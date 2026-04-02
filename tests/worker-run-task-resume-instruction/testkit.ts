@@ -62,12 +62,12 @@ export const createRuntime = async (): Promise<RuntimeState> => {
     runtimeId: 'runtime-run-task-resume-instruction-test',
     withGlobalFocus: false,
   })
-  runtime.worker.queue = {
+  runtime.process.worker.queue = {
     add: vi.fn(),
     clear: vi.fn(),
     pause: vi.fn(),
     sizeBy: vi.fn().mockReturnValue(0),
-  } as unknown as RuntimeState['worker']['queue']
+  } as unknown as RuntimeState['process']['worker']['queue']
   return runtime
 }
 

@@ -28,5 +28,5 @@ export const applyRememberMemoryAction = async (
     focusId,
     remembered,
   )
-  if (appended) runtime.manager.memoryRefresh.signalVersion += 1
+  if (appended) runtime.process.manager.memoryRefresh.signalVersion += 1
 }

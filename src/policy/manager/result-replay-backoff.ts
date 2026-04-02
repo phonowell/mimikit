@@ -14,8 +14,8 @@ const resolveReplayBackoffBaseMs = (runtime: ManagerRuntime): number =>
   Math.max(MIN_RESULT_REPLAY_BACKOFF_MS, runtime.config.worker.retry.backoffMs)
 
 export const clearResultReplayBackoff = (runtime: ManagerRuntime): void => {
-  runtime.manager.resultReplayFailureCount = 0
-  runtime.manager.resultReplayReadyAtMs = 0
+  runtime.process.manager.resultReplayFailureCount = 0
+  runtime.process.manager.resultReplayReadyAtMs = 0
 }
 
 export const scheduleResultReplayBackoff = (params: {
@@ -33,13 +33,14 @@ export const scheduleResultReplayBackoff = (params: {
     readProviderErrorCode(params.error) !== 'provider_transient_network'
   )
     return undefined
-  const nextFailureCount = params.runtime.manager.resultReplayFailureCount + 1
+  const nextFailureCount =
+    params.runtime.process.manager.resultReplayFailureCount + 1
   const delayMs = Math.min(
     MAX_RESULT_REPLAY_BACKOFF_MS,
     resolveReplayBackoffBaseMs(params.runtime) * 2 ** (nextFailureCount - 1),
   )
-  params.runtime.manager.resultReplayFailureCount = nextFailureCount
-  params.runtime.manager.resultReplayReadyAtMs = Date.now() + delayMs
+  params.runtime.process.manager.resultReplayFailureCount = nextFailureCount
+  params.runtime.process.manager.resultReplayReadyAtMs = Date.now() + delayMs
   return delayMs
 }
 
@@ -53,7 +54,7 @@ export const resolveResultReplayDelayMs = (
     return 0
   }
   if (inputCount > 0) return 0
-  return Math.max(0, runtime.manager.resultReplayReadyAtMs - Date.now())
+  return Math.max(0, runtime.process.manager.resultReplayReadyAtMs - Date.now())
 }
 
 export const waitForResultReplayBackoff = async (

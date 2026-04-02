@@ -94,6 +94,9 @@ export const buildResultPromptPayload = (
   cancel?: TaskCancelMeta,
   taskArchivePath?: string,
   workDir?: string,
+  options?: {
+    includeOutput?: boolean
+  },
 ): Record<string, unknown> => {
   const archivePath = pickArchivePath(
     result.archivePath,
@@ -109,9 +112,13 @@ export const buildResultPromptPayload = (
     duration_ms: result.durationMs,
     ...(result.outcome ? { outcome: result.outcome } : {}),
     ...(result.stopReason ? { stop_reason: result.stopReason } : {}),
-    output: truncateText(result.output, TASK_OUTPUT_MAX_CHARS, {
-      normalizeWhitespace: true,
-    }),
+    ...(options?.includeOutput
+      ? {
+          output: truncateText(result.output, TASK_OUTPUT_MAX_CHARS, {
+            normalizeWhitespace: true,
+          }),
+        }
+      : {}),
     ...(result.status === 'canceled' && cancel
       ? { cancel: toCancelMeta(cancel) }
       : {}),

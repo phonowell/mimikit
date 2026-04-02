@@ -33,12 +33,12 @@ test('set_plan creates cron plan with enqueue_task effect', async () => {
     },
   ])
 
-  expect(runtime.taskPlans).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.trigger.mode).toBe('cron')
-  expect(runtime.taskPlans[0]?.trigger).toMatchObject({
+  expect(runtime.domain.taskPlans).toHaveLength(1)
+  expect(runtime.domain.taskPlans[0]?.trigger.mode).toBe('cron')
+  expect(runtime.domain.taskPlans[0]?.trigger).toMatchObject({
     timeZone: 'Asia/Shanghai',
   })
-  expect(runtime.taskPlans[0]?.effect).toMatchObject({
+  expect(runtime.domain.taskPlans[0]?.effect).toMatchObject({
     kind: 'enqueue_task',
     taskTemplate: {
       title: 'scheduled task',
@@ -50,7 +50,7 @@ test('set_plan creates cron plan with enqueue_task effect', async () => {
       acceptance: ['A concise build status summary is ready'],
     },
   })
-  const effect = runtime.taskPlans[0]?.effect
+  const effect = runtime.domain.taskPlans[0]?.effect
   expect(effect?.kind).toBe('enqueue_task')
   if (effect?.kind !== 'enqueue_task')
     throw new Error('expected enqueue effect')
@@ -85,9 +85,9 @@ test('set_plan accepts on_worker_slot_freed trigger mode', async () => {
     },
   ])
 
-  expect(runtime.taskPlans).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_freed')
-  expect(runtime.taskPlans[0]?.effect.kind).toBe('enqueue_task')
+  expect(runtime.domain.taskPlans).toHaveLength(1)
+  expect(runtime.domain.taskPlans[0]?.trigger.mode).toBe('on_worker_slot_freed')
+  expect(runtime.domain.taskPlans[0]?.effect.kind).toBe('enqueue_task')
 })
 
 test('delete_plan keeps plan entity and records canceled closure', async () => {
@@ -117,7 +117,7 @@ test('delete_plan keeps plan entity and records canceled closure', async () => {
       runCount: 0,
     },
   }
-  runtime.taskPlans.push(activePlan)
+  runtime.domain.taskPlans.push(activePlan)
 
   await applyTaskActions(runtime, [
     {
@@ -126,14 +126,14 @@ test('delete_plan keeps plan entity and records canceled closure', async () => {
     },
   ])
 
-  expect(runtime.taskPlans).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.status).toBe('done')
-  expect(runtime.taskPlans[0]?.runtime.doneReason).toBe('canceled')
+  expect(runtime.domain.taskPlans).toHaveLength(1)
+  expect(runtime.domain.taskPlans[0]?.status).toBe('done')
+  expect(runtime.domain.taskPlans[0]?.runtime.doneReason).toBe('canceled')
 })
 
 test('set_plan replaces active plan in place', async () => {
   const runtime = await createRuntime()
-  runtime.taskPlans.push({
+  runtime.domain.taskPlans.push({
     id: 'plan-switch-effect',
     title: 'switch effect',
     focusId: GLOBAL_FOCUS_ID,
@@ -180,7 +180,7 @@ test('set_plan replaces active plan in place', async () => {
     },
   ])
 
-  const effect = runtime.taskPlans[0]?.effect
+  const effect = runtime.domain.taskPlans[0]?.effect
   expect(effect?.kind).toBe('enqueue_task')
   if (effect?.kind !== 'enqueue_task')
     throw new Error('expected enqueue effect')

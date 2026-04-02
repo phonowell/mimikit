@@ -6,7 +6,7 @@ import { appendTaskProgress } from '../../persistence/storage/task-progress.js'
 import { appendWorkerUsageLedgerEntry } from '../../persistence/storage/usage-ledger.js'
 import { resolveTaskGitLifecycle } from '../shared/task-git-lifecycle.js'
 
-import { applyRuntimeTaskResultDomainWrite } from './task-state-write.js'
+import { applyRuntimeTaskDomainWrite } from './task-state-write.js'
 
 import type { Task, TaskResult } from '../../foundation/types/index.js'
 import type {
@@ -27,11 +27,13 @@ export type ApplyTaskResultWriteOptions = {
 
 type TaskResultWriteRuntime = RuntimePersistState & {
   paths: RuntimePathsState['paths']
-  manager: RuntimePersistState['manager'] &
-    Pick<RuntimeManagerState, 'wakePending' | 'signalController'>
-  worker: Pick<RuntimeWorkerState, 'lastActivityAtMs'>
-  ui: RuntimePersistState['ui'] &
-    Pick<RuntimeUiState, 'wakeVersion' | 'wakeEvents' | 'signalControllers'>
+  process: RuntimePersistState['process'] & {
+    manager: RuntimePersistState['process']['manager'] &
+      Pick<RuntimeManagerState, 'wakePending' | 'signalController'>
+    worker: Pick<RuntimeWorkerState, 'lastActivityAtMs'>
+    ui: RuntimePersistState['process']['ui'] &
+      Pick<RuntimeUiState, 'wakeVersion' | 'wakeEvents' | 'signalControllers'>
+  }
 }
 
 export const applyTaskResultWrite = async (params: {
@@ -66,8 +68,9 @@ export const applyTaskResultWrite = async (params: {
     ...(options.taskPatch ?? {}),
   }
 
-  runtime.worker.lastActivityAtMs = Date.now()
-  applyRuntimeTaskResultDomainWrite({
+  runtime.process.worker.lastActivityAtMs = Date.now()
+  applyRuntimeTaskDomainWrite({
+    kind: 'apply_result',
     runtime,
     taskId: task.id,
     result,

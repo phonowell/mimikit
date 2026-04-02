@@ -11,7 +11,7 @@ const normalizeSessionId = (
 }
 
 const findTask = (runtime: RuntimeTaskStateSlice, taskId: string) =>
-  runtime.tasks.find((item) => item.id === taskId)
+  runtime.domain.tasks.find((item) => item.id === taskId)
 
 const resolveTaskTarget = (params: {
   runtime: RuntimeTaskStateSlice

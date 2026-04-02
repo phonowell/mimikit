@@ -4,6 +4,7 @@ import {
   notifyManagerLoop,
   notifyWorkerLoop,
 } from '../src/kernel/orchestrator/signals.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 test('notifyManagerLoop can skip ui wake emission', async () => {
@@ -11,9 +12,9 @@ test('notifyManagerLoop can skip ui wake emission', async () => {
 
   notifyManagerLoop(runtime, { notifyUi: false })
 
-  expect(runtime.manager.wakePending).toBe(true)
-  expect(runtime.ui.wakeVersion).toBe(0)
-  expect(runtime.ui.wakeEvents.size).toBe(0)
+  expect(runtime.process.manager.wakePending).toBe(true)
+  expect(runtime.process.ui.wakeVersion).toBe(0)
+  expect(runtime.process.ui.wakeEvents.size).toBe(0)
 })
 
 test('notifyWorkerLoop can emit explicit ui wake kind', async () => {
@@ -21,6 +22,6 @@ test('notifyWorkerLoop can emit explicit ui wake kind', async () => {
 
   notifyWorkerLoop(runtime, { uiKind: 'tasks' })
 
-  expect(runtime.ui.wakeVersion).toBe(1)
-  expect(runtime.ui.wakeEvents.get(1)).toBe('tasks')
+  expect(runtime.process.ui.wakeVersion).toBe(1)
+  expect(runtime.process.ui.wakeEvents.get(1)).toBe('tasks')
 })

@@ -33,7 +33,9 @@ const applyTaskControlAction = async (
   item: Parsed,
 ): Promise<void> => {
   if (item.type !== 'task_control') return
-  const task = runtime.tasks.find((candidate) => candidate.id === item.task_id)
+  const task = runtime.domain.tasks.find(
+    (candidate) => candidate.id === item.task_id,
+  )
   const taskTarget = {
     taskId: item.task_id,
     ...(task?.title ? { taskTitle: task.title } : {}),

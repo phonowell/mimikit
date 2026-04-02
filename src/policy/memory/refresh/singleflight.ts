@@ -13,7 +13,7 @@ import type { ManagerRuntime } from '../../../kernel/orchestrator/runtime-interf
 const runMemoryRefreshDrain = async (
   runtime: ManagerRuntime,
 ): Promise<void> => {
-  const state = runtime.manager.memoryRefresh
+  const state = runtime.process.manager.memoryRefresh
   try {
     while (state.pending || shouldTriggerMemoryRefresh(runtime)) {
       state.pending = false
@@ -23,7 +23,7 @@ const runMemoryRefreshDrain = async (
     await bestEffort('appendLog: memory_refresh_failed', () =>
       appendLog(runtime.paths.log, {
         event: MEMORY_REFRESH_AUDIT_EVENTS.failed,
-        managerTurn: runtime.manager.turn,
+        managerTurn: runtime.process.manager.turn,
         source: MEMORY_REFRESH_SOURCE,
         error: error instanceof Error ? error.message : String(error),
       }),
@@ -39,7 +39,7 @@ const runMemoryRefreshDrain = async (
 }
 
 export const requestMemoryRefresh = (runtime: ManagerRuntime): void => {
-  const state = runtime.manager.memoryRefresh
+  const state = runtime.process.manager.memoryRefresh
   if (state.running) {
     state.pending = true
     return

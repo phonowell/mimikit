@@ -157,7 +157,7 @@ export const enqueueClosureTaskIfNeeded = async (params: {
   const contract = buildClosureContract({ task, result, baseBranch: branch })
   const { task: closureTask, created } = await enqueueTask(
     runtime.config.workDir,
-    runtime.tasks,
+    runtime.domain.tasks,
     prompt,
     `收尾：${task.title}`,
     repoRoot,

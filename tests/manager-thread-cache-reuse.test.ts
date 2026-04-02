@@ -53,7 +53,7 @@ test('runManagerCorrectionRounds reuses and updates manager thread id across rou
   expect(runManagerRoundWithRecoveryMock.mock.calls[1]?.[0]).toMatchObject({
     managerThreadId: 'session-manager-1',
   })
-  expect(runtime.manager.threadId).toBe('session-manager-1')
+  expect(runtime.process.manager.threadId).toBe('session-manager-1')
 })
 
 test('runManagerCorrectionRounds opens rejection circuit after repeated rejected actions', async () => {

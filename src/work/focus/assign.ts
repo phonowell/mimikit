@@ -1,5 +1,10 @@
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { readHistory, rewriteHistory } from '../../persistence/history/store.js'
+import {
+  findRuntimePlan,
+  patchRuntimeTask,
+  updateRuntimePlan,
+} from '../orchestrator/runtime-domain-write.js'
 
 import { ensureFocus, touchFocus } from './state.js'
 
@@ -23,18 +28,25 @@ export const assignFocusByTargetId = async (
   ensureFocus(runtime, focusId)
 
   if (targetType === 'task') {
-    const task = runtime.tasks.find((item) => item.id === targetId)
+    const task = patchRuntimeTask({
+      runtime,
+      taskId: targetId,
+      patch: { focusId },
+    })
     if (!task) return false
-    task.focusId = focusId
     touchFocus(runtime, focusId)
     await persistRuntimeState(runtime)
     return true
   }
 
   if (targetType === 'plan') {
-    const plan = runtime.taskPlans.find((item) => item.id === targetId)
+    const plan = findRuntimePlan(runtime, targetId)
     if (!plan) return false
-    plan.focusId = focusId
+    updateRuntimePlan({
+      runtime,
+      planId: targetId,
+      update: (current) => ({ ...current, focusId }),
+    })
     touchFocus(runtime, focusId)
     await persistRuntimeState(runtime)
     return true

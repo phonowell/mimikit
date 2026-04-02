@@ -63,7 +63,7 @@ test('set_plan rejects sibling collision for active plan key', async () => {
     },
   ])
 
-  const targetId = runtime.taskPlans[1]?.id
+  const targetId = runtime.domain.taskPlans[1]?.id
   expect(targetId).toBeTruthy()
 
   await applyTaskActions(runtime, [
@@ -74,8 +74,8 @@ test('set_plan rejects sibling collision for active plan key', async () => {
     },
   ])
 
-  expect(runtime.taskPlans).toHaveLength(2)
-  expect(runtime.taskPlans[1]).toMatchObject({
+  expect(runtime.domain.taskPlans).toHaveLength(2)
+  expect(runtime.domain.taskPlans[1]).toMatchObject({
     id: targetId,
     title: 'follow up',
     trigger: {
@@ -114,8 +114,8 @@ test('set_plan skips duplicate active plan even when execution spec ids differ',
   ])
 
   const firstSpecId =
-    runtime.taskPlans[0]?.effect.kind === 'enqueue_task'
-      ? runtime.taskPlans[0].effect.taskTemplate.executionSpecId
+    runtime.domain.taskPlans[0]?.effect.kind === 'enqueue_task'
+      ? runtime.domain.taskPlans[0].effect.taskTemplate.executionSpecId
       : null
 
   await applyTaskActions(runtime, [
@@ -126,11 +126,11 @@ test('set_plan skips duplicate active plan even when execution spec ids differ',
     },
   ])
 
-  expect(runtime.taskPlans).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.effect.kind).toBe('enqueue_task')
-  if (runtime.taskPlans[0]?.effect.kind !== 'enqueue_task')
+  expect(runtime.domain.taskPlans).toHaveLength(1)
+  expect(runtime.domain.taskPlans[0]?.effect.kind).toBe('enqueue_task')
+  if (runtime.domain.taskPlans[0]?.effect.kind !== 'enqueue_task')
     throw new Error('expected enqueue effect')
-  expect(runtime.taskPlans[0].effect.taskTemplate.executionSpecId).toBe(
+  expect(runtime.domain.taskPlans[0].effect.taskTemplate.executionSpecId).toBe(
     firstSpecId,
   )
 })

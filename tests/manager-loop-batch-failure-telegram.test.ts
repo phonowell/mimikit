@@ -38,7 +38,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
     pausedQueue: true,
   })
   const now = new Date().toISOString()
-  runtime.focuses.push({
+  runtime.domain.focuses.push({
     id: 'focus-main',
     title: 'Main',
     status: 'active',
@@ -73,7 +73,7 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
     telegramChatId: 'telegram-from-input',
     telegramMessageId: '42',
   }
-  runtime.session.inflightInputs = [input]
+  runtime.process.session.inflightInputs = [input]
   await publishUserInput({ paths: runtime.paths, payload: input })
 
   await recoverManagerBatchFailure({
@@ -106,6 +106,6 @@ test('recoverManagerBatchFailure dispatches fallback reply to telegram source in
     chatId: 'telegram-from-input',
     text: fallbackReply,
   })
-  expect(runtime.manager.resultReplayFailureCount).toBe(0)
-  expect(runtime.manager.resultReplayReadyAtMs).toBe(0)
+  expect(runtime.process.manager.resultReplayFailureCount).toBe(0)
+  expect(runtime.process.manager.resultReplayReadyAtMs).toBe(0)
 })

@@ -40,8 +40,8 @@ export const applyTaskActions = async (
       total,
       ...(options?.batchId ? { batchId: options.batchId } : {}),
       ...(options?.roundId ? { roundId: options.roundId } : {}),
-      ...(runtime.manager.threadId
-        ? { traceId: runtime.manager.threadId }
+      ...(runtime.process.manager.threadId
+        ? { traceId: runtime.process.manager.threadId }
         : {}),
     })
     await managerActionCliLogger.logLifecycle({
@@ -51,8 +51,8 @@ export const applyTaskActions = async (
       total,
       ...(options?.batchId ? { batchId: options.batchId } : {}),
       ...(options?.roundId ? { roundId: options.roundId } : {}),
-      ...(runtime.manager.threadId
-        ? { traceId: runtime.manager.threadId }
+      ...(runtime.process.manager.threadId
+        ? { traceId: runtime.process.manager.threadId }
         : {}),
     })
     let result
@@ -68,8 +68,8 @@ export const applyTaskActions = async (
         elapsedMs: Math.max(0, Date.now() - startedAt),
         ...(options?.batchId ? { batchId: options.batchId } : {}),
         ...(options?.roundId ? { roundId: options.roundId } : {}),
-        ...(runtime.manager.threadId
-          ? { traceId: runtime.manager.threadId }
+        ...(runtime.process.manager.threadId
+          ? { traceId: runtime.process.manager.threadId }
           : {}),
       })
       if (isActionApplyFeedbackError(error)) {
@@ -78,8 +78,8 @@ export const applyTaskActions = async (
           action: error.feedback.action,
           error: error.feedback.error,
           hint: error.feedback.hint,
-          ...(runtime.manager.threadId
-            ? { traceId: runtime.manager.threadId }
+          ...(runtime.process.manager.threadId
+            ? { traceId: runtime.process.manager.threadId }
             : {}),
           ...(options?.batchId ? { batchId: options.batchId } : {}),
           ...(options?.roundId ? { roundId: options.roundId } : {}),
@@ -97,8 +97,8 @@ export const applyTaskActions = async (
       elapsedMs: Math.max(0, Date.now() - startedAt),
       ...(options?.batchId ? { batchId: options.batchId } : {}),
       ...(options?.roundId ? { roundId: options.roundId } : {}),
-      ...(runtime.manager.threadId
-        ? { traceId: runtime.manager.threadId }
+      ...(runtime.process.manager.threadId
+        ? { traceId: runtime.process.manager.threadId }
         : {}),
     })
     if (result === 'stop') return

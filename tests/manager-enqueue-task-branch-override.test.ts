@@ -68,8 +68,8 @@ test('enqueue_task write mode keeps repo cwd and skips git metadata by default',
     buildTaskDraft(cwd, { title: 'default write task' }),
   )
 
-  expect(runtime.tasks).toHaveLength(1)
-  const task = runtime.tasks[0]
+  expect(runtime.domain.tasks).toHaveLength(1)
+  const task = runtime.domain.tasks[0]
   expect(task?.repoKey).toBe(repoKey)
   expect(task?.resourceMode).toBe('write')
   expect(task?.cwd).toBe(await realpath(cwd))
@@ -86,10 +86,10 @@ test('enqueue_task read mode keeps repo cwd without creating a worktree', async 
     buildTaskDraft(cwd, { title: 'read task', mode: 'read' }),
   )
 
-  expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.tasks[0]?.resourceMode).toBe('read')
-  expect(runtime.tasks[0]?.cwd).toBe(await realpath(cwd))
-  expect(runtime.tasks[0]?.branch).toBe('main')
+  expect(runtime.domain.tasks).toHaveLength(1)
+  expect(runtime.domain.tasks[0]?.resourceMode).toBe('read')
+  expect(runtime.domain.tasks[0]?.cwd).toBe(await realpath(cwd))
+  expect(runtime.domain.tasks[0]?.branch).toBe('main')
 })
 
 test('enqueue_task write mode materializes worktrees only when use_worktree=true', async () => {
@@ -113,8 +113,8 @@ test('enqueue_task write mode materializes worktrees only when use_worktree=true
     },
   ])
 
-  expect(runtime.tasks).toHaveLength(2)
-  const task = runtime.tasks[0]
+  expect(runtime.domain.tasks).toHaveLength(2)
+  const task = runtime.domain.tasks[0]
   expect(task?.resourceMode).toBe('write')
   expect(task?.branch).toMatch(/^task\//)
   const expectedWorktree = resolveExpectedWorktreePath(cwd, task?.branch ?? '')
@@ -126,8 +126,10 @@ test('enqueue_task write mode materializes worktrees only when use_worktree=true
       encoding: 'utf8',
     }).trim(),
   ).toBe(task?.branch)
-  expect(runtime.tasks[0]?.branch).not.toBe(runtime.tasks[1]?.branch)
-  expect(runtime.tasks[0]?.cwd).not.toBe(runtime.tasks[1]?.cwd)
+  expect(runtime.domain.tasks[0]?.branch).not.toBe(
+    runtime.domain.tasks[1]?.branch,
+  )
+  expect(runtime.domain.tasks[0]?.cwd).not.toBe(runtime.domain.tasks[1]?.cwd)
 }, 15_000)
 
 test('enqueue_task maps repo subdirectory into worktree cwd only when use_worktree=true', async () => {
@@ -140,8 +142,8 @@ test('enqueue_task maps repo subdirectory into worktree cwd only when use_worktr
     buildTaskDraft(nestedCwd, { title: 'nested task', use_worktree: true }),
   )
 
-  expect(runtime.tasks).toHaveLength(1)
-  const task = runtime.tasks[0]
+  expect(runtime.domain.tasks).toHaveLength(1)
+  const task = runtime.domain.tasks[0]
   const expectedWorktree = resolveExpectedWorktreePath(cwd, task?.branch ?? '')
   expect(task?.cwd).toBe(join(await realpath(expectedWorktree), 'src'))
   expect(task?.branch).toMatch(/^task\//)
@@ -172,7 +174,7 @@ test('enqueue_task reuses existing auto-generated worktree for the same semantic
 
   await enqueueTask(runtime, task)
 
-  expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.tasks[0]?.cwd).toBe(await realpath(target.cwd))
-  expect(runtime.tasks[0]?.branch).toBe(target.branch)
+  expect(runtime.domain.tasks).toHaveLength(1)
+  expect(runtime.domain.tasks[0]?.cwd).toBe(await realpath(target.cwd))
+  expect(runtime.domain.tasks[0]?.branch).toBe(target.branch)
 })

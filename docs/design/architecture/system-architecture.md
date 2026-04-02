@@ -12,17 +12,19 @@
 - 保留统一模型 `Task + TaskPlan + Focus`，不再维护旧链路兼容层。
 - `mimikit` 对外是异步自治作业系统，对内保持轻量编排内核：负责本地状态机、队列、调度、可观测性，不直接执行任务。
 - manager 使用 `openai-responses`；worker 使用 `codex-sdk`。
-- 运行时状态采用“根级实体集合 + 过程态子域”结构：根上保留 `queues / tasks / taskPlans / focuses`，过程态收敛在 `session / manager / worker / ui`，避免继续堆第二套调度或摘要层。
+- 运行时状态采用显式 `domain + process` 分层：`runtime.domain` 只保留 `queues / tasks / taskPlans / focuses` 这类可持久化编排真相，`runtime.process` 只保留 `session / manager / worker / ui` 这类进程内过程态；不再保留 root-level 兼容入口。
 - manager prompt 收敛为双 packet：`state_packet` 负责稳定状态（focus/task/plan），其中 task 与 plan 只暴露合同级 digest（`goal/scope/acceptance` 等）与调度外壳，不回灌完整 worker prompt；`event_packet` 负责当前批次事件（input/result/history/action_feedback/environment/packet）；详细 task result 只留在 `event_packet.batch_results`，`state_packet.tasks` 不再重复展开结果正文；section 字节预算固定取自 `manager.promptSections`，`wakeProfile` 只影响 packet section 选择，不再动态改写 bytes，也不再分档 action surface。
 - worker 执行通道固定为 codex，不再进行 provider 候选注入、自动打分或按任务显式切换。
 - manager/worker 每轮 usage 统一写入 `usage/ledger.jsonl`，直接暴露 prompt 字节、packet 裁剪与执行侧 token 消耗，不再额外引入成本推导层。
 - HTTP 输入校验集中在 `src/surface/http/input-body.ts`，HTTP 路由装配在 `src/surface/http/routes-api.ts`。
 - 本地持久化采用进程内串行 + 文件锁（`proper-lockfile`）。
+- task/plan/focus 的真相写入统一收口到受控 write surface；manager/work/focus 模块不再各自直接 `push/splice/替换` domain collection。
 
 ## 组件职责
 
 - `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，记录每轮 context packet 与 usage ledger，并在批次收尾后触发 memory refresh。
 - `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态，同时在结果收尾时写 usage ledger。
+- `runtime domain write surface`：负责 task/plan/focus 真相变更的最小写入口；worker/manager 只提交结构化状态变化，不再在业务模块中散写 collection。
 - `managerLoop`：统一处理计划触发、worker 槽位释放与批次收尾，不再保留独立 trigger loop。
 - `runtime reaper`：主进程异常退出后回收 worker 子进程。
 - `channel lifecycle`：启动并维护 Telegram polling，把外部入站消息转成统一输入，并负责被动回发与跨通道广播。

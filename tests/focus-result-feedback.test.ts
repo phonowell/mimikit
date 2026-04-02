@@ -5,8 +5,10 @@ import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
 } from '../src/work/orchestrator/task-state.js'
-import type { Task, TaskResult } from '../src/foundation/types/index.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
+
+import type { Task, TaskResult } from '../src/foundation/types/index.js'
 
 test('syncFocusFromTaskResult updates summary but does not infer open items', async () => {
   const runtime = await createTestRuntimeState({
@@ -67,10 +69,10 @@ test('syncFocusFromTaskResult updates summary but does not infer open items', as
 
   syncFocusFromTaskResult(runtime, task, result)
 
-  expect(runtime.focuses[0]?.summary).toBe(
+  expect(runtime.domain.focuses[0]?.summary).toBe(
     'Task blocked pending review checkpoint.',
   )
-  expect(runtime.focuses[0]?.openItems).toEqual(['Keep existing digest'])
+  expect(runtime.domain.focuses[0]?.openItems).toEqual(['Keep existing digest'])
 })
 
 test('syncFocusFromTaskResult falls back to stable status summary instead of raw output', async () => {
@@ -127,5 +129,5 @@ test('syncFocusFromTaskResult falls back to stable status summary instead of raw
 
   syncFocusFromTaskResult(runtime, task, result)
 
-  expect(runtime.focuses[0]?.summary).toBe('Task "Ship Release" failed.')
+  expect(runtime.domain.focuses[0]?.summary).toBe('Task "Ship Release" failed.')
 })

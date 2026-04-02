@@ -32,9 +32,12 @@ export const runQueuedWorker = async (
   task: Task,
 ): Promise<void> => {
   if (task.status !== 'pending') return
-  if (runtime.worker.runningControllers.has(task.id)) return
+  if (runtime.process.worker.runningControllers.has(task.id)) return
   const dispatchLockKey = buildTaskDispatchLockKey(task)
-  if (dispatchLockKey && runtime.worker.runningTaskLocks.has(dispatchLockKey))
+  if (
+    dispatchLockKey &&
+    runtime.process.worker.runningTaskLocks.has(dispatchLockKey)
+  )
     return
   clearTaskLiveOutput(runtime, task.id)
   const controller = new AbortController()
@@ -46,7 +49,9 @@ export const runQueuedWorker = async (
   })
   let longTaskWarned = false
   const longTaskTimer = setInterval(() => {
-    const controllerForTask = runtime.worker.runningControllers.get(task.id)
+    const controllerForTask = runtime.process.worker.runningControllers.get(
+      task.id,
+    )
     if (!controllerForTask || controllerForTask.signal.aborted) return
     const startedAtMs = Date.parse(task.startedAt ?? '')
     if (!Number.isFinite(startedAtMs)) return

@@ -37,24 +37,24 @@ export const computeOrchestratorStatus = (
   runtime: RuntimeState,
   pendingInputsCount: number,
 ): OrchestratorStatus => {
-  const workerUsageTotal = runtime.tasks.reduce<TokenUsage | undefined>(
+  const workerUsageTotal = runtime.domain.tasks.reduce<TokenUsage | undefined>(
     (acc, task) => mergeUsageAdditive(acc, task.result?.usage ?? task.usage),
     undefined,
   )
-  const pendingTasks = runtime.tasks.filter(
+  const pendingTasks = runtime.domain.tasks.filter(
     (task) => task.status === 'pending',
   ).length
   const runningTaskIds = new Set(
-    runtime.tasks
+    runtime.domain.tasks
       .filter((task) => task.status === 'running')
       .map((task) => task.id),
   )
-  const activeTasks = [...runtime.worker.runningControllers.keys()].filter(
-    (taskId) => runningTaskIds.has(taskId),
-  ).length
+  const activeTasks = [
+    ...runtime.process.worker.runningControllers.keys(),
+  ].filter((taskId) => runningTaskIds.has(taskId)).length
   const maxWorkers = runtime.config.worker.maxConcurrent
   const agentStatus =
-    runtime.manager.running || activeTasks > 0 ? 'running' : 'idle'
+    runtime.process.manager.running || activeTasks > 0 ? 'running' : 'idle'
   return {
     ok: true,
     runtimeId: runtime.runtimeId,
@@ -62,13 +62,13 @@ export const computeOrchestratorStatus = (
     activeTasks,
     pendingTasks,
     pendingInputs: pendingInputsCount,
-    managerRunning: runtime.manager.running,
+    managerRunning: runtime.process.manager.running,
     maxWorkers,
-    ...(runtime.manager.lastUsage
-      ? { managerLastUsage: runtime.manager.lastUsage }
+    ...(runtime.process.manager.lastUsage
+      ? { managerLastUsage: runtime.process.manager.lastUsage }
       : {}),
-    ...(runtime.manager.usageTotal
-      ? { managerUsageTotal: runtime.manager.usageTotal }
+    ...(runtime.process.manager.usageTotal
+      ? { managerUsageTotal: runtime.process.manager.usageTotal }
       : {}),
     ...(workerUsageTotal ? { workerUsageTotal } : {}),
   }

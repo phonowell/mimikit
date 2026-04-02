@@ -53,6 +53,9 @@ export const buildManagerPacketSectionSource = (params: {
           params.tasks,
           params.runtime.pendingResults,
           params.workDir,
+          {
+            includeOutputTaskIds: params.runtime.historyHydratedTaskIds,
+          },
         ),
         params.limits.batchResultsMaxBytes,
       )

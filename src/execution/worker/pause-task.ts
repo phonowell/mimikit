@@ -57,7 +57,7 @@ export const pauseTask = async (
   const prevStatus = task.status
   touchTaskMutation(runtime, task.id)
   pauseRuntimeTask({ runtime, taskId: task.id, pausedAt })
-  const controller = runtime.worker.runningControllers.get(task.id)
+  const controller = runtime.process.worker.runningControllers.get(task.id)
   if (controller && !controller.signal.aborted)
     controller.abort(meta?.reason ?? 'Task paused')
 

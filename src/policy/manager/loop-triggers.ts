@@ -56,7 +56,7 @@ const processLoopTriggers = async (
     )
     stateChanged = stateChanged || slotTriggered.stateChanged
     if (slotTriggered.triggeredCount === 0) {
-      const hasPendingOrRunningTask = runtime.tasks.some(
+      const hasPendingOrRunningTask = runtime.domain.tasks.some(
         (task) => task.status === 'pending' || task.status === 'running',
       )
       if (hasRunnableWorkerSlotPlan(runtime) || hasPendingOrRunningTask) {

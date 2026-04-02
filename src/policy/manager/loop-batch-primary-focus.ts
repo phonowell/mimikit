@@ -18,7 +18,7 @@ const resolveKnownFocusId = (
 ): FocusId | undefined => {
   const normalized = focusId?.trim()
   if (!normalized) return undefined
-  const matched = runtime.focuses.find((item) => item.id === normalized)
+  const matched = runtime.domain.focuses.find((item) => item.id === normalized)
   if (!matched || matched.status === 'archived') return undefined
   return matched.id
 }
@@ -39,7 +39,7 @@ const resolveLatestResultFocusId = (
   runtime: ManagerRuntime,
   resultsNewestFirst: TaskResult[],
 ): FocusId | undefined => {
-  const taskById = new Map(runtime.tasks.map((task) => [task.id, task]))
+  const taskById = new Map(runtime.domain.tasks.map((task) => [task.id, task]))
   for (const result of resultsNewestFirst) {
     const task = taskById.get(result.taskId)
     if (!task) continue
@@ -53,7 +53,9 @@ const resolveLatestTriggerFocusId = (
   runtime: ManagerRuntime,
   inputsNewestFirst: UserInput[],
 ): FocusId | undefined => {
-  const planById = new Map(runtime.taskPlans.map((plan) => [plan.id, plan]))
+  const planById = new Map(
+    runtime.domain.taskPlans.map((plan) => [plan.id, plan]),
+  )
   for (const input of inputsNewestFirst) {
     if (input.role !== 'system') continue
     const event = resolveSystemEvent(input)
@@ -76,7 +78,7 @@ const resolveLatestTriggerFocusId = (
 const resolveLatestOpenTaskFocusId = (
   runtime: ManagerRuntime,
 ): FocusId | undefined => {
-  const openTasks = runtime.tasks
+  const openTasks = runtime.domain.tasks
     .filter(
       (task) =>
         task.status === 'pending' ||
@@ -98,7 +100,7 @@ const resolveLatestOpenTaskFocusId = (
 const resolveRecentActiveFocusId = (
   runtime: ManagerRuntime,
 ): FocusId | undefined => {
-  const activeFocus = runtime.focuses
+  const activeFocus = runtime.domain.focuses
     .filter((focus) => focus.status === 'active')
     .sort((a, b) => {
       const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)

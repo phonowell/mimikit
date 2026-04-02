@@ -47,12 +47,12 @@ export const createRuntime = async (): Promise<RuntimeState> => {
   })
   runtime.config.worker.retry.maxAttempts = 0
   runtime.config.worker.retry.backoffMs = 0
-  runtime.worker.queue = {
+  runtime.process.worker.queue = {
     add: vi.fn(),
     clear: vi.fn(),
     pause: vi.fn(),
     sizeBy: vi.fn().mockReturnValue(0),
-  } as unknown as RuntimeState['worker']['queue']
+  } as unknown as RuntimeState['process']['worker']['queue']
   return runtime
 }
 

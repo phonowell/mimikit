@@ -61,9 +61,9 @@ export class Orchestrator {
     scheduleOrchestratorRestart({
       reason,
       getStatus: () => this.getStatus(),
-      restartScheduled: this.runtime.session.restartScheduled,
+      restartScheduled: this.runtime.process.session.restartScheduled,
       markScheduled: () => {
-        this.runtime.session.restartScheduled = true
+        this.runtime.process.session.restartScheduled = true
       },
       runRestart: async () => {
         await this.stopAndPersist()
@@ -140,7 +140,7 @@ export class Orchestrator {
   }
 
   getWebUiWakeVersion(): number {
-    return this.runtime.ui.wakeVersion
+    return this.runtime.process.ui.wakeVersion
   }
 
   waitForWebUiSignal(
@@ -158,7 +158,7 @@ export class Orchestrator {
     reason: string,
     options?: { skipPersist?: boolean },
   ): void {
-    this.runtime.session.requestExit?.({
+    this.runtime.process.session.requestExit?.({
       code,
       reason,
       ...(options?.skipPersist ? { skipPersist: true } : {}),
@@ -184,7 +184,7 @@ export class Orchestrator {
   getStatus(): OrchestratorStatus {
     return computeOrchestratorStatus(
       this.runtime,
-      this.runtime.session.inflightInputs.length,
+      this.runtime.process.session.inflightInputs.length,
     )
   }
 }

@@ -30,7 +30,7 @@ test('processManagerBatch flushes pending restart on no-reply fast path', async 
     reason: 'manager_restart_requested',
     skipPersist: true,
   })
-  expect(runtime.session.pendingRestartReason).toBeUndefined()
+  expect(runtime.process.session.pendingRestartReason).toBeUndefined()
 
   const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
     ensureFile: true,

@@ -34,8 +34,8 @@ export const buildActionFeedbackContext = (params: {
 }): {
   stateDir: string
   taskStatusById: Map<string, TaskStatus>
-  taskById: Map<string, ManagerRuntime['tasks'][number]>
-  planById: Map<string, ManagerRuntime['taskPlans'][number]>
+  taskById: Map<string, ManagerRuntime['domain']['tasks'][number]>
+  planById: Map<string, ManagerRuntime['domain']['taskPlans'][number]>
   planStatusById: Map<string, TaskPlanStatus>
   resultTaskIds: Set<string>
   allowAskUserChoice: boolean
@@ -56,26 +56,26 @@ export const buildActionFeedbackContext = (params: {
     inputs,
     recentUserIntentTexts,
   } = params
-  const currentInputs = inputs ?? runtime.session.inflightInputs
+  const currentInputs = inputs ?? runtime.process.session.inflightInputs
   const supplementalEvidenceSources = new Set<SupplementalEvidenceSource>()
   if (resultTaskIds.size > 0) supplementalEvidenceSources.add('task_result')
   return {
     stateDir: runtime.config.workDir,
     taskStatusById: new Map(
-      runtime.tasks.map((task) => [task.id, task.status]),
+      runtime.domain.tasks.map((task) => [task.id, task.status]),
     ),
-    taskById: new Map(runtime.tasks.map((task) => [task.id, task])),
-    planById: new Map(runtime.taskPlans.map((plan) => [plan.id, plan])),
+    taskById: new Map(runtime.domain.tasks.map((task) => [task.id, task])),
+    planById: new Map(runtime.domain.taskPlans.map((plan) => [plan.id, plan])),
     planStatusById: new Map(
-      runtime.taskPlans.map((plan) => [plan.id, plan.status]),
+      runtime.domain.taskPlans.map((plan) => [plan.id, plan.status]),
     ),
     resultTaskIds,
     allowAskUserChoice,
     wakeProfile,
     inputs: currentInputs,
     supplementalEvidenceSources,
-    restartRuntimeAvailable: runtime.session.requestExit !== undefined,
-    restartRuntimeScheduled: runtime.session.restartScheduled,
+    restartRuntimeAvailable: runtime.process.session.requestExit !== undefined,
+    restartRuntimeScheduled: runtime.process.session.restartScheduled,
     restartRuntimeBusy: !canScheduleManagerRestart(runtime),
     defaultFocusId: resolveDefaultFocusId(runtime),
     ...(recentUserIntentTexts && recentUserIntentTexts.length > 0

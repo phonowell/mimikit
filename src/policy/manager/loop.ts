@@ -25,21 +25,21 @@ export const managerLoop = async (runtime: ManagerRuntime): Promise<void> => {
     lastWorkerSlotEventAtMs: 0,
   }
   let inputCheckpoint: QueueReadCheckpoint = {
-    cursor: runtime.queues.inputsCursor,
+    cursor: runtime.domain.queues.inputsCursor,
     byteOffset: 0,
   }
   let resultCheckpoint: QueueReadCheckpoint = {
-    cursor: runtime.queues.resultsCursor,
+    cursor: runtime.domain.queues.resultsCursor,
     byteOffset: 0,
   }
-  while (!runtime.session.stopped) {
+  while (!runtime.process.session.stopped) {
     inputCheckpoint = syncCheckpoint(
       inputCheckpoint,
-      runtime.queues.inputsCursor,
+      runtime.domain.queues.inputsCursor,
     )
     resultCheckpoint = syncCheckpoint(
       resultCheckpoint,
-      runtime.queues.resultsCursor,
+      runtime.domain.queues.resultsCursor,
     )
     const triggerStateChanged = await safeProcessLoopTriggers(
       runtime,
@@ -73,8 +73,8 @@ export const managerLoop = async (runtime: ManagerRuntime): Promise<void> => {
       continue
 
     if (inputPackets.length === 0 && resultPackets.length === 0) {
-      if (nextResultsCursor !== runtime.queues.resultsCursor) {
-        runtime.queues.resultsCursor = nextResultsCursor
+      if (nextResultsCursor !== runtime.domain.queues.resultsCursor) {
+        runtime.domain.queues.resultsCursor = nextResultsCursor
         await bestEffort('persistRuntimeState: invalid_result_packet', () =>
           persistRuntimeState(runtime),
         )

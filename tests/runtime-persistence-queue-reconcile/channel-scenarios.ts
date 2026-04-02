@@ -36,7 +36,7 @@ test('hydrateRuntimeState restores channel targets from snapshot', async () => {
 
   await hydrateRuntimeState(restored)
 
-  expect(restored.session.channelTargets).toEqual({
+  expect(restored.process.session.channelTargets).toEqual({
     telegramChatId: 'chat-1001',
   })
 })
@@ -60,7 +60,7 @@ test('hydrateRuntimeState falls back to channel targets from history', async () 
 
   await hydrateRuntimeState(restored)
 
-  expect(restored.session.channelTargets).toEqual({
+  expect(restored.process.session.channelTargets).toEqual({
     telegramChatId: 'chat-1001',
   })
 })

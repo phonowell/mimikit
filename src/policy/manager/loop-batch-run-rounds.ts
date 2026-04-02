@@ -62,7 +62,7 @@ export const runManagerCorrectionRounds = async (params: {
   } = params
   let elapsedMs = 0
   let batchUsage: TokenUsage | undefined
-  let managerThreadId = runtime.manager.threadId
+  let managerThreadId = runtime.process.manager.threadId
   let lastDiagnostics: ManagerRoundDiagnostics = {
     batchId: params.batchId,
     roundCount: 0,
@@ -76,7 +76,7 @@ export const runManagerCorrectionRounds = async (params: {
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
     !hasUserInputFromSource(inputs, 'telegram') &&
-    !isNoChoiceReturnChannelSource(runtime.session.lastUserMeta?.source)
+    !isNoChoiceReturnChannelSource(runtime.process.session.lastUserMeta?.source)
   for (let round = 1; round <= maxCorrectionRounds; round++) {
     if (round >= 2 && extra.actionFeedback && extra.actionFeedback.length > 0) {
       const continuation = await resolveSelfRepairRoundContinuation({
@@ -110,7 +110,7 @@ export const runManagerCorrectionRounds = async (params: {
         const errorThreadId = readProviderThreadId(error)
         if (errorThreadId) {
           managerThreadId = errorThreadId
-          runtime.manager.threadId = errorThreadId
+          runtime.process.manager.threadId = errorThreadId
         }
         throw error
       }
@@ -122,8 +122,8 @@ export const runManagerCorrectionRounds = async (params: {
       runResult,
       ...(managerThreadId ? { threadId: managerThreadId } : {}),
     })
-    if (managerThreadId) runtime.manager.threadId = managerThreadId
-    else delete runtime.manager.threadId
+    if (managerThreadId) runtime.process.manager.threadId = managerThreadId
+    else delete runtime.process.manager.threadId
     elapsedMs += runResult.elapsedMs
     batchUsage = mergeUsageAdditive(batchUsage, runResult.usage)
     const parsed = {
@@ -166,8 +166,8 @@ export const runManagerCorrectionRounds = async (params: {
     diagnostics: lastDiagnostics,
     ...(managerThreadId ? { threadId: managerThreadId } : {}),
   })
-  if (managerThreadId) runtime.manager.threadId = managerThreadId
-  else delete runtime.manager.threadId
+  if (managerThreadId) runtime.process.manager.threadId = managerThreadId
+  else delete runtime.process.manager.threadId
   return buildRoundLimitResult({
     text: extra.actionFeedback?.length
       ? buildCorrectionFallbackReply(extra.actionFeedback)

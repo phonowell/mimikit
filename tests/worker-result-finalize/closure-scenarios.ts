@@ -115,7 +115,7 @@ test('finalizeResult pauses merge-required write task and enqueues repo-root clo
     result.evidence?.acceptanceChecks.every((item) => item.met === false),
   ).toBe(true)
 
-  const closureTask = runtime.tasks.find((item) => item.id !== task.id)
+  const closureTask = runtime.domain.tasks.find((item) => item.id !== task.id)
   expect(closureTask).toMatchObject({
     title: '收尾：落地 output tokens 收缩',
     cwd: repoRoot,

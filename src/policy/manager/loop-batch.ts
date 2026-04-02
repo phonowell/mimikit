@@ -37,23 +37,23 @@ export const processManagerBatch = async (params: {
     params
   applyPlanCompletionState(runtime, results)
   if (results.length > 0 || inputs.length > 0)
-    runtime.manager.lastActivityAtMs = Date.now()
-  runtime.manager.running = true
+    runtime.process.manager.lastActivityAtMs = Date.now()
+  runtime.process.manager.running = true
   notifyUiSignal(runtime)
   const runAbortController = new AbortController()
-  runtime.manager.runAbortController = runAbortController
+  runtime.process.manager.runAbortController = runAbortController
   const agentInputs = inputs.filter((item) => isVisibleToAgent(item))
   const startedAt = Date.now()
   let agentAppended = false
   let managerBatchId: string | undefined
   try {
     if (
-      runtime.session.stopped ||
+      runtime.process.session.stopped ||
       (agentInputs.length === 0 && results.length === 0)
     ) {
       await finishBatchWithoutAgentReply({
         runtime,
-        batchId: `batch-noop-${runtime.manager.turn + 1}`,
+        batchId: `batch-noop-${runtime.process.manager.turn + 1}`,
         inputs,
         results,
         nextInputsCursor,
@@ -62,7 +62,7 @@ export const processManagerBatch = async (params: {
       })
       return
     }
-    runtime.manager.turn += 1
+    runtime.process.manager.turn += 1
     const managerRun = await runManagerBatch({
       runtime,
       inputs: agentInputs,
@@ -124,12 +124,13 @@ export const processManagerBatch = async (params: {
     })
   } catch (error) {
     if (
-      runtime.session.stopped &&
+      runtime.process.session.stopped &&
       readProviderErrorCode(error) === 'provider_aborted'
     ) {
       await finishBatchWithoutAgentReply({
         runtime,
-        batchId: managerBatchId ?? `batch-aborted-${runtime.manager.turn}`,
+        batchId:
+          managerBatchId ?? `batch-aborted-${runtime.process.manager.turn}`,
         inputs,
         results,
         nextInputsCursor,
@@ -140,7 +141,7 @@ export const processManagerBatch = async (params: {
     }
     await recoverManagerBatchFailure({
       runtime,
-      batchId: managerBatchId ?? `batch-failed-${runtime.manager.turn}`,
+      batchId: managerBatchId ?? `batch-failed-${runtime.process.manager.turn}`,
       error,
       inputs,
       results,
@@ -151,9 +152,9 @@ export const processManagerBatch = async (params: {
       startedAt,
     })
   } finally {
-    if (runtime.manager.runAbortController === runAbortController)
-      runtime.manager.runAbortController = new AbortController()
-    runtime.manager.running = false
+    if (runtime.process.manager.runAbortController === runAbortController)
+      runtime.process.manager.runAbortController = new AbortController()
+    runtime.process.manager.running = false
     notifyUiSignal(runtime)
   }
 }

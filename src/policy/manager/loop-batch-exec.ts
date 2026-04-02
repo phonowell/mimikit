@@ -29,8 +29,8 @@ const buildManagerEnv = (
 ): ManagerEnv => {
   const slots = resolveSlotStatus(runtime)
   const env: ManagerEnv = {
-    ...(runtime.session.lastUserMeta
-      ? { lastUser: runtime.session.lastUserMeta }
+    ...(runtime.process.session.lastUserMeta
+      ? { lastUser: runtime.process.session.lastUserMeta }
       : {}),
     wakeProfile,
     workerSlots: {
@@ -106,7 +106,7 @@ export const runManagerRoundWithRecovery = async (params: {
     promptSectionLimits,
     startupWorktree: params.runtime.startup.worktree,
     plans: params.plans,
-    focuses: params.runtime.focuses,
+    focuses: params.runtime.domain.focuses,
     workingFocusIds: params.workingFocusIds,
     ...(params.extra.actionFeedback
       ? { actionFeedback: params.extra.actionFeedback }
@@ -132,10 +132,12 @@ export const runManagerRoundWithRecovery = async (params: {
     roundId,
   })
   if (result.usage) {
-    params.runtime.manager.lastUsage = result.usage
-    params.runtime.manager.usageTotal =
-      mergeUsageAdditive(params.runtime.manager.usageTotal, result.usage) ??
-      result.usage
+    params.runtime.process.manager.lastUsage = result.usage
+    params.runtime.process.manager.usageTotal =
+      mergeUsageAdditive(
+        params.runtime.process.manager.usageTotal,
+        result.usage,
+      ) ?? result.usage
   }
   await bestEffort('appendManagerUsageLedgerEntry', () =>
     appendManagerUsageLedgerEntry({

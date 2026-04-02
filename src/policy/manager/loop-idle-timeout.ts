@@ -43,7 +43,7 @@ export const resolveManagerIdleTimeoutMs = (
   const nowMs = now.getTime()
   let nextWakeAtMs: number | undefined
 
-  for (const plan of runtime.taskPlans)
+  for (const plan of runtime.domain.taskPlans)
     nextWakeAtMs = pickEarlier(nextWakeAtMs, resolvePlanWakeAtMs(plan, now))
 
   if (nextWakeAtMs === undefined) return Number.POSITIVE_INFINITY

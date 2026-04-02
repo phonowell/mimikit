@@ -4,12 +4,13 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { readHistory } from '../src/persistence/history/store.js'
 import { resumeTask } from '../src/execution/worker/resume-task.js'
+import { readHistory } from '../src/persistence/history/store.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 import type { Task } from '../src/foundation/types/index.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const tempDirs: string[] = []
 
@@ -26,12 +27,13 @@ const createRuntime = async (): Promise<RuntimeState> => {
     runtimeId: 'runtime-resume-instruction-test',
     withGlobalFocus: false,
   })
-  runtime.worker.queue = {
-    add: vi.fn(async () => undefined),
+  const queue: RuntimeState['process']['worker']['queue'] = {
+    add: vi.fn(() => Promise.resolve(undefined)),
     clear: vi.fn(),
     pause: vi.fn(),
     sizeBy: vi.fn().mockReturnValue(0),
-  } as unknown as RuntimeState['worker']['queue']
+  }
+  runtime.process.worker.queue = queue
   return runtime
 }
 
@@ -59,7 +61,7 @@ afterEach(async () => {
 test('resumeTask stores resume instruction and marks resumed history payload', async () => {
   const runtime = await createRuntime()
   const task = createTask('task-resume-instruction')
-  runtime.tasks = [task]
+  runtime.domain.tasks = [task]
 
   await resumeTask(runtime, task.id, {
     source: 'user',

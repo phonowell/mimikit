@@ -131,7 +131,7 @@ export const createRuntime = async (params?: {
     workDir,
     Math.max(1, params?.maxConcurrent ?? 1),
   )
-  runtime.worker.queue = new PQueue({
+  runtime.process.worker.queue = new PQueue({
     concurrency: runtime.config.worker.maxConcurrent,
   })
   return runtime
@@ -141,7 +141,7 @@ export const stopLoop = async (
   runtime: RuntimeState,
   loopPromise: Promise<void>,
 ): Promise<void> => {
-  runtime.session.stopped = true
+  runtime.process.session.stopped = true
   notifyManagerLoop(runtime)
   await loopPromise
 }

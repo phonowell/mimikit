@@ -95,7 +95,7 @@ export const buildRefreshScoreContext = (
 
   const workingFocusIds = [
     ...new Set(
-      runtime.tasks
+      runtime.domain.tasks
         .filter(
           (task) =>
             task.status === 'pending' ||

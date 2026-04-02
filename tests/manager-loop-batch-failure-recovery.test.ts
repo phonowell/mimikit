@@ -44,7 +44,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
     pausedQueue: true,
   })
   const now = new Date().toISOString()
-  runtime.focuses.push({
+  runtime.domain.focuses.push({
     id: 'focus-main',
     title: 'Main',
     status: 'active',
@@ -73,7 +73,7 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
   task.status = 'succeeded'
   task.completedAt = '2026-03-08T06:19:38.113Z'
   task.durationMs = 42
-  runtime.tasks.push(task)
+  runtime.domain.tasks.push(task)
 
   const input: UserInput = {
     id: 'input-1',
@@ -94,7 +94,7 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
     profile: 'worker',
     provider: 'codex',
   }
-  runtime.session.inflightInputs = [input]
+  runtime.process.session.inflightInputs = [input]
   await publishUserInput({ paths: runtime.paths, payload: input })
   await publishWorkerResult({ paths: runtime.paths, payload: result })
 
@@ -114,15 +114,17 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
     startedAt: Date.now() - 20,
   })
 
-  expect(runtime.queues.inputsCursor).toBe(1)
-  expect(runtime.queues.resultsCursor).toBe(0)
-  expect(runtime.session.inflightInputs).toHaveLength(0)
-  expect(runtime.tasks[0]?.result).toBeUndefined()
-  expect(runtime.manager.resultReplayFailureCount).toBe(1)
-  expect(runtime.manager.resultReplayReadyAtMs).toBeGreaterThan(Date.now())
+  expect(runtime.domain.queues.inputsCursor).toBe(1)
+  expect(runtime.domain.queues.resultsCursor).toBe(0)
+  expect(runtime.process.session.inflightInputs).toHaveLength(0)
+  expect(runtime.domain.tasks[0]?.result).toBeUndefined()
+  expect(runtime.process.manager.resultReplayFailureCount).toBe(1)
+  expect(runtime.process.manager.resultReplayReadyAtMs).toBeGreaterThan(
+    Date.now(),
+  )
   const pendingResults = await consumeWorkerResults({
     paths: runtime.paths,
-    fromCursor: runtime.queues.resultsCursor,
+    fromCursor: runtime.domain.queues.resultsCursor,
   })
   expect(pendingResults).toHaveLength(1)
   expect(pendingResults[0]?.payload.taskId).toBe(task.id)

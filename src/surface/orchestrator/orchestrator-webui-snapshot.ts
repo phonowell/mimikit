@@ -12,9 +12,9 @@ export const buildOrchestratorTaskViews = (
   limit = 200,
 ) => {
   const liveOutputByTaskId = getTaskLiveOutputById(runtime)
-  return buildTaskViews(runtime.tasks, limit, {
+  return buildTaskViews(runtime.domain.tasks, limit, {
     maxConcurrentWorkers: runtime.config.worker.maxConcurrent,
-    runningTaskCount: runtime.worker.runningControllers.size,
+    runningTaskCount: runtime.process.worker.runningControllers.size,
     ...(liveOutputByTaskId ? { liveOutputByTaskId } : {}),
   })
 }
@@ -22,7 +22,7 @@ export const buildOrchestratorTaskViews = (
 export const buildOrchestratorPlanViews = (
   runtime: SurfaceRuntime,
   limit = 200,
-) => buildPlanViews(runtime.taskPlans, limit)
+) => buildPlanViews(runtime.domain.taskPlans, limit)
 
 export const buildOrchestratorWebUiSnapshot = async (params: {
   runtime: SurfaceRuntime

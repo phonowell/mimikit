@@ -33,15 +33,15 @@ const appendRoundActionFeedback = async (params: {
       total: actionFeedback.length,
       ...(params.batchId ? { batchId: params.batchId } : {}),
       ...(params.roundId ? { roundId: params.roundId } : {}),
-      ...(params.runtime.manager.threadId
-        ? { traceId: params.runtime.manager.threadId }
+      ...(params.runtime.process.manager.threadId
+        ? { traceId: params.runtime.process.manager.threadId }
         : {}),
     })
   }
   await appendLog(params.runtime.paths.log, {
     event: 'manager_action_feedback',
-    ...(params.runtime.manager.threadId
-      ? { traceId: params.runtime.manager.threadId }
+    ...(params.runtime.process.manager.threadId
+      ? { traceId: params.runtime.process.manager.threadId }
       : {}),
     ...(params.batchId ? { batchId: params.batchId } : {}),
     ...(params.roundId ? { roundId: params.roundId } : {}),
@@ -88,7 +88,7 @@ export const resolveRoundFollowup = async (params: {
         ...(params.inputs ? { inputs: params.inputs } : {}),
       }),
       scheduleNowIso: resolveScheduleNowIso(
-        params.runtime.session.lastUserMeta,
+        params.runtime.process.session.lastUserMeta,
       ),
     },
     params.output,
@@ -119,8 +119,8 @@ export const resolveRoundFollowup = async (params: {
   if (validation.suppressedActionIndexes.length > 0) {
     await appendLog(params.runtime.paths.log, {
       event: 'manager_action_suppressed',
-      ...(params.runtime.manager.threadId
-        ? { traceId: params.runtime.manager.threadId }
+      ...(params.runtime.process.manager.threadId
+        ? { traceId: params.runtime.process.manager.threadId }
         : {}),
       ...(params.batchId ? { batchId: params.batchId } : {}),
       ...(params.roundId ? { roundId: params.roundId } : {}),

@@ -67,7 +67,7 @@ export const createTelegramChannelLifecycle = (params: {
     startPromise = (async () => {
       if (
         !params.runtime.config.telegram.enabled ||
-        params.runtime.session.stopped
+        params.runtime.process.session.stopped
       )
         return
       try {
@@ -94,7 +94,7 @@ export const createTelegramChannelLifecycle = (params: {
       }
     })()
       .then(async () => {
-        if (!params.runtime.session.stopped) return
+        if (!params.runtime.process.session.stopped) return
         await bestEffort(
           'orchestrator:stop_telegram_after_late_start',
           () => stopPollingIfEnabled(),

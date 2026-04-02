@@ -23,14 +23,14 @@ type CreateTestRuntimeStateOptions = {
   withGlobalFocus?: boolean
   pausedQueue?: boolean
   patch?: {
-    session?: Partial<RuntimeState['session']>
-    manager?: Partial<RuntimeState['manager']>
-    worker?: Partial<RuntimeState['worker']>
-    ui?: Partial<RuntimeState['ui']>
-    queues?: Partial<RuntimeState['queues']>
-    tasks?: RuntimeState['tasks']
-    taskPlans?: RuntimeState['taskPlans']
-    focuses?: RuntimeState['focuses']
+    session?: Partial<RuntimeState['process']['session']>
+    manager?: Partial<RuntimeState['process']['manager']>
+    worker?: Partial<RuntimeState['process']['worker']>
+    ui?: Partial<RuntimeState['process']['ui']>
+    queues?: Partial<RuntimeState['domain']['queues']>
+    tasks?: RuntimeState['domain']['tasks']
+    taskPlans?: RuntimeState['domain']['taskPlans']
+    focuses?: RuntimeState['domain']['focuses']
   }
 }
 
@@ -94,47 +94,51 @@ export const createTestRuntimeState = async (
     },
     config,
     paths: buildPaths(workDir),
-    session: {
-      stopped: false,
-      inflightInputs: [],
-      channelTargets: {},
-      restartScheduled: false,
-      ...options.patch?.session,
+    domain: {
+      queues: {
+        inputsCursor: 0,
+        resultsCursor: 0,
+        ...options.patch?.queues,
+      },
+      tasks,
+      taskPlans,
+      focuses,
     },
-    manager: {
-      running: false,
-      signalController: new AbortController(),
-      runAbortController: new AbortController(),
-      wakePending: false,
-      lastActivityAtMs: nowMs,
-      resultReplayReadyAtMs: 0,
-      resultReplayFailureCount: 0,
-      turn: 0,
-      memoryRefresh: createDefaultMemoryRefreshState(),
-      ...options.patch?.manager,
+    process: {
+      session: {
+        stopped: false,
+        inflightInputs: [],
+        channelTargets: {},
+        restartScheduled: false,
+        ...options.patch?.session,
+      },
+      manager: {
+        running: false,
+        signalController: new AbortController(),
+        runAbortController: new AbortController(),
+        wakePending: false,
+        lastActivityAtMs: nowMs,
+        resultReplayReadyAtMs: 0,
+        resultReplayFailureCount: 0,
+        turn: 0,
+        memoryRefresh: createDefaultMemoryRefreshState(),
+        ...options.patch?.manager,
+      },
+      worker: {
+        lastActivityAtMs: nowMs,
+        runningControllers: new Map(),
+        runningTaskLocks: new Set(),
+        createTaskDebounce: new Map(),
+        queue,
+        signalController: new AbortController(),
+        ...options.patch?.worker,
+      },
+      ui: {
+        wakeVersion: 0,
+        wakeEvents: new Map(),
+        signalControllers: new Set(),
+        ...options.patch?.ui,
+      },
     },
-    worker: {
-      lastActivityAtMs: nowMs,
-      runningControllers: new Map(),
-      runningTaskLocks: new Set(),
-      createTaskDebounce: new Map(),
-      queue,
-      signalController: new AbortController(),
-      ...options.patch?.worker,
-    },
-    ui: {
-      wakeVersion: 0,
-      wakeEvents: new Map(),
-      signalControllers: new Set(),
-      ...options.patch?.ui,
-    },
-    queues: {
-      inputsCursor: 0,
-      resultsCursor: 0,
-      ...options.patch?.queues,
-    },
-    tasks,
-    taskPlans,
-    focuses,
   }
 }

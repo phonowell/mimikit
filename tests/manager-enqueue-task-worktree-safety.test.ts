@@ -60,7 +60,7 @@ test('enqueue_task write mode rejects a nonexistent future worktree cwd', async 
     ]),
   ).resolves.toBeUndefined()
 
-  expect(runtime.tasks).toHaveLength(0)
+  expect(runtime.domain.tasks).toHaveLength(0)
   const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
     ensureFile: true,
   })
@@ -112,7 +112,7 @@ test('enqueue_task worktree prepare failure appends action feedback without thro
     ]),
   ).resolves.toBeUndefined()
 
-  expect(runtime.tasks).toHaveLength(0)
+  expect(runtime.domain.tasks).toHaveLength(0)
   const history = await readHistory(runtime.paths.history)
   const triggerFire = history.find(
     (item) => item.role === 'system' && item.systemEventName === 'trigger_fire',
@@ -138,7 +138,7 @@ test('enqueue_task rejects repo-internal cwd when mapped worktree subpath is mis
     ]),
   ).resolves.toBeUndefined()
 
-  expect(runtime.tasks).toHaveLength(0)
+  expect(runtime.domain.tasks).toHaveLength(0)
   const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
     ensureFile: true,
   })

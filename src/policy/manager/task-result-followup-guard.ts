@@ -108,7 +108,7 @@ export const resolveResultFollowupFeedback = (params: {
     return undefined
 
   const focusId = resolveDefaultFocusId(params.runtime).trim()
-  const task = params.runtime.tasks.find(
+  const task = params.runtime.domain.tasks.find(
     (item) =>
       item.id === result.taskId &&
       item.focusId.trim() === focusId &&
@@ -116,7 +116,7 @@ export const resolveResultFollowupFeedback = (params: {
   )
   if (!task) return undefined
 
-  const activePlans = params.runtime.taskPlans.filter(
+  const activePlans = params.runtime.domain.taskPlans.filter(
     (plan) => plan.status === 'active' && plan.focusId.trim() === focusId,
   )
   if (activePlans.length === 1) {

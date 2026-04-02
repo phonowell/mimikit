@@ -35,7 +35,7 @@ const buildTaskDraft = (title: string, cwd: string) => ({
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ maxConcurrent: 2 })
   runtime.config.codex.enabled = true
-  runtime.worker.queue = new PQueue({
+  runtime.process.worker.queue = new PQueue({
     concurrency: runtime.config.worker.maxConcurrent,
   })
   return runtime
@@ -57,7 +57,7 @@ const createEnqueuePlan = async (
         focusId: GLOBAL_FOCUS_ID,
         task,
       })
-      runtime.taskPlans.push({
+      runtime.domain.taskPlans.push({
         id,
         title,
         focusId: GLOBAL_FOCUS_ID,
@@ -105,7 +105,7 @@ test('safeProcessLoopTriggers preserves release-edge detection after a plan cons
     },
   )
 
-  runtime.worker.runningControllers.set(
+  runtime.process.worker.runningControllers.set(
     'task-busy-initial',
     new AbortController(),
   )
@@ -118,25 +118,27 @@ test('safeProcessLoopTriggers preserves release-edge detection after a plan cons
   const firstChanged = await safeProcessLoopTriggers(runtime, triggerState)
 
   await waitForCondition(() =>
-    runtime.worker.runningControllers.has(runtime.tasks[0]?.id ?? ''),
+    runtime.process.worker.runningControllers.has(
+      runtime.domain.tasks[0]?.id ?? '',
+    ),
   )
   expect(firstChanged).toBe(true)
-  expect(runtime.taskPlans[0]?.runtime.runCount).toBe(1)
-  expect(runtime.taskPlans[1]?.runtime.runCount).toBe(0)
+  expect(runtime.domain.taskPlans[0]?.runtime.runCount).toBe(1)
+  expect(runtime.domain.taskPlans[1]?.runtime.runCount).toBe(0)
   expect(triggerState.lastAvailableSlots).toBe(0)
 
-  runtime.worker.runningControllers.delete('task-busy-initial')
+  runtime.process.worker.runningControllers.delete('task-busy-initial')
   triggerState.lastWorkerSlotEventAtMs = 0
 
   const secondChanged = await safeProcessLoopTriggers(runtime, triggerState)
 
   expect(secondChanged).toBe(true)
-  expect(runtime.taskPlans[1]?.runtime.runCount).toBe(1)
-  expect(runtime.tasks.map((task) => task.title)).toEqual([
+  expect(runtime.domain.taskPlans[1]?.runtime.runCount).toBe(1)
+  expect(runtime.domain.tasks.map((task) => task.title)).toEqual([
     'task-one',
     'task-two',
   ])
 
   resolveFirstRun?.()
-  await runtime.worker.queue.onIdle()
+  await runtime.process.worker.queue.onIdle()
 })

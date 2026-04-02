@@ -59,10 +59,10 @@ export const appendUserInput = async (
   }
   const input = quoteId ? { ...baseInput, quote: quoteId } : baseInput
   await publishUserInput({ paths: runtime.paths, payload: input })
-  runtime.session.inflightInputs.push(input)
+  runtime.process.session.inflightInputs.push(input)
   notifyUiSignal(runtime)
   if (meta) {
-    runtime.session.lastUserMeta = meta
+    runtime.process.session.lastUserMeta = meta
     rememberChannelTargets(runtime, meta)
   }
   await appendLog(runtime.paths.log, {

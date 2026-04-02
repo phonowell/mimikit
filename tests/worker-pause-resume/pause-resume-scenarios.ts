@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest'
 
-import { readHistory } from '../../src/persistence/history/store.js'
 import { pauseTask } from '../../src/execution/worker/pause-task.js'
 import { resumeTask } from '../../src/execution/worker/resume-task.js'
+import { readHistory } from '../../src/persistence/history/store.js'
 
 import { createQueueAdd, createRuntime, createTask } from './testkit.js'
 
@@ -11,7 +11,7 @@ import type { RuntimeState } from '../../src/kernel/orchestrator/runtime-state.j
 test('pauseTask marks pending task as paused and writes task_paused event', async () => {
   const runtime = await createRuntime()
   const task = createTask('task-pause-pending')
-  runtime.tasks = [task]
+  runtime.domain.tasks = [task]
 
   const result = await pauseTask(runtime, task.id, { source: 'user' })
 
@@ -22,7 +22,7 @@ test('pauseTask marks pending task as paused and writes task_paused event', asyn
   })
   expect(task.status).toBe('paused')
   expect(task.pausedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
-  expect(runtime.ui.wakeVersion).toBe(1)
+  expect(runtime.process.ui.wakeVersion).toBe(1)
   const history = await readHistory(runtime.paths.history)
   const event = history
     .map((item) =>
@@ -43,9 +43,9 @@ test('pauseTask aborts running controller', async () => {
     status: 'running',
     startedAt: '2026-03-06T00:00:02.000Z',
   })
-  runtime.tasks = [task]
+  runtime.domain.tasks = [task]
   const controller = new AbortController()
-  runtime.worker.runningControllers.set(task.id, controller)
+  runtime.process.worker.runningControllers.set(task.id, controller)
 
   const result = await pauseTask(runtime, task.id, { source: 'user' })
 
@@ -62,7 +62,7 @@ test('resumeTask re-queues paused task and writes task_resumed event', async () 
   const queueAdd = createQueueAdd()
   const runtime = await createRuntime({
     queue: {
-      add: queueAdd as RuntimeState['worker']['queue']['add'],
+      add: queueAdd as RuntimeState['process']['worker']['queue']['add'],
       sizeBy: () => 0,
     },
   })
@@ -71,7 +71,7 @@ test('resumeTask re-queues paused task and writes task_resumed event', async () 
     pausedAt: '2026-03-06T00:00:03.000Z',
     archivePath: '/tmp/task-paused.md',
   })
-  runtime.tasks = [task]
+  runtime.domain.tasks = [task]
 
   const result = await resumeTask(runtime, task.id, { source: 'user' })
 

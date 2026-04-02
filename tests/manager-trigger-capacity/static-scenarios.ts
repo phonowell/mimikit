@@ -22,14 +22,14 @@ test('worker slot availability tracks queue capacity transitions', async () => {
   expect(hasFreeWorkerSlot(runtime)).toBe(true)
 
   const releases: Array<() => void> = []
-  void runtime.worker.queue.add(
+  void runtime.process.worker.queue.add(
     () =>
       new Promise<void>((resolve) => {
         releases.push(resolve)
       }),
     { id: 'task-block-1' },
   )
-  void runtime.worker.queue.add(
+  void runtime.process.worker.queue.add(
     () =>
       new Promise<void>((resolve) => {
         releases.push(resolve)
@@ -37,20 +37,20 @@ test('worker slot availability tracks queue capacity transitions', async () => {
     { id: 'task-block-2' },
   )
 
-  await waitForCondition(() => runtime.worker.queue.pending === 2)
+  await waitForCondition(() => runtime.process.worker.queue.pending === 2)
   expect(hasFreeWorkerSlot(runtime)).toBe(false)
 
   releases.shift()?.()
-  await waitForCondition(() => runtime.worker.queue.pending === 1)
+  await waitForCondition(() => runtime.process.worker.queue.pending === 1)
   expect(hasFreeWorkerSlot(runtime)).toBe(true)
 
   releases.shift()?.()
-  await runtime.worker.queue.onIdle()
+  await runtime.process.worker.queue.onIdle()
 })
 
 test('managerLoop emits worker_slot_freed once on startup when slot is already free', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
-  runtime.tasks.push({
+  runtime.domain.tasks.push({
     id: 'task-pending-seed',
     fingerprint: 'fp-task-pending-seed',
     prompt: 'seed prompt',
@@ -76,7 +76,7 @@ test('managerLoop emits worker_slot_freed once on startup when slot is already f
 
 test('managerLoop does not append fallback agent reply for worker_slot_freed-only wakeups', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
-  runtime.tasks.push({
+  runtime.domain.tasks.push({
     id: 'task-pending-worker-slot-only',
     fingerprint: 'fp-task-pending-worker-slot-only',
     prompt: 'seed prompt',
@@ -115,7 +115,7 @@ test('managerLoop suppresses worker_slot_freed when no queue work exists', async
 
 test('on_worker_slot_freed plans trigger without touching non-capacity plans', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
-  runtime.taskPlans.push(
+  runtime.domain.taskPlans.push(
     await createCapacityPlan(
       runtime,
       'plan-capacity',
@@ -136,14 +136,14 @@ test('on_worker_slot_freed plans trigger without touching non-capacity plans', a
     runtime.config.worker.maxConcurrent,
   )
   expect(capacityTriggered).toEqual({ triggeredCount: 1, stateChanged: true })
-  expect(runtime.taskPlans[0]?.runtime.runCount).toBe(1)
-  expect(runtime.taskPlans[1]?.runtime.runCount).toBe(0)
+  expect(runtime.domain.taskPlans[0]?.runtime.runCount).toBe(1)
+  expect(runtime.domain.taskPlans[1]?.runtime.runCount).toBe(0)
   expect(await countSystemEvent(runtime, 'trigger_fire')).toBe(1)
 })
 
 test('trigger_fire wakeups do not append fallback agent reply when manager output is empty', async () => {
   const runtime = await createRuntime({ maxConcurrent: 2 })
-  runtime.taskPlans.push(
+  runtime.domain.taskPlans.push(
     await createCapacityPlan(
       runtime,
       'plan-capacity-trigger-only',
@@ -155,7 +155,7 @@ test('trigger_fire wakeups do not append fallback agent reply when manager outpu
   const loopPromise = managerLoop(runtime)
   try {
     await waitForCondition(
-      () => (runtime.taskPlans[0]?.runtime.runCount ?? 0) >= 1,
+      () => (runtime.domain.taskPlans[0]?.runtime.runCount ?? 0) >= 1,
       4_000,
     )
     await settle()
@@ -176,7 +176,7 @@ test('trigger_fire system event uses global focus even when plan has local focus
     GLOBAL_FOCUS_ID,
   )
   plan.focusId = 'focus-local'
-  runtime.taskPlans.push(plan)
+  runtime.domain.taskPlans.push(plan)
 
   const triggered = await triggerOnWorkerSlotFreedPlans(
     runtime,
@@ -184,7 +184,7 @@ test('trigger_fire system event uses global focus even when plan has local focus
     runtime.config.worker.maxConcurrent,
   )
   expect(triggered.triggeredCount).toBe(1)
-  const triggerInput = runtime.session.inflightInputs.find(
+  const triggerInput = runtime.process.session.inflightInputs.find(
     (input) =>
       input.role === 'system' && input.systemEventName === 'trigger_fire',
   )

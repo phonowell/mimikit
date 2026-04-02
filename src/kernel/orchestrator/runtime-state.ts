@@ -85,15 +85,7 @@ export type RuntimeUiState = {
   signalControllers: Set<AbortController>
 }
 
-export type RuntimeState = {
-  runtimeId: string
-  startup: RuntimeStartupInfo
-  config: AppConfig
-  paths: StatePaths
-  session: RuntimeSessionState
-  manager: RuntimeManagerState
-  worker: RuntimeWorkerState
-  ui: RuntimeUiState
+export type RuntimeDomainState = {
   queues: {
     inputsCursor: number
     resultsCursor: number
@@ -101,6 +93,22 @@ export type RuntimeState = {
   tasks: Task[]
   taskPlans: TaskPlan[]
   focuses: FocusMeta[]
+}
+
+export type RuntimeProcessState = {
+  session: RuntimeSessionState
+  manager: RuntimeManagerState
+  worker: RuntimeWorkerState
+  ui: RuntimeUiState
+}
+
+export type RuntimeState = {
+  runtimeId: string
+  startup: RuntimeStartupInfo
+  config: AppConfig
+  paths: StatePaths
+  domain: RuntimeDomainState
+  process: RuntimeProcessState
 }
 
 export const createRuntimeState = (
@@ -126,42 +134,46 @@ export const createRuntimeState = (
     startup: options.startup,
     config,
     paths,
-    session: {
-      stopped: false,
-      inflightInputs: [],
-      channelTargets: {},
-      restartScheduled: false,
-      ...(options.onExitRequested
-        ? { requestExit: options.onExitRequested }
-        : {}),
+    domain: {
+      queues: { inputsCursor: 0, resultsCursor: 0 },
+      tasks: [],
+      taskPlans: [],
+      focuses: [],
     },
-    manager: {
-      running: false,
-      signalController: new AbortController(),
-      runAbortController: new AbortController(),
-      wakePending: false,
-      lastActivityAtMs: nowMs,
-      resultReplayReadyAtMs: 0,
-      resultReplayFailureCount: 0,
-      turn: 0,
-      memoryRefresh,
+    process: {
+      session: {
+        stopped: false,
+        inflightInputs: [],
+        channelTargets: {},
+        restartScheduled: false,
+        ...(options.onExitRequested
+          ? { requestExit: options.onExitRequested }
+          : {}),
+      },
+      manager: {
+        running: false,
+        signalController: new AbortController(),
+        runAbortController: new AbortController(),
+        wakePending: false,
+        lastActivityAtMs: nowMs,
+        resultReplayReadyAtMs: 0,
+        resultReplayFailureCount: 0,
+        turn: 0,
+        memoryRefresh,
+      },
+      worker: {
+        lastActivityAtMs: nowMs,
+        runningControllers: new Map(),
+        runningTaskLocks: new Set(),
+        createTaskDebounce: new Map(),
+        queue: new PQueue({ concurrency: config.worker.maxConcurrent }),
+        signalController: new AbortController(),
+      },
+      ui: {
+        wakeVersion: 0,
+        wakeEvents: new Map(),
+        signalControllers: new Set(),
+      },
     },
-    worker: {
-      lastActivityAtMs: nowMs,
-      runningControllers: new Map(),
-      runningTaskLocks: new Set(),
-      createTaskDebounce: new Map(),
-      queue: new PQueue({ concurrency: config.worker.maxConcurrent }),
-      signalController: new AbortController(),
-    },
-    ui: {
-      wakeVersion: 0,
-      wakeEvents: new Map(),
-      signalControllers: new Set(),
-    },
-    queues: { inputsCursor: 0, resultsCursor: 0 },
-    tasks: [],
-    taskPlans: [],
-    focuses: [],
   }
 }

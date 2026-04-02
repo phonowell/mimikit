@@ -81,7 +81,7 @@ export const deleteTask = async (
 
   touchTaskMutation(runtime, task.id)
   removeRuntimeTask({ runtime, taskId: task.id })
-  runtime.worker.runningControllers.delete(task.id)
+  runtime.process.worker.runningControllers.delete(task.id)
   const deletedAt = nowIso()
 
   await bestEffort('persistRuntimeState: task_deleted', () =>

@@ -23,7 +23,7 @@ export const getChatMessagesSnapshot = async (
   const history = await readHistory(runtime.paths.history)
   return selectChatMessages({
     history,
-    inflightInputs: [...runtime.session.inflightInputs],
+    inflightInputs: [...runtime.process.session.inflightInputs],
     limit,
     ...(afterId ? { afterId } : {}),
   })
@@ -36,7 +36,7 @@ export const getChatHistorySnapshot = async (
   const history = await readHistory(runtime.paths.history)
   return mergeChatMessages({
     history,
-    inflightInputs: [...runtime.session.inflightInputs],
+    inflightInputs: [...runtime.process.session.inflightInputs],
     limit,
   })
 }

@@ -68,9 +68,13 @@ test('startTaskWorkerRun and finishTaskWorkerRun own worker run state writes', a
   })
 
   expect(task.status).toBe('running')
-  expect(runtime.worker.runningControllers.get(task.id)).toBe(controller)
-  expect(runtime.worker.runningTaskLocks.has(dispatchLockKey)).toBe(true)
-  expect(runtime.ui.wakeVersion).toBe(1)
+  expect(runtime.process.worker.runningControllers.get(task.id)).toBe(
+    controller,
+  )
+  expect(runtime.process.worker.runningTaskLocks.has(dispatchLockKey)).toBe(
+    true,
+  )
+  expect(runtime.process.ui.wakeVersion).toBe(1)
 
   const snapshot = await loadRuntimeSnapshot(workDir)
   expect(snapshot.tasks[0]?.id).toBe(task.id)
@@ -82,9 +86,11 @@ test('startTaskWorkerRun and finishTaskWorkerRun own worker run state writes', a
     dispatchLockKey,
   })
 
-  expect(runtime.worker.runningControllers.has(task.id)).toBe(false)
-  expect(runtime.worker.runningTaskLocks.has(dispatchLockKey)).toBe(false)
-  expect(runtime.manager.wakePending).toBe(true)
+  expect(runtime.process.worker.runningControllers.has(task.id)).toBe(false)
+  expect(runtime.process.worker.runningTaskLocks.has(dispatchLockKey)).toBe(
+    false,
+  )
+  expect(runtime.process.manager.wakePending).toBe(true)
 })
 
 test('updateTaskUsage updates task usage and wakes task UI once per change', async () => {
@@ -110,5 +116,5 @@ test('updateTaskUsage updates task usage and wakes task UI once per change', asy
   expect(firstChanged).toBe(true)
   expect(secondChanged).toBe(false)
   expect(task.usage).toEqual({ input: 10, output: 4, total: 14 })
-  expect(runtime.ui.wakeVersion).toBe(1)
+  expect(runtime.process.ui.wakeVersion).toBe(1)
 })

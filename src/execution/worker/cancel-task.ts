@@ -157,7 +157,7 @@ export const cancelTask = async (
     ...(durationMs !== undefined ? { durationMs } : {}),
     cancel: cancelMeta,
   })
-  const controller = runtime.worker.runningControllers.get(task.id)
+  const controller = runtime.process.worker.runningControllers.get(task.id)
   if (controller && !controller.signal.aborted) controller.abort()
   await bestEffort('appendLog: task_cancel_requested', () =>
     appendLog(runtime.paths.log, {

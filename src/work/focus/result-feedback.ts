@@ -25,7 +25,7 @@ const resolveHandoffSummary = (result: TaskResult): string | undefined => {
 }
 
 export const syncFocusFromTaskResult = (
-  runtime: { focuses: RuntimeFocusCollection },
+  runtime: { domain: { focuses: RuntimeFocusCollection } },
   task: Task,
   result: TaskResult,
 ): void => {

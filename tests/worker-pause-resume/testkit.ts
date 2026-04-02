@@ -4,11 +4,11 @@ import { join } from 'node:path'
 
 import { afterEach, vi } from 'vitest'
 
-import { createTestRuntimeState } from '../helpers/runtime-state.js'
 import {
   buildTaskFingerprint,
   buildTaskSemanticKey,
 } from '../../src/work/orchestrator/task-state.js'
+import { createTestRuntimeState } from '../helpers/runtime-state.js'
 
 import type { Task } from '../../src/foundation/types/index.js'
 import type { RuntimeState } from '../../src/kernel/orchestrator/runtime-state.js'
@@ -22,7 +22,7 @@ const createTmpDir = async (): Promise<string> => {
 }
 
 export const createRuntime = async (params?: {
-  queue?: Partial<RuntimeState['worker']['queue']>
+  queue?: Partial<RuntimeState['process']['worker']['queue']>
 }): Promise<RuntimeState> => {
   const workDir = await createTmpDir()
   const runtime = await createTestRuntimeState({
@@ -30,17 +30,21 @@ export const createRuntime = async (params?: {
     runtimeId: 'runtime-pause-resume-test',
     withGlobalFocus: false,
   })
-  runtime.worker.queue = {
-    add: async () => undefined,
+  const queue: RuntimeState['process']['worker']['queue'] = {
+    add: () => Promise.resolve(undefined),
     clear: () => undefined,
     pause: () => undefined,
     sizeBy: () => 0,
     ...params?.queue,
-  } as RuntimeState['worker']['queue']
+  }
+  runtime.process.worker.queue = queue
   return runtime
 }
 
-export const createTask = (id: string, overrides: Partial<Task> = {}): Task => ({
+export const createTask = (
+  id: string,
+  overrides: Partial<Task> = {},
+): Task => ({
   id,
   fingerprint: buildTaskFingerprint({
     prompt: 'run task',
@@ -69,7 +73,7 @@ export const createTask = (id: string, overrides: Partial<Task> = {}): Task => (
   ...overrides,
 })
 
-export const createQueueAdd = () => vi.fn(async () => undefined)
+export const createQueueAdd = () => vi.fn(() => Promise.resolve(undefined))
 
 afterEach(async () => {
   for (const dir of tempDirs.splice(0, tempDirs.length))

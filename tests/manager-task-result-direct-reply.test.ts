@@ -92,7 +92,7 @@ test('processManagerBatch routes single task_result batches through manager foll
     },
     elapsedMs: 25,
   })
-  expect(runtime.queues.resultsCursor).toBe(1)
+  expect(runtime.domain.queues.resultsCursor).toBe(1)
 })
 
 test('processManagerBatch flushes pending restart after result-only manager follow-up', async () => {

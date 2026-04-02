@@ -25,15 +25,15 @@ type MemoryRefreshCheckpoint = { signalVersion: number }
 const captureCheckpoint = (
   runtime: ManagerRuntime,
 ): MemoryRefreshCheckpoint => ({
-  signalVersion: runtime.manager.memoryRefresh.signalVersion,
+  signalVersion: runtime.process.manager.memoryRefresh.signalVersion,
 })
 
 const markCompleted = (
   runtime: ManagerRuntime,
   checkpoint: MemoryRefreshCheckpoint,
 ): void => {
-  const state = runtime.manager.memoryRefresh
-  state.lastCompletedTurn = runtime.manager.turn
+  const state = runtime.process.manager.memoryRefresh
+  state.lastCompletedTurn = runtime.process.manager.turn
   state.lastProcessedSignalVersion = checkpoint.signalVersion
   state.lastRunAt = nowIso()
 }
@@ -44,7 +44,7 @@ export const runMemoryRefreshOnce = async (
   const checkpoint = captureCheckpoint(runtime)
   await appendLog(runtime.paths.log, {
     event: MEMORY_REFRESH_AUDIT_EVENTS.requested,
-    managerTurn: runtime.manager.turn,
+    managerTurn: runtime.process.manager.turn,
     source: MEMORY_REFRESH_SOURCE,
   })
   if (!hasMemoryRefreshDelta(runtime)) {
@@ -54,7 +54,7 @@ export const runMemoryRefreshOnce = async (
       event: MEMORY_REFRESH_AUDIT_EVENTS.succeeded,
       mode: 'noop',
       reason: 'no_delta',
-      managerTurn: runtime.manager.turn,
+      managerTurn: runtime.process.manager.turn,
       source: MEMORY_REFRESH_SOURCE,
     })
     return
@@ -62,7 +62,7 @@ export const runMemoryRefreshOnce = async (
 
   await appendLog(runtime.paths.log, {
     event: MEMORY_REFRESH_AUDIT_EVENTS.started,
-    managerTurn: runtime.manager.turn,
+    managerTurn: runtime.process.manager.turn,
     source: MEMORY_REFRESH_SOURCE,
   })
   const payload = await buildMemoryRefreshPayload(runtime)
@@ -88,7 +88,7 @@ export const runMemoryRefreshOnce = async (
   await persistRuntimeState(runtime)
   await appendLog(runtime.paths.log, {
     event: MEMORY_REFRESH_AUDIT_EVENTS.succeeded,
-    managerTurn: runtime.manager.turn,
+    managerTurn: runtime.process.manager.turn,
     source: MEMORY_REFRESH_SOURCE,
     mode: output.mode,
     reason: output.reason,

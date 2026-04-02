@@ -45,7 +45,7 @@ export const resolveWakeProfile = (
 }
 
 const countActiveFocuses = (runtime: ManagerRuntime): number =>
-  runtime.focuses.filter((focus) => focus.status === 'active').length
+  runtime.domain.focuses.filter((focus) => focus.status === 'active').length
 
 export const normalizePromptSectionLimits = (
   base: PromptSectionLimits,

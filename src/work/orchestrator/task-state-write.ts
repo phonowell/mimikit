@@ -20,7 +20,7 @@ import type {
 const findTask = (
   runtime: RuntimeTaskStateSlice,
   taskId: string,
-): Task | undefined => runtime.tasks.find((item) => item.id === taskId)
+): Task | undefined => runtime.domain.tasks.find((item) => item.id === taskId)
 
 const resolveTaskTarget = (params: {
   runtime: RuntimeTaskStateSlice
@@ -33,7 +33,7 @@ export const pauseRuntimeTask = (params: {
   taskId: string
   pausedAt: string
 }): Task | undefined => {
-  markTaskPaused(params.runtime.tasks, params.taskId, {
+  markTaskPaused(params.runtime.domain.tasks, params.taskId, {
     pausedAt: params.pausedAt,
   })
   return findTask(params.runtime, params.taskId)
@@ -66,7 +66,7 @@ export const cancelRuntimeTask = (params: {
   durationMs?: number
   cancel: TaskCancelMeta
 }): Task | undefined => {
-  markTaskCanceled(params.runtime.tasks, params.taskId, {
+  markTaskCanceled(params.runtime.domain.tasks, params.taskId, {
     completedAt: params.completedAt,
     ...(params.durationMs !== undefined
       ? { durationMs: params.durationMs }
@@ -80,11 +80,11 @@ export const removeRuntimeTask = (params: {
   runtime: RuntimeTaskStateSlice
   taskId: string
 }): Task | undefined => {
-  const index = params.runtime.tasks.findIndex(
+  const index = params.runtime.domain.tasks.findIndex(
     (item) => item.id === params.taskId,
   )
   if (index < 0) return undefined
-  const [removed] = params.runtime.tasks.splice(index, 1)
+  const [removed] = params.runtime.domain.tasks.splice(index, 1)
   return removed
 }
 
@@ -121,18 +121,6 @@ export const patchRuntimeTask = (params: {
   return task
 }
 
-export const assignRuntimeTaskUsage = (params: {
-  runtime: RuntimeTaskStateSlice
-  taskId: string
-  usage: NonNullable<Task['usage']>
-  task?: Task
-}): Task | undefined => {
-  const task = resolveTaskTarget(params)
-  if (!task) return undefined
-  task.usage = params.usage
-  return task
-}
-
 export const applyRuntimeTaskGitResult = (params: {
   runtime: RuntimeTaskStateSlice
   taskId: string
@@ -146,25 +134,45 @@ export const applyRuntimeTaskGitResult = (params: {
   return task
 }
 
-export const markRuntimeTaskRunning = (params: {
-  runtime: RuntimeTaskStateSlice
-  taskId: string
-  startedAt?: string
-}): Task | undefined => {
-  markTaskRunning(params.runtime.tasks, params.taskId, {
-    ...(params.startedAt ? { startedAt: params.startedAt } : {}),
-  })
-  return findTask(params.runtime, params.taskId)
-}
+export const applyRuntimeTaskDomainWrite = (
+  params:
+    | {
+        kind: 'assign_usage'
+        runtime: RuntimeTaskStateSlice
+        taskId: string
+        usage: NonNullable<Task['usage']>
+        task?: Task
+      }
+    | {
+        kind: 'mark_running'
+        runtime: RuntimeTaskStateSlice
+        taskId: string
+        startedAt?: string
+      }
+    | {
+        kind: 'apply_result'
+        runtime: RuntimeTaskFocusStateSlice
+        taskId: string
+        result: TaskResult
+        markTask: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void
+        patch: Partial<Task>
+      },
+): Task | undefined => {
+  if (params.kind === 'assign_usage') {
+    const task = resolveTaskTarget(params)
+    if (!task) return undefined
+    task.usage = params.usage
+    return task
+  }
 
-export const applyRuntimeTaskResultDomainWrite = (params: {
-  runtime: RuntimeTaskFocusStateSlice
-  taskId: string
-  result: TaskResult
-  markTask: (tasks: Task[], taskId: string, patch?: Partial<Task>) => void
-  patch: Partial<Task>
-}): Task | undefined => {
-  params.markTask(params.runtime.tasks, params.taskId, params.patch)
+  if (params.kind === 'mark_running') {
+    markTaskRunning(params.runtime.domain.tasks, params.taskId, {
+      ...(params.startedAt ? { startedAt: params.startedAt } : {}),
+    })
+    return findTask(params.runtime, params.taskId)
+  }
+
+  params.markTask(params.runtime.domain.tasks, params.taskId, params.patch)
   const task = findTask(params.runtime, params.taskId)
   if (!task) return undefined
   syncFocusFromTaskResult(params.runtime, task, params.result)

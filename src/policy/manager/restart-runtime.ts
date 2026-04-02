@@ -11,7 +11,7 @@ export type ScheduleManagerRestartResult =
 export const canScheduleManagerRestart = (runtime: ManagerRuntime): boolean => {
   const status = computeOrchestratorStatus(
     runtime,
-    runtime.session.inflightInputs.length,
+    runtime.process.session.inflightInputs.length,
   )
   return status.activeTasks === 0 && status.pendingTasks === 0
 }
@@ -20,19 +20,19 @@ export const scheduleManagerRestart = (
   runtime: ManagerRuntime,
   reason: string,
 ): ScheduleManagerRestartResult => {
-  if (!runtime.session.requestExit) return 'unavailable'
-  if (runtime.session.restartScheduled) return 'already_scheduled'
+  if (!runtime.process.session.requestExit) return 'unavailable'
+  if (runtime.process.session.restartScheduled) return 'already_scheduled'
   if (!canScheduleManagerRestart(runtime)) return 'busy'
-  runtime.session.restartScheduled = true
-  runtime.session.pendingRestartReason = reason
+  runtime.process.session.restartScheduled = true
+  runtime.process.session.pendingRestartReason = reason
   return 'scheduled'
 }
 
 export const consumePendingManagerRestartReason = (
   runtime: ManagerRuntime,
 ): string | undefined => {
-  const reason = runtime.session.pendingRestartReason?.trim()
-  delete runtime.session.pendingRestartReason
+  const reason = runtime.process.session.pendingRestartReason?.trim()
+  delete runtime.process.session.pendingRestartReason
   if (!reason) return undefined
   return reason
 }
@@ -42,7 +42,7 @@ export const flushPendingManagerRestart = (
 ): boolean => {
   const reason = consumePendingManagerRestartReason(runtime)
   if (!reason) return false
-  runtime.session.requestExit?.({
+  runtime.process.session.requestExit?.({
     code: 75,
     reason,
     skipPersist: true,

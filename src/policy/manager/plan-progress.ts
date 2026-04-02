@@ -1,5 +1,6 @@
 import { nowIso } from '../../foundation/shared/utils.js'
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
+import { updateRuntimePlan } from '../../work/orchestrator/runtime-domain-write.js'
 
 import type {
   Task,
@@ -35,7 +36,7 @@ export const linkTriggeredPlanToTask = (params: {
   const { runtime, triggeredPlanIds, task } = params
   if (!triggeredPlanIds || triggeredPlanIds.size === 0) return false
 
-  const candidates = runtime.taskPlans.filter((plan) =>
+  const candidates = runtime.domain.taskPlans.filter((plan) =>
     triggeredPlanIds.has(plan.id),
   )
   const matchedPlan = resolveTriggeredPlanMatch(candidates, task)
@@ -47,11 +48,18 @@ export const linkTriggeredPlanToTask = (params: {
   )
     return false
 
-  matchedPlan.runtime = {
-    ...matchedPlan.runtime,
-    lastTaskId: nextTaskId,
-  }
-  matchedPlan.updatedAt = params.linkedAt ?? nowIso()
+  updateRuntimePlan({
+    runtime,
+    planId: matchedPlan.id,
+    update: (current) => ({
+      ...current,
+      runtime: {
+        ...current.runtime,
+        lastTaskId: nextTaskId,
+      },
+      updatedAt: params.linkedAt ?? nowIso(),
+    }),
+  })
   notifyUiSignal(runtime, 'plans')
   return true
 }
@@ -73,13 +81,20 @@ export const applyPlanCompletionState = (
   }
 
   let changed = false
-  for (const plan of runtime.taskPlans) {
+  for (const plan of runtime.domain.taskPlans) {
     const taskId = plan.runtime.lastTaskId?.trim()
     if (!taskId) continue
     const matched = latestByTaskId.get(taskId)
     if (!matched) continue
     if (plan.updatedAt === matched.completedAt) continue
-    plan.updatedAt = matched.completedAt
+    updateRuntimePlan({
+      runtime,
+      planId: plan.id,
+      update: (current) => ({
+        ...current,
+        updatedAt: matched.completedAt,
+      }),
+    })
     changed = true
   }
   if (changed) notifyUiSignal(runtime, 'plans')

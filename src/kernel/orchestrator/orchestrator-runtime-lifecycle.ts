@@ -35,9 +35,9 @@ export const startRuntimeLifecycle = async (
 }
 
 export const prepareRuntimeStop = (runtime: RuntimeState): void => {
-  runtime.session.stopped = true
-  if (!runtime.manager.runAbortController.signal.aborted)
-    runtime.manager.runAbortController.abort()
+  runtime.process.session.stopped = true
+  if (!runtime.process.manager.runAbortController.signal.aborted)
+    runtime.process.manager.runAbortController.abort()
   notifyManagerLoop(runtime)
   notifyWorkerLoop(runtime)
 }
@@ -45,7 +45,7 @@ export const prepareRuntimeStop = (runtime: RuntimeState): void => {
 export const waitForRuntimeManagerDrain = async (
   runtime: RuntimeState,
 ): Promise<void> => {
-  while (runtime.manager.running) {
+  while (runtime.process.manager.running) {
     await new Promise<void>((resolve) =>
       setTimeout(resolve, SHUTDOWN_MANAGER_WAIT_POLL_MS),
     )

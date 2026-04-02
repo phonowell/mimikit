@@ -21,6 +21,10 @@ export type TaskPromptPayloadOptions = {
   latestResultTaskId?: string | undefined
 }
 
+export type ResultPromptPayloadOptions = {
+  includeOutputTaskIds?: readonly string[] | undefined
+}
+
 export type PromptSelectionSummary = {
   selected: number
   full: number
@@ -124,10 +128,12 @@ export const buildResultsPromptPayload = (
   tasks: Task[],
   results: TaskResult[],
   workDir?: string,
+  options?: ResultPromptPayloadOptions,
 ): { tasks: Record<string, unknown>[] } | undefined => {
   if (results.length === 0) return undefined
 
   const taskById = new Map(tasks.map((task) => [task.id, task]))
+  const includeOutputTaskIds = new Set(options?.includeOutputTaskIds ?? [])
   const latestByTaskId = new Map<string, TaskResult>()
   for (const result of results) {
     const existing = latestByTaskId.get(result.taskId)
@@ -162,6 +168,9 @@ export const buildResultsPromptPayload = (
           result.cancel ?? task?.cancel,
           task?.archivePath,
           workDir,
+          {
+            includeOutput: includeOutputTaskIds.has(result.taskId),
+          },
         ),
       }
     })
@@ -173,8 +182,9 @@ export const formatResultsJson = (
   tasks: Task[],
   results: TaskResult[],
   workDir?: string,
+  options?: ResultPromptPayloadOptions,
 ): string => {
-  const payload = buildResultsPromptPayload(tasks, results, workDir)
+  const payload = buildResultsPromptPayload(tasks, results, workDir, options)
   if (!payload) return ''
   return escapeCdata(stringifyPromptJson(payload))
 }

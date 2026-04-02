@@ -4,13 +4,15 @@ import { join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
 
+import { deleteTask } from '../src/execution/worker/delete-task.js'
 import { appendHistory, readHistory } from '../src/persistence/history/store.js'
 import { appendTaskSystemMessage } from '../src/persistence/history/task-events.js'
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 import { loadRuntimeSnapshot } from '../src/persistence/storage/runtime-snapshot.js'
-import type { Task } from '../src/foundation/types/index.js'
-import { deleteTask } from '../src/execution/worker/delete-task.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
+
+import type { Task } from '../src/foundation/types/index.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const tempDirs: string[] = []
 
@@ -27,12 +29,13 @@ const createRuntime = async (): Promise<RuntimeState> => {
     runtimeId: 'runtime-delete-task-test',
     withGlobalFocus: false,
   })
-  runtime.worker.queue = {
-    add: async () => undefined,
+  const queue: RuntimeState['process']['worker']['queue'] = {
+    add: () => Promise.resolve(undefined),
     clear: () => undefined,
     pause: () => undefined,
     sizeBy: () => 0,
-  } as RuntimeState['worker']['queue']
+  }
+  runtime.process.worker.queue = queue
   return runtime
 }
 
@@ -60,7 +63,7 @@ afterEach(async () => {
 test('deleteTask rejects active task', async () => {
   const runtime = await createRuntime()
   const task = createTask('task-active-delete', { status: 'running' })
-  runtime.tasks = [task]
+  runtime.domain.tasks = [task]
 
   const result = await deleteTask(runtime, task.id, { source: 'user' })
 
@@ -69,7 +72,7 @@ test('deleteTask rejects active task', async () => {
     id: task.id,
     status: 'active_task',
   })
-  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.domain.tasks).toHaveLength(1)
 })
 
 test('deleteTask hard-deletes runtime, history, archives and generated files', async () => {
@@ -116,7 +119,7 @@ test('deleteTask hard-deletes runtime, history, archives and generated files', a
       archivePath,
     },
   })
-  runtime.tasks = [task]
+  runtime.domain.tasks = [task]
   await appendTaskSystemMessage(runtime.paths.history, 'created', task)
   await appendTaskSystemMessage(runtime.paths.history, 'completed', task, {
     status: 'succeeded',
@@ -136,7 +139,7 @@ test('deleteTask hard-deletes runtime, history, archives and generated files', a
   })
 
   expect(result).toMatchObject({ ok: true, id: taskId, status: 'deleted' })
-  expect(runtime.tasks).toEqual([])
+  expect(runtime.domain.tasks).toEqual([])
   const history = await readHistory(runtime.paths.history)
   expect(
     history.some(

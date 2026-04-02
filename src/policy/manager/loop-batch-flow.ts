@@ -128,7 +128,7 @@ export const recoverManagerBatchFailure = async (params: {
       await finalizeBatchProgress({
         runtime: params.runtime,
         nextInputsCursor: params.nextInputsCursor,
-        nextResultsCursor: params.runtime.queues.resultsCursor,
+        nextResultsCursor: params.runtime.domain.queues.resultsCursor,
         consumedInputIds: consumedInputs.consumedInputIds,
         persistRuntime: persistRuntimeState,
       })

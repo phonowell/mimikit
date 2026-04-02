@@ -34,7 +34,7 @@ const readWorkerSlotFreedSummaries = async (
 
 test('managerLoop fires on_worker_slot_freed once on full-to-free transition', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
-  runtime.taskPlans.push(
+  runtime.domain.taskPlans.push(
     await createCapacityPlan(
       runtime,
       'plan-capacity',
@@ -42,24 +42,27 @@ test('managerLoop fires on_worker_slot_freed once on full-to-free transition', a
       GLOBAL_FOCUS_ID,
     ),
   )
-  runtime.worker.runningControllers.set('task-busy', new AbortController())
+  runtime.process.worker.runningControllers.set(
+    'task-busy',
+    new AbortController(),
+  )
 
   const loopPromise = managerLoop(runtime)
   try {
     await settle()
-    expect(runtime.taskPlans[0]?.runtime.runCount).toBe(0)
+    expect(runtime.domain.taskPlans[0]?.runtime.runCount).toBe(0)
 
-    runtime.worker.runningControllers.clear()
-    runtime.worker.lastActivityAtMs = Date.now()
+    runtime.process.worker.runningControllers.clear()
+    runtime.process.worker.lastActivityAtMs = Date.now()
     notifyManagerLoop(runtime)
 
     await waitForCondition(
-      () => (runtime.taskPlans[0]?.runtime.runCount ?? 0) >= 1,
+      () => (runtime.domain.taskPlans[0]?.runtime.runCount ?? 0) >= 1,
       4_000,
     )
     await settle()
 
-    expect(runtime.taskPlans[0]?.runtime.runCount).toBe(1)
+    expect(runtime.domain.taskPlans[0]?.runtime.runCount).toBe(1)
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
   } finally {
     await stopLoop(runtime, loopPromise)
@@ -68,7 +71,7 @@ test('managerLoop fires on_worker_slot_freed once on full-to-free transition', a
 
 test('managerLoop emits worker_slot_freed on full-to-free transition only once', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
-  runtime.tasks.push({
+  runtime.domain.tasks.push({
     id: 'task-pending-transition',
     fingerprint: 'fp-task-pending-transition',
     prompt: 'transition prompt',
@@ -78,15 +81,18 @@ test('managerLoop emits worker_slot_freed on full-to-free transition only once',
     status: 'pending',
     createdAt: new Date().toISOString(),
   })
-  runtime.worker.runningControllers.set('task-busy', new AbortController())
+  runtime.process.worker.runningControllers.set(
+    'task-busy',
+    new AbortController(),
+  )
 
   const loopPromise = managerLoop(runtime)
   try {
     await settle()
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
 
-    runtime.worker.runningControllers.clear()
-    runtime.worker.lastActivityAtMs = Date.now()
+    runtime.process.worker.runningControllers.clear()
+    runtime.process.worker.lastActivityAtMs = Date.now()
     notifyManagerLoop(runtime)
 
     await waitForCondition(
@@ -102,7 +108,7 @@ test('managerLoop emits worker_slot_freed on full-to-free transition only once',
 
 test('managerLoop reports initial idle capacity without claiming a slot was freed', async () => {
   const runtime = await createRuntime({ maxConcurrent: 1 })
-  runtime.tasks.push({
+  runtime.domain.tasks.push({
     id: 'task-pending-initial-idle',
     fingerprint: 'fp-task-pending-initial-idle',
     prompt: 'initial idle prompt',
@@ -135,7 +141,7 @@ test('managerLoop reports initial idle capacity without claiming a slot was free
 
 test('managerLoop coalesces burst worker releases while capacity remains free', async () => {
   const runtime = await createRuntime({ maxConcurrent: 3 })
-  runtime.tasks.push({
+  runtime.domain.tasks.push({
     id: 'task-pending-burst',
     fingerprint: 'fp-task-pending-burst',
     prompt: 'burst prompt',
@@ -145,21 +151,21 @@ test('managerLoop coalesces burst worker releases while capacity remains free', 
     status: 'pending',
     createdAt: new Date().toISOString(),
   })
-  runtime.worker.runningControllers.set('task-1', new AbortController())
-  runtime.worker.runningControllers.set('task-2', new AbortController())
-  runtime.worker.runningControllers.set('task-3', new AbortController())
+  runtime.process.worker.runningControllers.set('task-1', new AbortController())
+  runtime.process.worker.runningControllers.set('task-2', new AbortController())
+  runtime.process.worker.runningControllers.set('task-3', new AbortController())
 
   const loopPromise = managerLoop(runtime)
   try {
     await settle()
     expect(await countSystemEvent(runtime, 'worker_slot_freed')).toBe(0)
 
-    runtime.worker.runningControllers.delete('task-1')
-    runtime.worker.lastActivityAtMs = Date.now()
-    runtime.worker.runningControllers.delete('task-2')
-    runtime.worker.lastActivityAtMs = Date.now()
-    runtime.worker.runningControllers.delete('task-3')
-    runtime.worker.lastActivityAtMs = Date.now()
+    runtime.process.worker.runningControllers.delete('task-1')
+    runtime.process.worker.lastActivityAtMs = Date.now()
+    runtime.process.worker.runningControllers.delete('task-2')
+    runtime.process.worker.lastActivityAtMs = Date.now()
+    runtime.process.worker.runningControllers.delete('task-3')
+    runtime.process.worker.lastActivityAtMs = Date.now()
     notifyManagerLoop(runtime)
     await waitForCondition(
       async () => (await countSystemEvent(runtime, 'worker_slot_freed')) >= 1,

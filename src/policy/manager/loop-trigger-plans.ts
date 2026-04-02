@@ -24,7 +24,7 @@ const sortTriggerPlans = (plans: TaskPlan[]): TaskPlan[] =>
   })
 
 export const hasRunnableWorkerSlotPlan = (runtime: ManagerRuntime): boolean =>
-  runtime.taskPlans.some((plan) => {
+  runtime.domain.taskPlans.some((plan) => {
     if (plan.status !== 'active') return false
     if (plan.trigger.mode !== 'on_worker_slot_freed') return false
     if (plan.maxRuns === undefined) return true
@@ -73,7 +73,7 @@ export const checkScheduledPlans = async (
   let triggeredCount = 0
   let stateChanged = false
 
-  for (const plan of runtime.taskPlans) {
+  for (const plan of runtime.domain.taskPlans) {
     if (plan.status !== 'active') continue
     if (maybeMarkPlanExhausted(plan, nowIso)) {
       stateChanged = true
@@ -139,7 +139,9 @@ export const triggerOnWorkerSlotFreedPlans = (
   return triggerPlans({
     runtime,
     nowIso,
-    plans: runtime.taskPlans.filter((plan) => canFireOnWorkerSlotFreed(plan)),
+    plans: runtime.domain.taskPlans.filter((plan) =>
+      canFireOnWorkerSlotFreed(plan),
+    ),
     reason: 'on_worker_slot_freed',
     availableSlots,
   })

@@ -24,7 +24,9 @@ const buildTaskFocusBrief = (
   runtime: WorkerRuntime,
   task: Task,
 ): TaskFocusBrief | undefined => {
-  const focusMeta = runtime.focuses.find((focus) => focus.id === task.focusId)
+  const focusMeta = runtime.domain.focuses.find(
+    (focus) => focus.id === task.focusId,
+  )
   if (!focusMeta) return undefined
   return {
     focusId: task.focusId,

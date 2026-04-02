@@ -107,6 +107,6 @@ test('finalizeResult binds closure task to main even when repo root is checked o
 
   await finalizeResult(runtime, task, result, markTaskSucceeded)
 
-  const closureTask = runtime.tasks.find((item) => item.id !== task.id)
+  const closureTask = runtime.domain.tasks.find((item) => item.id !== task.id)
   expect(closureTask?.branch).toBe('main')
 }, 15_000)

@@ -102,7 +102,7 @@ export const applyRunTask = async (
   seen.add(dedupeKeyWithContract)
 
   const activeSemanticTask = findActiveTaskBySemanticKey(
-    runtime.tasks,
+    runtime.domain.tasks,
     semanticKey,
   )
   if (activeSemanticTask) {
@@ -128,7 +128,7 @@ export const applyRunTask = async (
 
   const { task, created } = await enqueueTask(
     runtime.config.workDir,
-    runtime.tasks,
+    runtime.domain.tasks,
     workerPrompt,
     item.task.title,
     target.cwd,

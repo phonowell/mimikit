@@ -1,6 +1,11 @@
 import { newId, nowIso } from '../../foundation/shared/utils.js'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
+import {
+  appendRuntimePlan,
+  findRuntimePlan,
+  updateRuntimePlan,
+} from '../../work/orchestrator/runtime-domain-write.js'
 
 import { resolveActionFocusId } from './action-focus-id.js'
 import { buildPlanEffectFromTaskDraft } from './action-plan-effect.js'
@@ -54,7 +59,7 @@ export const applySetPlan = async (
   const updatedAt = nowIso()
 
   if (item.plan_id === null) {
-    const exists = runtime.taskPlans.some(
+    const exists = runtime.domain.taskPlans.some(
       (plan) =>
         plan.status !== 'done' &&
         normalizePlanKey({
@@ -82,19 +87,21 @@ export const applySetPlan = async (
         runCount: 0,
       },
     }
-    runtime.taskPlans.push(plan)
+    appendRuntimePlan({ runtime, plan })
     await persistRuntimeState(runtime)
     await appendPlanSystemMessage(runtime, 'plan_created', plan)
     notifyUiSignal(runtime, 'plans')
     return
   }
 
-  const index = runtime.taskPlans.findIndex((plan) => plan.id === item.plan_id)
+  const index = runtime.domain.taskPlans.findIndex(
+    (plan) => plan.id === item.plan_id,
+  )
   if (index < 0) return
-  const current = runtime.taskPlans[index]
+  const current = findRuntimePlan(runtime, item.plan_id)
   if (!current || current.status === 'done') return
 
-  const collides = runtime.taskPlans.some(
+  const collides = runtime.domain.taskPlans.some(
     (plan) =>
       plan.id !== current.id &&
       plan.status !== 'done' &&
@@ -118,7 +125,11 @@ export const applySetPlan = async (
     ...(item.plan.max_runs !== null ? { maxRuns: item.plan.max_runs } : {}),
   }
   if (item.plan.max_runs === null) delete next.maxRuns
-  runtime.taskPlans[index] = next
+  updateRuntimePlan({
+    runtime,
+    planId: item.plan_id,
+    update: () => next,
+  })
   await persistRuntimeState(runtime)
   await appendPlanSystemMessage(runtime, 'plan_updated', next)
   notifyUiSignal(runtime, 'plans')
@@ -130,10 +141,12 @@ export const applyDeletePlan = async (
 ): Promise<void> => {
   if (item.type !== 'delete_plan') return
 
-  const index = runtime.taskPlans.findIndex((plan) => plan.id === item.plan_id)
+  const index = runtime.domain.taskPlans.findIndex(
+    (plan) => plan.id === item.plan_id,
+  )
   if (index < 0) return
 
-  const current = runtime.taskPlans[index]
+  const current = findRuntimePlan(runtime, item.plan_id)
   if (!current) return
   const deletedAt = nowIso()
   const next =
@@ -149,7 +162,11 @@ export const applyDeletePlan = async (
             doneReason: 'canceled' as const,
           },
         }
-  runtime.taskPlans[index] = next
+  updateRuntimePlan({
+    runtime,
+    planId: item.plan_id,
+    update: () => next,
+  })
 
   await persistRuntimeState(runtime)
   await appendPlanSystemMessage(runtime, 'plan_deleted', next)

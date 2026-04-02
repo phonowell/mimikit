@@ -43,17 +43,19 @@ export const buildRuntimeSnapshot = (
   runtime: RuntimeSnapshotPersistSlice,
   memoryRefresh: RuntimeSnapshot['memoryRefresh'],
 ): RuntimeSnapshot => {
-  const channelTargets = normalizeChannelTargets(runtime.session.channelTargets)
+  const channelTargets = normalizeChannelTargets(
+    runtime.process.session.channelTargets,
+  )
   return {
     schemaVersion: RUNTIME_SNAPSHOT_SCHEMA_VERSION,
-    tasks: selectPersistedTasks(runtime.tasks),
-    taskPlans: runtime.taskPlans,
-    focuses: selectPersistedFocuses(runtime.focuses),
-    managerTurn: runtime.manager.turn,
-    ...(runtime.manager.threadId
-      ? { managerThreadId: runtime.manager.threadId }
+    tasks: selectPersistedTasks(runtime.domain.tasks),
+    taskPlans: runtime.domain.taskPlans,
+    focuses: selectPersistedFocuses(runtime.domain.focuses),
+    managerTurn: runtime.process.manager.turn,
+    ...(runtime.process.manager.threadId
+      ? { managerThreadId: runtime.process.manager.threadId }
       : {}),
-    queues: runtime.queues,
+    queues: runtime.domain.queues,
     ...(Object.keys(channelTargets).length > 0 ? { channelTargets } : {}),
     memoryRefresh,
   }

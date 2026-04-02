@@ -62,7 +62,7 @@ const createRuntime = (limits: PromptSectionLimits) => {
       worktree: '.mimikit-test',
     },
   })
-  runtime.focuses.push({
+  runtime.domain.focuses.push({
     id: 'focus-1',
     title: 'Focus',
     status: 'active',

@@ -5,11 +5,8 @@ import { readJsonl } from '../../persistence/storage/jsonl.js'
 import type { RuntimeState } from './runtime-state.js'
 import type { JsonPacket } from '../../foundation/types/index.js'
 
-export type RuntimeQueueReconcileSlice = Pick<
-  RuntimeState,
-  'paths' | 'queues'
-> & {
-  manager: Pick<RuntimeState['manager'], 'memoryRefresh'>
+export type RuntimeQueueReconcileSlice = Pick<RuntimeState, 'paths'> & {
+  domain: Pick<RuntimeState['domain'], 'queues'>
 }
 
 const resetStaleCursor = (cursor: number, packetCount: number): number => {
@@ -31,21 +28,21 @@ export const reconcileRuntimeQueueState = async (
     readQueuePacketCount(runtime.paths.inputsPackets),
     readQueuePacketCount(runtime.paths.resultsPackets),
   ])
-  const prevInputsCursor = runtime.queues.inputsCursor
-  const prevResultsCursor = runtime.queues.resultsCursor
+  const prevInputsCursor = runtime.domain.queues.inputsCursor
+  const prevResultsCursor = runtime.domain.queues.resultsCursor
 
-  runtime.queues.inputsCursor = resetStaleCursor(
-    runtime.queues.inputsCursor,
+  runtime.domain.queues.inputsCursor = resetStaleCursor(
+    runtime.domain.queues.inputsCursor,
     inputsPacketCount,
   )
-  runtime.queues.resultsCursor = resetStaleCursor(
-    runtime.queues.resultsCursor,
+  runtime.domain.queues.resultsCursor = resetStaleCursor(
+    runtime.domain.queues.resultsCursor,
     resultsPacketCount,
   )
 
   const changed =
-    runtime.queues.inputsCursor !== prevInputsCursor ||
-    runtime.queues.resultsCursor !== prevResultsCursor
+    runtime.domain.queues.inputsCursor !== prevInputsCursor ||
+    runtime.domain.queues.resultsCursor !== prevResultsCursor
   if (!changed) return
 
   await bestEffort('appendLog: runtime_queue_state_reconciled', () =>
@@ -55,8 +52,8 @@ export const reconcileRuntimeQueueState = async (
       resultsPacketCount,
       prevInputsCursor,
       prevResultsCursor,
-      nextInputsCursor: runtime.queues.inputsCursor,
-      nextResultsCursor: runtime.queues.resultsCursor,
+      nextInputsCursor: runtime.domain.queues.inputsCursor,
+      nextResultsCursor: runtime.domain.queues.resultsCursor,
     }),
   )
 }

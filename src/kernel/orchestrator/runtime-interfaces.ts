@@ -5,69 +5,65 @@ type RuntimeEnvelopeState = Pick<
   'runtimeId' | 'startup' | 'config' | 'paths'
 >
 
-export type RuntimeSessionState = RuntimeState['session']
-export type RuntimeManagerState = RuntimeState['manager']
-export type RuntimeWorkerState = RuntimeState['worker']
-export type RuntimeUiState = RuntimeState['ui']
+export type RuntimeDomainState = RuntimeState['domain']
+export type RuntimeProcessState = RuntimeState['process']
+export type RuntimeSessionState = RuntimeState['process']['session']
+export type RuntimeManagerState = RuntimeState['process']['manager']
+export type RuntimeWorkerState = RuntimeState['process']['worker']
+export type RuntimeUiState = RuntimeState['process']['ui']
 
-export type RuntimeTaskCollection = RuntimeState['tasks']
-export type RuntimeTaskState = RuntimeState['tasks'][number]
-export type RuntimePlanCollection = RuntimeState['taskPlans']
-export type RuntimeFocusCollection = RuntimeState['focuses']
-export type RuntimeQueueState = RuntimeState['queues']
-export type RuntimeChannelTargets = RuntimeState['session']['channelTargets']
+export type RuntimeTaskCollection = RuntimeState['domain']['tasks']
+export type RuntimeTaskState = RuntimeState['domain']['tasks'][number]
+export type RuntimePlanCollection = RuntimeState['domain']['taskPlans']
+export type RuntimeFocusCollection = RuntimeState['domain']['focuses']
+export type RuntimeQueueState = RuntimeState['domain']['queues']
+export type RuntimeChannelTargets =
+  RuntimeState['process']['session']['channelTargets']
 export type RuntimePathsState = Pick<RuntimeState, 'paths'>
 export type RuntimeUserMeta = UserMeta
-export type RuntimeTaskStateSlice = Pick<RuntimeState, 'tasks'>
-export type RuntimeTaskFocusStateSlice = Pick<RuntimeState, 'tasks' | 'focuses'>
-
-export type RuntimeDomainState = Pick<
-  RuntimeState,
-  'tasks' | 'taskPlans' | 'focuses' | 'queues'
-> & {
-  manager: Pick<RuntimeManagerState, 'turn' | 'threadId' | 'memoryRefresh'>
-  session: Pick<RuntimeSessionState, 'channelTargets'>
-  ui: RuntimeUiState
+export type RuntimeTaskStateSlice = {
+  domain: Pick<RuntimeDomainState, 'tasks'>
+}
+export type RuntimeTaskFocusStateSlice = {
+  domain: Pick<RuntimeDomainState, 'tasks' | 'focuses'>
+}
+export type RuntimePlanStateSlice = {
+  domain: Pick<RuntimeDomainState, 'taskPlans'>
+}
+export type RuntimePlanFocusStateSlice = {
+  domain: Pick<RuntimeDomainState, 'taskPlans' | 'focuses'>
+}
+export type RuntimeFocusStateSlice = {
+  domain: Pick<RuntimeDomainState, 'focuses'>
 }
 
-export type RuntimePersistState = Pick<
-  RuntimeState,
-  'config' | 'tasks' | 'taskPlans' | 'focuses' | 'queues'
-> & {
-  manager: Pick<RuntimeManagerState, 'turn' | 'threadId' | 'memoryRefresh'>
-  session: Pick<RuntimeSessionState, 'channelTargets'>
-  ui: RuntimeUiState
-}
-
-export type RuntimeProcessState = {
-  session: Omit<RuntimeSessionState, 'channelTargets'>
-  manager: Omit<RuntimeManagerState, 'turn' | 'threadId' | 'memoryRefresh'>
-  worker: RuntimeWorkerState
-  ui: RuntimeUiState
-}
-
-export type ManagerRuntime = RuntimeEnvelopeState &
-  Pick<RuntimeState, 'tasks' | 'taskPlans' | 'focuses' | 'queues'> & {
-    session: RuntimeSessionState
-    manager: RuntimeManagerState
-    worker: RuntimeWorkerState
+export type RuntimePersistState = Pick<RuntimeState, 'config'> & {
+  domain: Pick<RuntimeDomainState, 'tasks' | 'taskPlans' | 'focuses' | 'queues'>
+  process: {
+    manager: Pick<
+      RuntimeManagerState,
+      'turn' | 'threadId' | 'memoryRefresh' | 'lastUsage' | 'usageTotal'
+    >
+    session: Pick<RuntimeSessionState, 'channelTargets'>
     ui: RuntimeUiState
   }
+}
+
+export type ManagerRuntime = RuntimeEnvelopeState & {
+  domain: RuntimeDomainState
+  process: RuntimeProcessState
+}
 
 export type WorkerRuntime = OrchestratorRuntime
 
-export type OrchestratorRuntime = RuntimeEnvelopeState &
-  Pick<RuntimeState, 'tasks' | 'taskPlans' | 'focuses' | 'queues'> & {
-    session: RuntimeSessionState
-    manager: RuntimeManagerState
-    worker: RuntimeWorkerState
-    ui: RuntimeUiState
-  }
+export type OrchestratorRuntime = ManagerRuntime
 
 export type FocusRuntime = OrchestratorRuntime
 
 export type SurfaceRuntime = OrchestratorRuntime
 
 export type ChannelRuntime = Pick<RuntimeState, 'config' | 'paths'> & {
-  session: Pick<RuntimeSessionState, 'channelTargets'>
+  process: {
+    session: Pick<RuntimeSessionState, 'channelTargets'>
+  }
 }

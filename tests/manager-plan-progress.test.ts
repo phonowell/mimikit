@@ -31,7 +31,7 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
   const runtime = await createRuntime()
   const taskCwd = `${runtime.config.workDir}/manager-plan-progress-task`
   await mkdir(taskCwd, { recursive: true })
-  runtime.taskPlans.push({
+  runtime.domain.taskPlans.push({
     id: 'plan-triggered',
     title: 'scheduled title',
     focusId: GLOBAL_FOCUS_ID,
@@ -71,6 +71,8 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
     },
   )
 
-  expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.taskPlans[0]?.runtime.lastTaskId).toBe(runtime.tasks[0]?.id)
+  expect(runtime.domain.tasks).toHaveLength(1)
+  expect(runtime.domain.taskPlans[0]?.runtime.lastTaskId).toBe(
+    runtime.domain.tasks[0]?.id,
+  )
 })

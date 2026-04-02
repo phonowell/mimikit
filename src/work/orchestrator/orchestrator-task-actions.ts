@@ -19,7 +19,7 @@ export const resolveTaskById = (
 ): Task | undefined => {
   const id = taskId.trim()
   if (!id) return undefined
-  return runtime.tasks.find((task) => task.id === id)
+  return runtime.domain.tasks.find((task) => task.id === id)
 }
 
 export const mutateTaskByAction = (

@@ -32,11 +32,13 @@ export const resolveTaskLookup = (
 ): TaskLookup => {
   const normalizedId = taskId.trim()
   if (!normalizedId) return { normalizedId, index: -1 }
-  const index = runtime.tasks.findIndex((item) => item.id === normalizedId)
+  const index = runtime.domain.tasks.findIndex(
+    (item) => item.id === normalizedId,
+  )
   return {
     normalizedId,
     index,
-    ...(index >= 0 ? { task: runtime.tasks[index] } : {}),
+    ...(index >= 0 ? { task: runtime.domain.tasks[index] } : {}),
   }
 }
 
@@ -73,6 +75,6 @@ export const touchTaskMutation = (
   runtime: WorkerRuntime,
   taskId: string,
 ): void => {
-  runtime.worker.lastActivityAtMs = Date.now()
+  runtime.process.worker.lastActivityAtMs = Date.now()
   clearTaskLiveOutput(runtime, taskId)
 }

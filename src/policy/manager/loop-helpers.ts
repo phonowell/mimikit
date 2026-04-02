@@ -31,22 +31,12 @@ const resolveLatestResult = (results: TaskResult[]): TaskResult | undefined => {
   return sorted[0]
 }
 
-const FALLBACK_RESULT_OUTPUT_MAX_CHARS = 280
-const FALLBACK_RESULT_OUTPUT_MAX_LINES = 4
-
 const resolveFallbackResultDetail = (
   result: TaskResult,
 ): string | undefined => {
   const handoffSummary = result.handoff?.summary?.trim()
   if (handoffSummary) return handoffSummary
-  if (!result.ok || result.status !== 'succeeded') return undefined
-  const output = result.output.trim()
-  if (!output) return undefined
-  if (output.includes('```')) return undefined
-  if (output.length > FALLBACK_RESULT_OUTPUT_MAX_CHARS) return undefined
-  if (output.split(/\r?\n/).length > FALLBACK_RESULT_OUTPUT_MAX_LINES)
-    return undefined
-  return output
+  return undefined
 }
 
 const buildFallbackResultReply = (params: {
@@ -99,29 +89,30 @@ export const finalizeBatchProgress = async (params: {
     consumedInputIds,
     persistRuntime,
   } = params
-  runtime.queues.inputsCursor = nextInputsCursor
-  runtime.queues.resultsCursor = nextResultsCursor
-  runtime.session.inflightInputs = runtime.session.inflightInputs.filter(
-    (item) => !consumedInputIds.has(item.id),
-  )
+  runtime.domain.queues.inputsCursor = nextInputsCursor
+  runtime.domain.queues.resultsCursor = nextResultsCursor
+  runtime.process.session.inflightInputs =
+    runtime.process.session.inflightInputs.filter(
+      (item) => !consumedInputIds.has(item.id),
+    )
   const compactedInputs = await compactInputQueueIfFullyConsumed({
     paths: runtime.paths,
-    cursor: runtime.queues.inputsCursor,
+    cursor: runtime.domain.queues.inputsCursor,
     minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
   })
-  if (compactedInputs) runtime.queues.inputsCursor = 0
+  if (compactedInputs) runtime.domain.queues.inputsCursor = 0
 
   const compactedResults = await compactResultQueueIfFullyConsumed({
     paths: runtime.paths,
-    cursor: runtime.queues.resultsCursor,
+    cursor: runtime.domain.queues.resultsCursor,
     minPacketsToCompact: QUEUE_COMPACT_MIN_PACKETS,
   })
-  if (compactedResults) runtime.queues.resultsCursor = 0
+  if (compactedResults) runtime.domain.queues.resultsCursor = 0
 
   const snapshot = {
     id: `task-snapshot-${Date.now()}`,
     createdAt: nowIso(),
-    tasks: runtime.tasks,
+    tasks: runtime.domain.tasks,
   }
   const nextTasksSerialized = JSON.stringify(snapshot.tasks)
   await updateJsonl<typeof snapshot>(runtime.paths.tasksEvents, (current) => {
@@ -158,7 +149,7 @@ export const consumeBatchHistory = async (params: {
 
   const consumedResultCount = await appendConsumedResultsToHistory(
     params.runtime.paths.history,
-    params.runtime.tasks,
+    params.runtime.domain.tasks,
     params.results,
     params.summaries,
   )

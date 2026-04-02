@@ -48,7 +48,7 @@ export const appendManagerBatchReply = async (params: {
     normalizeManagerReplyText(
       await buildFallbackReply({
         results: params.results,
-        tasks: params.runtime.tasks,
+        tasks: params.runtime.domain.tasks,
         workDir: params.runtime.config.workDir,
       }),
     )

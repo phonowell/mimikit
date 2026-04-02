@@ -6,12 +6,13 @@ import PQueue from 'p-queue'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { enqueuePendingWorkerTasks } from '../src/execution/worker/dispatch.js'
+
 import { materializeTaskFixture } from './helpers/execution-spec.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
-import type { Task } from '../src/foundation/types/index.js'
 import type { WorkerLlmResult } from '../src/execution/worker/run-retry.js'
+import type { Task } from '../src/foundation/types/index.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const { runTaskWithRetryMock } = vi.hoisted(() => ({
   runTaskWithRetryMock: vi.fn(),
@@ -39,7 +40,7 @@ const createRuntime = async (): Promise<RuntimeState> => {
     maxConcurrent: 2,
   })
   runtime.config.worker.maxConcurrent = 2
-  runtime.worker.queue = new PQueue({
+  runtime.process.worker.queue = new PQueue({
     concurrency: runtime.config.worker.maxConcurrent,
   })
   return runtime
@@ -74,14 +75,13 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
-  for (const dir of tempDirs.splice(0, tempDirs.length)) {
+  for (const dir of tempDirs.splice(0, tempDirs.length))
     await rm(dir, { recursive: true, force: true })
-  }
 })
 
 test('worker dispatch serializes tasks on the same repo and branch', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await createTask(runtime.config.workDir, 'task-main-a', 'main'),
     await createTask(runtime.config.workDir, 'task-main-b', 'main'),
   )
@@ -100,11 +100,11 @@ test('worker dispatch serializes tasks on the same repo and branch', async () =>
 
   for (let round = 0; round < 6; round += 1) {
     enqueuePendingWorkerTasks(runtime)
-    await runtime.worker.queue.onIdle()
-    if (runtime.tasks.every((task) => task.status === 'succeeded')) break
+    await runtime.process.worker.queue.onIdle()
+    if (runtime.domain.tasks.every((task) => task.status === 'succeeded')) break
   }
 
-  expect(runtime.tasks.map((task) => task.status)).toEqual([
+  expect(runtime.domain.tasks.map((task) => task.status)).toEqual([
     'succeeded',
     'succeeded',
   ])
@@ -113,7 +113,7 @@ test('worker dispatch serializes tasks on the same repo and branch', async () =>
 
 test('worker dispatch keeps different branches parallel when slots are free', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await createTask(runtime.config.workDir, 'task-worktree-1', 'worktree-1'),
     await createTask(runtime.config.workDir, 'task-worktree-2', 'worktree-2'),
   )
@@ -132,11 +132,11 @@ test('worker dispatch keeps different branches parallel when slots are free', as
 
   for (let round = 0; round < 4; round += 1) {
     enqueuePendingWorkerTasks(runtime)
-    await runtime.worker.queue.onIdle()
-    if (runtime.tasks.every((task) => task.status === 'succeeded')) break
+    await runtime.process.worker.queue.onIdle()
+    if (runtime.domain.tasks.every((task) => task.status === 'succeeded')) break
   }
 
-  expect(runtime.tasks.map((task) => task.status)).toEqual([
+  expect(runtime.domain.tasks.map((task) => task.status)).toEqual([
     'succeeded',
     'succeeded',
   ])
@@ -145,7 +145,7 @@ test('worker dispatch keeps different branches parallel when slots are free', as
 
 test('worker dispatch does not serialize read tasks behind the same repo branch lock', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await createTask(runtime.config.workDir, 'task-read-a', 'main', 'read'),
     await createTask(runtime.config.workDir, 'task-read-b', 'main', 'read'),
   )
@@ -164,11 +164,11 @@ test('worker dispatch does not serialize read tasks behind the same repo branch 
 
   for (let round = 0; round < 4; round += 1) {
     enqueuePendingWorkerTasks(runtime)
-    await runtime.worker.queue.onIdle()
-    if (runtime.tasks.every((task) => task.status === 'succeeded')) break
+    await runtime.process.worker.queue.onIdle()
+    if (runtime.domain.tasks.every((task) => task.status === 'succeeded')) break
   }
 
-  expect(runtime.tasks.map((task) => task.status)).toEqual([
+  expect(runtime.domain.tasks.map((task) => task.status)).toEqual([
     'succeeded',
     'succeeded',
   ])

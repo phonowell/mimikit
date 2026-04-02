@@ -28,8 +28,8 @@ test('set_plan preserves task use_worktree on enqueue effect', async () => {
     },
   ])
 
-  expect(runtime.taskPlans).toHaveLength(1)
-  const effect = runtime.taskPlans[0]?.effect
+  expect(runtime.domain.taskPlans).toHaveLength(1)
+  const effect = runtime.domain.taskPlans[0]?.effect
   expect(effect?.kind).toBe('enqueue_task')
   if (effect?.kind !== 'enqueue_task')
     throw new Error('expected enqueue effect')

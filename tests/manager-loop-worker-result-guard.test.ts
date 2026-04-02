@@ -2,24 +2,26 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { afterEach, expect, test, vi } from 'vitest'
 import PQueue from 'p-queue'
-
-import { createTestRuntimeState } from './helpers/runtime-state.js'
+import { afterEach, expect, test, vi } from 'vitest'
 
 const triggerMocks = vi.hoisted(() => ({
-  checkScheduledPlans: vi.fn(async () => ({
-    triggeredCount: 0,
-    stateChanged: false,
-  })),
-  triggerOnWorkerSlotFreedPlans: vi.fn(async () => ({
-    triggeredCount: 0,
-    stateChanged: false,
-  })),
+  checkScheduledPlans: vi.fn(() =>
+    Promise.resolve({
+      triggeredCount: 0,
+      stateChanged: false,
+    }),
+  ),
+  triggerOnWorkerSlotFreedPlans: vi.fn(() =>
+    Promise.resolve({
+      triggeredCount: 0,
+      stateChanged: false,
+    }),
+  ),
 }))
 
 vi.mock('../src/policy/manager/loop-batch.js', () => ({
-  processManagerBatch: vi.fn(async () => {}),
+  processManagerBatch: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('../src/policy/manager/loop-trigger-plans.js', () => ({
@@ -28,21 +30,24 @@ vi.mock('../src/policy/manager/loop-trigger-plans.js', () => ({
 }))
 
 vi.mock('../src/kernel/orchestrator/runtime-persistence.js', () => ({
-  persistRuntimeState: vi.fn(async () => {}),
+  persistRuntimeState: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('../src/kernel/orchestrator/signals.js', () => ({
-  waitForManagerLoopSignal: vi.fn(async (runtime: RuntimeState) => {
-    runtime.session.stopped = true
+  waitForManagerLoopSignal: vi.fn((runtime: RuntimeState) => {
+    runtime.process.session.stopped = true
+    return Promise.resolve()
   }),
 }))
 
 import { buildPaths } from '../src/persistence/fs/paths.js'
-import { readJsonl, appendJsonl } from '../src/persistence/storage/jsonl.js'
+import { appendJsonl, readJsonl } from '../src/persistence/storage/jsonl.js'
 import { managerLoop } from '../src/policy/manager/loop.js'
 
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
+import { createTestRuntimeState } from './helpers/runtime-state.js'
+
 import type { JsonPacket } from '../src/foundation/types/index.js'
+import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const tempDirs: string[] = []
 
@@ -54,9 +59,8 @@ const createTmpDir = async (): Promise<string> => {
 
 afterEach(async () => {
   vi.clearAllMocks()
-  for (const dir of tempDirs.splice(0, tempDirs.length)) {
+  for (const dir of tempDirs.splice(0, tempDirs.length))
     await rm(dir, { recursive: true, force: true })
-  }
 })
 
 test('managerLoop drops malformed worker results and logs schema issues', async () => {
@@ -68,7 +72,7 @@ test('managerLoop drops malformed worker results and logs schema issues', async 
     withGlobalFocus: false,
   })
   runtime.paths = buildPaths(workDir)
-  runtime.worker.queue = queue
+  runtime.process.worker.queue = queue
 
   await appendJsonl<JsonPacket<unknown>>(runtime.paths.resultsPackets, [
     {
@@ -87,14 +91,14 @@ test('managerLoop drops malformed worker results and logs schema issues', async 
 
   await managerLoop(runtime)
 
-  const { processManagerBatch } = await import('../src/policy/manager/loop-batch.js')
-  const { persistRuntimeState } = await import(
-    '../src/kernel/orchestrator/runtime-persistence.js'
-  )
+  const { processManagerBatch } =
+    await import('../src/policy/manager/loop-batch.js')
+  const { persistRuntimeState } =
+    await import('../src/kernel/orchestrator/runtime-persistence.js')
 
   expect(processManagerBatch).not.toHaveBeenCalled()
   expect(persistRuntimeState).toHaveBeenCalledOnce()
-  expect(runtime.queues.resultsCursor).toBe(1)
+  expect(runtime.domain.queues.resultsCursor).toBe(1)
 
   const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
     ensureFile: true,
@@ -123,14 +127,16 @@ test('managerLoop logs trigger errors and still processes queued inputs', async 
     withGlobalFocus: false,
   })
   runtime.paths = buildPaths(workDir)
-  triggerMocks.checkScheduledPlans.mockImplementationOnce(async () => {
-    throw new Error('boom-trigger')
-  })
-  const { processManagerBatch } = await import('../src/policy/manager/loop-batch.js')
-  vi.mocked(processManagerBatch).mockImplementationOnce(async (params) => {
-    params.runtime.queues.inputsCursor = params.nextInputsCursor
-    params.runtime.queues.resultsCursor = params.nextResultsCursor
-    params.runtime.session.stopped = true
+  triggerMocks.checkScheduledPlans.mockImplementationOnce(() =>
+    Promise.reject(new Error('boom-trigger')),
+  )
+  const { processManagerBatch } =
+    await import('../src/policy/manager/loop-batch.js')
+  vi.mocked(processManagerBatch).mockImplementationOnce((params) => {
+    params.runtime.domain.queues.inputsCursor = params.nextInputsCursor
+    params.runtime.domain.queues.resultsCursor = params.nextResultsCursor
+    params.runtime.process.session.stopped = true
+    return Promise.resolve()
   })
 
   await appendJsonl<JsonPacket<unknown>>(runtime.paths.inputsPackets, [
@@ -150,7 +156,7 @@ test('managerLoop logs trigger errors and still processes queued inputs', async 
   await managerLoop(runtime)
 
   expect(processManagerBatch).toHaveBeenCalledOnce()
-  expect(runtime.queues.inputsCursor).toBe(1)
+  expect(runtime.domain.queues.inputsCursor).toBe(1)
 
   const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
     ensureFile: true,

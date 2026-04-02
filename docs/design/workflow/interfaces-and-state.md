@@ -154,6 +154,8 @@
 
 说明：
 
+- 进程内 runtime 现显式分层为 `runtime.domain.{queues,tasks,taskPlans,focuses}` 与 `runtime.process.{session,manager,worker,ui}`；前者是可持久化编排真相，后者是进程内过程态。
+- task/plan/focus 的真相变更统一经过受控 write surface；manager/work/focus 模块不再直接散写 domain collection。
 - `memory/MEMORY.md` 由两条链路维护：后台 memory 刷新子进程（`>=20` 轮且 `signalVersion != lastProcessedSignalVersion` 时触发，单飞执行）+ manager `remember_memory` 即时写入。
 - `usage/ledger.jsonl` 追加写入 manager round 与 worker result 两类账本记录；manager 记录 `wakeProfile/packetMode/promptBytes/promptSegmentCount`，worker 记录 `taskId/provider/status/usage`。两类记录现在都会按需附带 `batchId/roundId/providerCallId/traceRef/attempt` 诊断字段，便于反向定位到具体 provider 调用与 trace。
 - `task-progress/YYYY-MM-DD/{taskId}.jsonl` 当前会记录 `worker_start`、运行中的 `worker_activity`、脱敏后的 `worker_live_output` 摘要以及结束态事件；这些事件属于运行态进度记录，不构成最终 archive 协议。
@@ -181,6 +183,7 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 
 补充：
 
+- `runtime-snapshot.json` 只持久化 `runtime.domain` 与少量必要 process projection（`managerTurn/managerThreadId/memoryRefresh/channelTargets`）；`worker/ui` 等纯过程态不会进 snapshot。
 - `channelTargets`、`managerLastUsage`、`managerUsageTotal` 都是进程内交互/观测态，不进入 snapshot。
 - `channelTargets` 启动时会从最近 history 用户消息中的 chat id 恢复。
 - `runtime-snapshot` 运行期只接受当前 `schemaVersion`；旧版本/旧字段会被直接拒绝，不再提供仓内迁移脚本。

@@ -6,22 +6,32 @@ import type {
   RuntimeDomainState,
   RuntimeManagerState,
   RuntimeQueueState,
+  RuntimeSessionState,
 } from './runtime-interfaces.js'
 import type { Task } from '../../foundation/types/index.js'
 import type { RuntimeSnapshot } from '../../persistence/storage/runtime-snapshot-schema.js'
 
-export type RuntimeSnapshotHydrateSlice = Omit<RuntimeDomainState, 'queues'> & {
+export type RuntimeSnapshotHydrateSlice = {
+  domain: Omit<RuntimeDomainState, 'queues'>
+  process: {
+    manager: Pick<
+      RuntimeManagerState,
+      'turn' | 'threadId' | 'memoryRefresh' | 'lastUsage' | 'usageTotal'
+    >
+    session: Pick<RuntimeSessionState, 'channelTargets'>
+  }
   queues?: RuntimeQueueState
 }
 
-export type RuntimeSnapshotHydrateTarget = Pick<
-  RuntimeDomainState,
-  'tasks' | 'taskPlans' | 'focuses' | 'queues' | 'session' | 'ui'
-> & {
-  manager: Pick<
-    RuntimeManagerState,
-    'turn' | 'threadId' | 'memoryRefresh' | 'lastUsage' | 'usageTotal'
-  >
+export type RuntimeSnapshotHydrateTarget = {
+  domain: Pick<RuntimeDomainState, 'tasks' | 'taskPlans' | 'focuses' | 'queues'>
+  process: {
+    manager: Pick<
+      RuntimeManagerState,
+      'turn' | 'threadId' | 'memoryRefresh' | 'lastUsage' | 'usageTotal'
+    >
+    session: Pick<RuntimeSessionState, 'channelTargets'>
+  }
 }
 
 const selectRuntimeSnapshotQueues = (
@@ -63,21 +73,20 @@ export const buildRuntimeSnapshotHydrateSlice = (params: {
 }): RuntimeSnapshotHydrateSlice => {
   const { snapshot, channelTargets } = params
   const slice: RuntimeSnapshotHydrateSlice = {
-    tasks: recoverSnapshotTasks(snapshot.tasks),
-    taskPlans: snapshot.taskPlans,
-    focuses: snapshot.focuses ?? [],
-    manager: {
-      turn: snapshot.managerTurn ?? 0,
-      ...(snapshot.managerThreadId
-        ? { threadId: snapshot.managerThreadId }
-        : {}),
-      memoryRefresh: hydrateMemoryRefreshState(snapshot),
+    domain: {
+      tasks: recoverSnapshotTasks(snapshot.tasks),
+      taskPlans: snapshot.taskPlans,
+      focuses: snapshot.focuses ?? [],
     },
-    session: { channelTargets },
-    ui: {
-      wakeVersion: 0,
-      wakeEvents: new Map(),
-      signalControllers: new Set(),
+    process: {
+      manager: {
+        turn: snapshot.managerTurn ?? 0,
+        ...(snapshot.managerThreadId
+          ? { threadId: snapshot.managerThreadId }
+          : {}),
+        memoryRefresh: hydrateMemoryRefreshState(snapshot),
+      },
+      session: { channelTargets },
     },
   }
   const queues = selectRuntimeSnapshotQueues(snapshot)
@@ -89,15 +98,16 @@ export const applyRuntimeSnapshotHydrateSlice = (
   runtime: RuntimeSnapshotHydrateTarget,
   slice: RuntimeSnapshotHydrateSlice,
 ): void => {
-  runtime.tasks = slice.tasks
-  runtime.taskPlans = slice.taskPlans
-  runtime.focuses = slice.focuses
-  runtime.manager.turn = slice.manager.turn
-  if (slice.manager.threadId) runtime.manager.threadId = slice.manager.threadId
-  else delete runtime.manager.threadId
-  runtime.manager.memoryRefresh = slice.manager.memoryRefresh
-  delete runtime.manager.lastUsage
-  delete runtime.manager.usageTotal
-  runtime.session.channelTargets = slice.session.channelTargets
-  if (slice.queues) runtime.queues = slice.queues
+  runtime.domain.tasks = slice.domain.tasks
+  runtime.domain.taskPlans = slice.domain.taskPlans
+  runtime.domain.focuses = slice.domain.focuses
+  runtime.process.manager.turn = slice.process.manager.turn
+  if (slice.process.manager.threadId)
+    runtime.process.manager.threadId = slice.process.manager.threadId
+  else delete runtime.process.manager.threadId
+  runtime.process.manager.memoryRefresh = slice.process.manager.memoryRefresh
+  delete runtime.process.manager.lastUsage
+  delete runtime.process.manager.usageTotal
+  runtime.process.session.channelTargets = slice.process.session.channelTargets
+  if (slice.queues) runtime.domain.queues = slice.queues
 }

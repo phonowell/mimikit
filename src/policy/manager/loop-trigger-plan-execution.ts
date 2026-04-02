@@ -76,7 +76,7 @@ export const firePlan = async (params: {
   })
   const { task, created } = await enqueueTask(
     runtime.config.workDir,
-    runtime.tasks,
+    runtime.domain.tasks,
     spec.prompt,
     plan.effect.taskTemplate.title,
     target.cwd,

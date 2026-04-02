@@ -132,7 +132,7 @@ export const hydrateRuntimeState = async (
     ),
   })
   applyRuntimeSnapshotHydrateSlice(runtime, slice)
-  await syncReconciledTaskArchives(runtime.config.workDir, slice.tasks)
+  await syncReconciledTaskArchives(runtime.config.workDir, slice.domain.tasks)
   await reconcileRuntimeQueueState(runtime)
 
   if (snapshot.tasks.length > 0) {
@@ -150,9 +150,9 @@ export const persistRuntimeState = async (
 ): Promise<void> => {
   const snapshot = buildRuntimeSnapshot(
     runtime,
-    toPersistedMemoryRefreshState(runtime.manager.memoryRefresh),
+    toPersistedMemoryRefreshState(runtime.process.manager.memoryRefresh),
   )
-  runtime.tasks = snapshot.tasks
+  runtime.domain.tasks = snapshot.tasks
   await saveRuntimeSnapshot(runtime.config.workDir, snapshot)
   await syncReconciledTaskArchives(runtime.config.workDir, snapshot.tasks)
 }

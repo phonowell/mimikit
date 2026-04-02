@@ -9,7 +9,7 @@ import { createRuntime, TASK_CWD } from './testkit.js'
 
 test('task_control pause marks pending task as paused', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await materializeTaskFixture({
       stateDir: runtime.config.workDir,
       task: {
@@ -35,13 +35,13 @@ test('task_control pause marks pending task as paused', async () => {
     },
   ])
 
-  expect(runtime.tasks[0]?.status).toBe('paused')
-  expect(runtime.tasks[0]?.pausedAt).toBeTypeOf('string')
+  expect(runtime.domain.tasks[0]?.status).toBe('paused')
+  expect(runtime.domain.tasks[0]?.pausedAt).toBeTypeOf('string')
 })
 
 test('task_control resume requeues paused task', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await materializeTaskFixture({
       stateDir: runtime.config.workDir,
       task: {
@@ -68,14 +68,14 @@ test('task_control resume requeues paused task', async () => {
     },
   ])
 
-  expect(runtime.tasks[0]?.status).toBe('pending')
-  expect(runtime.tasks[0]?.pausedAt).toBeUndefined()
-  expect(runtime.worker.queue.size).toBe(1)
+  expect(runtime.domain.tasks[0]?.status).toBe('pending')
+  expect(runtime.domain.tasks[0]?.pausedAt).toBeUndefined()
+  expect(runtime.process.worker.queue.size).toBe(1)
 })
 
 test('task_control cancel marks paused task as canceled', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await materializeTaskFixture({
       stateDir: runtime.config.workDir,
       task: {
@@ -106,6 +106,6 @@ test('task_control cancel marks paused task as canceled', async () => {
 
   await applyTaskActions(runtime, turn.actions)
 
-  expect(runtime.tasks[0]?.status).toBe('canceled')
-  expect(runtime.tasks[0]?.completedAt).toBeTypeOf('string')
+  expect(runtime.domain.tasks[0]?.status).toBe('canceled')
+  expect(runtime.domain.tasks[0]?.completedAt).toBeTypeOf('string')
 })

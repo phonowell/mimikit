@@ -103,5 +103,5 @@ test('finalizeResult rejects closure task without repoKey truth source', async (
   await expect(
     finalizeResult(runtime, task, result, markTaskSucceeded),
   ).rejects.toThrow('closure task requires repoKey')
-  expect(runtime.tasks).toHaveLength(1)
+  expect(runtime.domain.tasks).toHaveLength(1)
 })

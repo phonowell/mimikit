@@ -18,7 +18,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
   const runtime = await createRuntime()
   const draft = buildTaskDraft()
   const taskCwd = await realpath(TASK_CWD)
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await materializeTaskFixture({
       stateDir: runtime.config.workDir,
       task: {
@@ -48,10 +48,10 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
     },
   ])
 
-  expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.tasks[0]?.id).toBe('task-pending')
-  expect(runtime.tasks[0]?.focusId).toBe(INBOX_FOCUS_ID)
-  expect(runtime.worker.queue.size).toBe(1)
+  expect(runtime.domain.tasks).toHaveLength(1)
+  expect(runtime.domain.tasks[0]?.id).toBe('task-pending')
+  expect(runtime.domain.tasks[0]?.focusId).toBe(INBOX_FOCUS_ID)
+  expect(runtime.process.worker.queue.size).toBe(1)
 })
 
 test('enqueue_task task_created system event includes worker slot status payload', async () => {
@@ -82,7 +82,7 @@ test('enqueue_task task_created system event includes worker slot status payload
 
 test('enqueue_task dedupe does not block task creation when fingerprint differs', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await materializeTaskFixture({
       stateDir: runtime.config.workDir,
       task: {
@@ -109,14 +109,16 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
     },
   ])
 
-  expect(runtime.tasks).toHaveLength(2)
-  expect(runtime.tasks[1]?.title).toBe('new title')
-  expect(runtime.tasks[1]?.fingerprint).not.toBe(runtime.tasks[0]?.fingerprint)
+  expect(runtime.domain.tasks).toHaveLength(2)
+  expect(runtime.domain.tasks[1]?.title).toBe('new title')
+  expect(runtime.domain.tasks[1]?.fingerprint).not.toBe(
+    runtime.domain.tasks[0]?.fingerprint,
+  )
 })
 
 test('enqueue_task contract change does not reuse pending task', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push(
+  runtime.domain.tasks.push(
     await materializeTaskFixture({
       stateDir: runtime.config.workDir,
       task: {
@@ -150,13 +152,13 @@ test('enqueue_task contract change does not reuse pending task', async () => {
     },
   ])
 
-  expect(runtime.tasks).toHaveLength(2)
-  expect(runtime.tasks[0]?.status).toBe('pending')
-  expect(runtime.tasks[0]?.cancel).toBeUndefined()
-  expect(runtime.tasks[1]?.status).toBe('pending')
+  expect(runtime.domain.tasks).toHaveLength(2)
+  expect(runtime.domain.tasks[0]?.status).toBe('pending')
+  expect(runtime.domain.tasks[0]?.cancel).toBeUndefined()
+  expect(runtime.domain.tasks[1]?.status).toBe('pending')
   const spec = await readTaskExecutionSpec(
     runtime.config.workDir,
-    runtime.tasks[1]?.executionSpecId ?? '',
+    runtime.domain.tasks[1]?.executionSpecId ?? '',
   )
   expect(spec.contract?.goal).toBe('New goal')
 })

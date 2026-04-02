@@ -7,10 +7,7 @@ import {
 } from '../../kernel/orchestrator/signals.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 
-import {
-  assignRuntimeTaskUsage,
-  markRuntimeTaskRunning,
-} from './task-state-write.js'
+import { applyRuntimeTaskDomainWrite } from './task-state-write.js'
 
 import type { Task, TokenUsage } from '../../foundation/types/index.js'
 import type {
@@ -21,17 +18,19 @@ import type {
 } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 type TaskWorkerRunRuntime = RuntimePersistState & {
-  manager: RuntimePersistState['manager'] &
-    Pick<RuntimeManagerState, 'wakePending' | 'signalController'>
-  worker: Pick<
-    RuntimeWorkerState,
-    | 'lastActivityAtMs'
-    | 'runningControllers'
-    | 'runningTaskLocks'
-    | 'signalController'
-  >
-  ui: RuntimePersistState['ui'] &
-    Pick<RuntimeUiState, 'wakeVersion' | 'wakeEvents' | 'signalControllers'>
+  process: RuntimePersistState['process'] & {
+    manager: RuntimePersistState['process']['manager'] &
+      Pick<RuntimeManagerState, 'wakePending' | 'signalController'>
+    worker: Pick<
+      RuntimeWorkerState,
+      | 'lastActivityAtMs'
+      | 'runningControllers'
+      | 'runningTaskLocks'
+      | 'signalController'
+    >
+    ui: RuntimePersistState['process']['ui'] &
+      Pick<RuntimeUiState, 'wakeVersion' | 'wakeEvents' | 'signalControllers'>
+  }
 }
 
 export const updateTaskUsage = (
@@ -40,7 +39,8 @@ export const updateTaskUsage = (
   usage: TokenUsage,
 ): boolean => {
   if (isSameUsage(task.usage, usage)) return false
-  assignRuntimeTaskUsage({
+  applyRuntimeTaskDomainWrite({
+    kind: 'assign_usage',
     runtime,
     taskId: task.id,
     task,
@@ -57,10 +57,15 @@ export const startTaskWorkerRun = async (params: {
   controller: AbortController
 }): Promise<void> => {
   const { runtime, task, dispatchLockKey, controller } = params
-  runtime.worker.lastActivityAtMs = Date.now()
-  if (dispatchLockKey) runtime.worker.runningTaskLocks.add(dispatchLockKey)
-  runtime.worker.runningControllers.set(task.id, controller)
-  markRuntimeTaskRunning({ runtime, taskId: task.id })
+  runtime.process.worker.lastActivityAtMs = Date.now()
+  if (dispatchLockKey)
+    runtime.process.worker.runningTaskLocks.add(dispatchLockKey)
+  runtime.process.worker.runningControllers.set(task.id, controller)
+  applyRuntimeTaskDomainWrite({
+    kind: 'mark_running',
+    runtime,
+    taskId: task.id,
+  })
   notifyUiSignal(runtime)
   await bestEffort('persistRuntimeState: worker_start', () =>
     persistRuntimeState(runtime),
@@ -73,8 +78,9 @@ export const finishTaskWorkerRun = async (params: {
   dispatchLockKey: string | undefined
 }): Promise<void> => {
   const { runtime, taskId, dispatchLockKey } = params
-  runtime.worker.runningControllers.delete(taskId)
-  if (dispatchLockKey) runtime.worker.runningTaskLocks.delete(dispatchLockKey)
+  runtime.process.worker.runningControllers.delete(taskId)
+  if (dispatchLockKey)
+    runtime.process.worker.runningTaskLocks.delete(dispatchLockKey)
   notifyManagerLoop(runtime)
   await bestEffort('persistRuntimeState: worker_end', () =>
     persistRuntimeState(runtime),

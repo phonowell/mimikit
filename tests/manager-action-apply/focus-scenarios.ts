@@ -1,13 +1,13 @@
 import { expect, test } from 'vitest'
 
-import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { applyTaskActions } from '../../src/policy/manager/action-apply.js'
+import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 
 import { createRuntime, TASK_CWD } from './testkit.js'
 
 test('assign_focus updates task focus by explicit target_type', async () => {
   const runtime = await createRuntime()
-  runtime.tasks.push({
+  runtime.domain.tasks.push({
     id: 'task-focus-1',
     fingerprint: 'fp-1',
     prompt: 'do something',
@@ -19,7 +19,7 @@ test('assign_focus updates task focus by explicit target_type', async () => {
     status: 'pending',
     createdAt: '2026-02-13T00:00:00.000Z',
   })
-  runtime.focuses.push({
+  runtime.domain.focuses.push({
     id: 'focus-release',
     title: 'Release',
     status: 'active',
@@ -37,5 +37,5 @@ test('assign_focus updates task focus by explicit target_type', async () => {
     },
   ])
 
-  expect(runtime.tasks[0]?.focusId).toBe('focus-release')
+  expect(runtime.domain.tasks[0]?.focusId).toBe('focus-release')
 })

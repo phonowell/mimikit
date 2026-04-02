@@ -14,7 +14,7 @@ const createRuntime = (): Promise<RuntimeState> => createTestRuntimeState()
 
 test('enforceActiveFocusLimit does not count global focus against worker maxConcurrent', async () => {
   const runtime = await createRuntime()
-  runtime.focuses.push({
+  runtime.domain.focuses.push({
     id: 'focus-a',
     title: 'A',
     status: 'active',
@@ -25,13 +25,13 @@ test('enforceActiveFocusLimit does not count global focus against worker maxConc
 
   enforceActiveFocusLimit(runtime)
 
-  const focusA = runtime.focuses.find((item) => item.id === 'focus-a')
+  const focusA = runtime.domain.focuses.find((item) => item.id === 'focus-a')
   expect(focusA?.status).toBe('active')
 })
 
 test('pruneArchivedFocuses keeps archived focus referenced by history', async () => {
   const runtime = await createRuntime()
-  runtime.focuses.push(
+  runtime.domain.focuses.push(
     {
       id: 'focus-archived-kept',
       title: 'Kept',
@@ -67,9 +67,9 @@ test('pruneArchivedFocuses keeps archived focus referenced by history', async ()
 
   await pruneArchivedFocuses(runtime)
 
-  const ids = new Set(runtime.focuses.map((item) => item.id))
+  const ids = new Set(runtime.domain.focuses.map((item) => item.id))
   expect(ids.has('focus-archived-kept')).toBe(true)
-  const archivedIds = runtime.focuses
+  const archivedIds = runtime.domain.focuses
     .filter((item) => item.status === 'archived')
     .map((item) => item.id)
   expect(archivedIds).toHaveLength(3)
@@ -81,7 +81,7 @@ test('pruneArchivedFocuses keeps archived focus referenced by history', async ()
 test('focus capacity maintenance no longer emits webui wake signals', async () => {
   const runtime = await createRuntime()
   runtime.config.worker.maxConcurrent = 1
-  runtime.focuses.push({
+  runtime.domain.focuses.push({
     id: 'focus-a',
     title: 'A',
     status: 'active',
@@ -92,6 +92,6 @@ test('focus capacity maintenance no longer emits webui wake signals', async () =
 
   enforceActiveFocusLimit(runtime)
 
-  expect(runtime.ui.wakeVersion).toBe(0)
-  expect(runtime.ui.wakeEvents.size).toBe(0)
+  expect(runtime.process.ui.wakeVersion).toBe(0)
+  expect(runtime.process.ui.wakeEvents.size).toBe(0)
 })

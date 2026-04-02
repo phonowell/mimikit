@@ -105,8 +105,10 @@ test('hydrateRuntimeState reconciles derived git closure into task truth source 
 
   await hydrateRuntimeState(runtime)
 
-  expect(runtime.tasks[0]?.git?.lifecycle?.cleaned).toBe(true)
-  expect(runtime.tasks[0]?.result?.handoff?.git?.lifecycle?.cleaned).toBe(true)
+  expect(runtime.domain.tasks[0]?.git?.lifecycle?.cleaned).toBe(true)
+  expect(
+    runtime.domain.tasks[0]?.result?.handoff?.git?.lifecycle?.cleaned,
+  ).toBe(true)
   expect(
     (await readTaskResultArchive(archivePath))?.handoff?.git?.lifecycle
       ?.cleaned,

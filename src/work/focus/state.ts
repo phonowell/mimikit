@@ -1,5 +1,9 @@
 import { compareIsoDesc } from '../../foundation/shared/time.js'
 import { nowIso } from '../../foundation/shared/utils.js'
+import {
+  appendRuntimeFocus,
+  findRuntimeFocus,
+} from '../orchestrator/runtime-domain-write.js'
 
 import { GLOBAL_FOCUS_ID, INBOX_FOCUS_ID } from './constants.js'
 import {
@@ -28,11 +32,13 @@ import type {
 export { normalizeFocusSummary } from './meta.js'
 
 type FocusCollectionRuntime = {
-  focuses: RuntimeFocusCollection
+  domain: {
+    focuses: RuntimeFocusCollection
+  }
 }
 
 export const resolveDefaultFocusId = (runtime: FocusRuntime): FocusId => {
-  const activeNonGlobal = runtime.focuses
+  const activeNonGlobal = runtime.domain.focuses
     .filter(isDefaultActiveFocusCandidate)
     .sort((a, b) => {
       const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
@@ -42,7 +48,7 @@ export const resolveDefaultFocusId = (runtime: FocusRuntime): FocusId => {
   const primaryActiveFocus = activeNonGlobal.at(0)
   if (primaryActiveFocus) return primaryActiveFocus.id
 
-  const reusableIdleFocus = runtime.focuses
+  const reusableIdleFocus = runtime.domain.focuses
     .filter(isDefaultIdleFocusCandidate)
     .sort((a, b) => {
       const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
@@ -58,7 +64,7 @@ export const resolveDefaultFocusId = (runtime: FocusRuntime): FocusId => {
 export const findFocus = (
   runtime: FocusCollectionRuntime,
   focusId: FocusId,
-): FocusMeta | undefined => runtime.focuses.find((item) => item.id === focusId)
+): FocusMeta | undefined => findRuntimeFocus(runtime, focusId)
 
 export const ensureFocus = (
   runtime: FocusCollectionRuntime,
@@ -85,8 +91,7 @@ export const ensureFocus = (
     updatedAt: timestamp,
     lastActivityAt: timestamp,
   }
-  runtime.focuses.push(next)
-  return next
+  return appendRuntimeFocus({ runtime, focus: next })
 }
 
 export const ensureGlobalFocus = (runtime: FocusRuntime): void => {

@@ -43,7 +43,7 @@ const createEnqueuePlan = async (
         focusId: GLOBAL_FOCUS_ID,
         task,
       })
-      runtime.taskPlans.push({
+      runtime.domain.taskPlans.push({
         id,
         title,
         focusId: GLOBAL_FOCUS_ID,
@@ -57,7 +57,7 @@ const createEnqueuePlan = async (
       })
     },
   )
-  return runtime.taskPlans[runtime.taskPlans.length - 1]
+  return runtime.domain.taskPlans[runtime.domain.taskPlans.length - 1]
 }
 
 test('on_worker_slot_freed enqueue plans respect available slot budget', async () => {
@@ -68,10 +68,10 @@ test('on_worker_slot_freed enqueue plans respect available slot budget', async (
   const triggered = await triggerOnWorkerSlotFreedPlans(runtime, Date.now(), 1)
 
   expect(triggered).toEqual({ triggeredCount: 1, stateChanged: true })
-  expect(runtime.tasks).toHaveLength(1)
-  expect(runtime.tasks[0]?.title).toBe('task-one')
-  expect(runtime.taskPlans[0]?.runtime.runCount).toBe(1)
-  expect(runtime.taskPlans[1]?.runtime.runCount).toBe(0)
+  expect(runtime.domain.tasks).toHaveLength(1)
+  expect(runtime.domain.tasks[0]?.title).toBe('task-one')
+  expect(runtime.domain.taskPlans[0]?.runtime.runCount).toBe(1)
+  expect(runtime.domain.taskPlans[1]?.runtime.runCount).toBe(0)
 })
 
 test('on_worker_slot_freed plans do not run when no slot is available', async () => {
@@ -81,6 +81,6 @@ test('on_worker_slot_freed plans do not run when no slot is available', async ()
   const triggered = await triggerOnWorkerSlotFreedPlans(runtime, Date.now(), 0)
 
   expect(triggered).toEqual({ triggeredCount: 0, stateChanged: false })
-  expect(runtime.tasks).toHaveLength(0)
-  expect(runtime.taskPlans[0]?.runtime.runCount).toBe(0)
+  expect(runtime.domain.tasks).toHaveLength(0)
+  expect(runtime.domain.taskPlans[0]?.runtime.runCount).toBe(0)
 })

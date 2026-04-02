@@ -9,19 +9,19 @@ import type { WorkerRuntime } from '../../kernel/orchestrator/runtime-interfaces
 
 export const enqueueWorkerTask = (runtime: WorkerRuntime, task: Task): void => {
   if (task.status !== 'pending') return
-  if (runtime.worker.runningControllers.has(task.id)) return
-  if (runtime.worker.queue.sizeBy({ id: task.id }) > 0) return
-  void runtime.worker.queue
+  if (runtime.process.worker.runningControllers.has(task.id)) return
+  if (runtime.process.worker.queue.sizeBy({ id: task.id }) > 0) return
+  void runtime.process.worker.queue
     .add(() => runQueuedWorker(runtime, task), { id: task.id })
     .catch((error) => reportWorkerQueueError(runtime, error))
 }
 
 export const enqueuePendingWorkerTasks = (runtime: WorkerRuntime): void => {
-  for (const task of runtime.tasks) {
+  for (const task of runtime.domain.tasks) {
     if (
       task.status === 'running' &&
-      !runtime.worker.runningControllers.has(task.id) &&
-      runtime.worker.queue.sizeBy({ id: task.id }) === 0
+      !runtime.process.worker.runningControllers.has(task.id) &&
+      runtime.process.worker.queue.sizeBy({ id: task.id }) === 0
     ) {
       recoverDispatchedTaskToPending({ runtime, taskId: task.id })
       clearTaskLiveOutput(runtime, task.id)
@@ -32,11 +32,11 @@ export const enqueuePendingWorkerTasks = (runtime: WorkerRuntime): void => {
 }
 
 export const workerLoop = async (runtime: WorkerRuntime): Promise<void> => {
-  while (!runtime.session.stopped) {
+  while (!runtime.process.session.stopped) {
     enqueuePendingWorkerTasks(runtime)
     await waitForWorkerLoopSignal(runtime, Number.POSITIVE_INFINITY)
   }
 
-  runtime.worker.queue.pause()
-  runtime.worker.queue.clear()
+  runtime.process.worker.queue.pause()
+  runtime.process.worker.queue.clear()
 }

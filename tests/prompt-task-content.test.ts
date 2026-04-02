@@ -2,7 +2,6 @@ import { expect, test } from 'vitest'
 
 import {
   buildPlansPromptPayload,
-  buildResultsPromptPayload,
   buildTasksPromptPayload,
 } from '../src/foundation/prompting/format.js'
 
@@ -12,46 +11,6 @@ import {
 } from './helpers/runtime-snapshot.js'
 
 import type { TaskResult } from '../src/foundation/types/index.js'
-
-test('buildResultsPromptPayload keeps the latest result per task', () => {
-  const task = createTaskFixture({
-    id: 'task-collapse-1',
-    title: 'Collapse format layer',
-    prompt: 'Refactor prompt format',
-  })
-  const results: TaskResult[] = [
-    {
-      taskId: task.id,
-      status: 'failed',
-      ok: false,
-      output: 'old result',
-      durationMs: 100,
-      completedAt: '2026-03-20T10:00:00.000Z',
-      provider: 'codex',
-    },
-    {
-      taskId: task.id,
-      status: 'succeeded',
-      ok: true,
-      output: 'new result',
-      durationMs: 90,
-      completedAt: '2026-03-20T10:10:00.000Z',
-      provider: 'codex',
-    },
-  ]
-  const payload = buildResultsPromptPayload([task], results, '/tmp')
-
-  expect(payload?.tasks).toHaveLength(1)
-  expect(payload?.tasks[0]).toMatchObject({
-    id: task.id,
-    changed_at: '2026-03-20T10:10:00.000Z',
-    result: {
-      status: 'succeeded',
-      ok: true,
-    },
-  })
-  expect(payload?.tasks[0]).not.toHaveProperty('prompt')
-})
 
 test('buildTasksPromptPayload omits result-only fallback and plan title still falls back to id', () => {
   const resultOnly: TaskResult = {

@@ -48,7 +48,7 @@ export const publishManagerSystemEventInput = async (params: {
     paths: params.runtime.paths,
     payload: input,
   })
-  params.runtime.session.inflightInputs.push(input)
+  params.runtime.process.session.inflightInputs.push(input)
   await bestEffort(`appendLog: ${params.logEvent}`, () =>
     appendLog(params.runtime.paths.log, {
       event: params.logEvent,

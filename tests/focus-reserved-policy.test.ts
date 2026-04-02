@@ -32,7 +32,7 @@ test('setFocusStatus normalizes global focus to active', async () => {
 
   setFocusStatus(runtime, 'focus-global', 'done')
 
-  expect(runtime.focuses[0]?.status).toBe('active')
+  expect(runtime.domain.focuses[0]?.status).toBe('active')
 })
 
 test('updateFocus ignores global focus business context', async () => {
@@ -44,8 +44,8 @@ test('updateFocus ignores global focus business context', async () => {
     openItems: ['next'],
   })
 
-  expect(runtime.focuses[0]?.summary).toBeUndefined()
-  expect(runtime.focuses[0]?.openItems).toBeUndefined()
+  expect(runtime.domain.focuses[0]?.summary).toBeUndefined()
+  expect(runtime.domain.focuses[0]?.openItems).toBeUndefined()
 })
 
 test('updateFocus normalizes global focus status through shared status path', async () => {
@@ -56,7 +56,7 @@ test('updateFocus normalizes global focus status through shared status path', as
     status: 'done',
   })
 
-  expect(runtime.focuses[0]?.status).toBe('active')
+  expect(runtime.domain.focuses[0]?.status).toBe('active')
 })
 
 test('updateFocus digest-only edits do not refresh lastActivityAt', async () => {
@@ -81,7 +81,7 @@ test('updateFocus digest-only edits do not refresh lastActivityAt', async () => 
     openItems: ['Next step'],
   })
 
-  const focus = runtime.focuses[0]
+  const focus = runtime.domain.focuses[0]
   expect(focus?.summary).toBe('Updated digest')
   expect(focus?.openItems).toEqual(['Next step'])
   expect(focus?.lastActivityAt).toBe('2026-03-01T00:00:05.000Z')
@@ -110,8 +110,8 @@ test('focus metadata edits no longer emit webui wake signals', async () => {
   })
   setFocusStatus(runtime, 'focus-local', 'archived')
 
-  expect(runtime.ui.wakeVersion).toBe(0)
-  expect(runtime.ui.wakeEvents.size).toBe(0)
+  expect(runtime.process.ui.wakeVersion).toBe(0)
+  expect(runtime.process.ui.wakeEvents.size).toBe(0)
 })
 
 test('ensureGlobalFocus cleans legacy global focus details', async () => {
@@ -119,7 +119,7 @@ test('ensureGlobalFocus cleans legacy global focus details', async () => {
 
   ensureGlobalFocus(runtime)
 
-  expect(runtime.focuses[0]?.summary).toBeUndefined()
-  expect(runtime.focuses[0]?.openItems).toBeUndefined()
-  expect(runtime.focuses[0]?.status).toBe('active')
+  expect(runtime.domain.focuses[0]?.summary).toBeUndefined()
+  expect(runtime.domain.focuses[0]?.openItems).toBeUndefined()
+  expect(runtime.domain.focuses[0]?.status).toBe('active')
 })

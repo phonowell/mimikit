@@ -5,19 +5,20 @@ import { join } from 'node:path'
 import { expect, test, vi } from 'vitest'
 
 import { rewriteHistory } from '../src/persistence/history/store.js'
+
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 const capturedPayloads: unknown[] = []
 
 vi.mock('../src/policy/memory/refresh/single-call.js', () => ({
-  runMemoryRefreshSingleCall: vi.fn(async (params: { payload: unknown }) => {
+  runMemoryRefreshSingleCall: vi.fn((params: { payload: unknown }) => {
     capturedPayloads.push(params.payload)
-    return {
+    return Promise.resolve({
       mode: 'noop',
       reason: 'test',
       entries: [],
       deleteEntryIds: [],
-    }
+    })
   }),
 }))
 
@@ -107,11 +108,10 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
       },
     },
   ])
-  runtime.manager.memoryRefresh.signalVersion = 1
+  runtime.process.manager.memoryRefresh.signalVersion = 1
 
-  const { requestMemoryRefresh } = await import(
-    '../src/policy/memory/refresh/singleflight.js'
-  )
+  const { requestMemoryRefresh } =
+    await import('../src/policy/memory/refresh/singleflight.js')
 
   requestMemoryRefresh(runtime)
 
@@ -127,8 +127,12 @@ test('requestMemoryRefresh excludes task outputs and plan titles from payload', 
   expect(JSON.stringify(capturedPayloads[0])).not.toContain(
     'Failure details with rollout notes',
   )
-  expect(JSON.stringify(capturedPayloads[0])).not.toContain('Nightly backlog sweep')
-  expect(JSON.stringify(capturedPayloads[0])).toContain('entry_id=memory-release-policy')
+  expect(JSON.stringify(capturedPayloads[0])).not.toContain(
+    'Nightly backlog sweep',
+  )
+  expect(JSON.stringify(capturedPayloads[0])).toContain(
+    'entry_id=memory-release-policy',
+  )
   expect(JSON.stringify(capturedPayloads[0])).not.toContain(
     'Keep the oncall escalation path stable across release weeks.',
   )

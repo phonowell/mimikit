@@ -51,14 +51,14 @@ const runRounds = (params: {
     inputs,
     results,
   })
-  const tasks = selectRecentTasks(runtime.tasks, {
+  const tasks = selectRecentTasks(runtime.domain.tasks, {
     minCount: runtime.config.manager.taskWindow.minCount,
     maxCount: runtime.config.manager.taskWindow.maxCount,
     workingFocusIds,
     latestResultTaskId: results[0]?.taskId,
   })
   const triggeredPlanIds = collectTriggeredPlanIds(inputs)
-  const plansSource = runtime.taskPlans.filter(
+  const plansSource = runtime.domain.taskPlans.filter(
     (plan) => !triggeredPlanIds.has(plan.id),
   )
   const plans = selectRecentPlans(plansSource, {

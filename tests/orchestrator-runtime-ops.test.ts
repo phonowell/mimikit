@@ -12,7 +12,7 @@ const GLOBAL_FOCUS_ID = 'focus-global'
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
   const now = new Date().toISOString()
-  runtime.focuses.push({
+  runtime.domain.focuses.push({
     id: 'focus-choice',
     title: 'Choice',
     status: 'active',
@@ -25,14 +25,14 @@ const createRuntime = async (): Promise<RuntimeState> => {
 
 test('appendUserInput falls back to inbox focus when only global focus exists', async () => {
   const runtime = await createRuntime()
-  runtime.focuses = runtime.focuses.filter(
+  runtime.domain.focuses = runtime.domain.focuses.filter(
     (item) => item.id === GLOBAL_FOCUS_ID,
   )
 
   await appendUserInput(runtime, 'start a new track')
 
-  expect(runtime.session.inflightInputs).toHaveLength(1)
-  const first = runtime.session.inflightInputs[0]
+  expect(runtime.process.session.inflightInputs).toHaveLength(1)
+  const first = runtime.process.session.inflightInputs[0]
   expect(first?.role).toBe('user')
   expect(first?.focusId).toBe(INBOX_FOCUS_ID)
 })

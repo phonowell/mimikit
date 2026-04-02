@@ -4,8 +4,8 @@ export { resolveTaskChangeAt } from '../../work/shared/task-state.js'
 export const resolveSlotStatus = (runtime: WorkerRuntime) => {
   const maxSlots = Math.max(1, runtime.config.worker.maxConcurrent)
   const occupied = Math.max(
-    runtime.worker.queue.pending,
-    runtime.worker.runningControllers.size,
+    runtime.process.worker.queue.pending,
+    runtime.process.worker.runningControllers.size,
   )
   const occupiedSlots = Math.min(maxSlots, Math.max(0, occupied))
   return {

@@ -1,5 +1,6 @@
 import { compareIsoAsc } from '../../foundation/shared/time.js'
 import { readHistory } from '../../persistence/history/store.js'
+import { removeRuntimeFocus } from '../orchestrator/runtime-domain-write.js'
 
 import { isDefaultActiveFocusCandidate } from './reserved.js'
 import { setFocusStatus } from './state.js'
@@ -20,21 +21,21 @@ const maxArchivedFocuses = (runtime: FocusRuntime): number =>
   runtime.config.worker.maxConcurrent * 2
 
 const activeBusinessFocusCount = (runtime: FocusRuntime): number =>
-  runtime.focuses.filter(isDefaultActiveFocusCandidate).length
+  runtime.domain.focuses.filter(isDefaultActiveFocusCandidate).length
 
 const collectReferencedFocusIds = async (
   runtime: FocusRuntime,
 ): Promise<Set<FocusId>> => {
   const ids = new Set<FocusId>()
-  for (const task of runtime.tasks) {
+  for (const task of runtime.domain.tasks) {
     const focusId = task.focusId.trim()
     if (focusId) ids.add(focusId)
   }
-  for (const plan of runtime.taskPlans) {
+  for (const plan of runtime.domain.taskPlans) {
     const focusId = plan.focusId.trim()
     if (focusId) ids.add(focusId)
   }
-  for (const input of runtime.session.inflightInputs) {
+  for (const input of runtime.process.session.inflightInputs) {
     const focusId = input.focusId.trim()
     if (focusId) ids.add(focusId)
   }
@@ -47,7 +48,7 @@ const collectReferencedFocusIds = async (
 }
 
 export const enforceActiveFocusLimit = (runtime: FocusRuntime): void => {
-  const demoteCandidates = runtime.focuses
+  const demoteCandidates = runtime.domain.focuses
     .filter(isDefaultActiveFocusCandidate)
     .sort(compareByActivityAsc)
   while (
@@ -63,7 +64,7 @@ export const enforceActiveFocusLimit = (runtime: FocusRuntime): void => {
 export const pruneArchivedFocuses = async (
   runtime: FocusRuntime,
 ): Promise<void> => {
-  const archived = runtime.focuses
+  const archived = runtime.domain.focuses
     .filter((item) => item.status === 'archived')
     .sort(compareByActivityAsc)
   const referencedFocusIds = await collectReferencedFocusIds(runtime)
@@ -76,6 +77,6 @@ export const pruneArchivedFocuses = async (
       continue
     }
     archived.splice(index, 1)
-    runtime.focuses = runtime.focuses.filter((item) => item.id !== candidate.id)
+    removeRuntimeFocus({ runtime, focusId: candidate.id })
   }
 }

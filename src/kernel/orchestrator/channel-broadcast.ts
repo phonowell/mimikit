@@ -27,7 +27,7 @@ const CHANNEL_SPECS: ChannelSpec[] = [
     source: 'telegram',
     enabled: (runtime) => runtime.config.telegram.enabled,
     resolveTargetId: (runtime) =>
-      trimOrEmpty(runtime.session.channelTargets.telegramChatId) ||
+      trimOrEmpty(runtime.process.session.channelTargets.telegramChatId) ||
       runtime.config.telegram.chatId.trim(),
     send: (runtime, text) =>
       sendTelegramChannelText({
@@ -35,7 +35,7 @@ const CHANNEL_SPECS: ChannelSpec[] = [
         apiRoot: runtime.config.telegram.apiRoot,
         proxy: runtime.config.telegram.proxy,
         chatId:
-          trimOrEmpty(runtime.session.channelTargets.telegramChatId) ||
+          trimOrEmpty(runtime.process.session.channelTargets.telegramChatId) ||
           runtime.config.telegram.chatId.trim(),
         text,
       }),
@@ -100,7 +100,7 @@ export const rememberChannelTargets = (
 ): void => {
   const telegramChatId = trimOrEmpty(meta?.telegramChatId)
   if (telegramChatId)
-    runtime.session.channelTargets.telegramChatId = telegramChatId
+    runtime.process.session.channelTargets.telegramChatId = telegramChatId
 }
 
 export const broadcastUserMessage = async (params: {

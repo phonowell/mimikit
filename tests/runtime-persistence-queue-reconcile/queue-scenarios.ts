@@ -67,8 +67,10 @@ test('hydrateRuntimeState reconciles stale queue cursors', async () => {
 
   await hydrateRuntimeState(runtime)
 
-  expect(runtime.queues).toEqual({ inputsCursor: 0, resultsCursor: 0 })
-  expect(runtime.manager.memoryRefresh.lastProcessedSignalVersion).toBe(3)
+  expect(runtime.domain.queues).toEqual({ inputsCursor: 0, resultsCursor: 0 })
+  expect(runtime.process.manager.memoryRefresh.lastProcessedSignalVersion).toBe(
+    3,
+  )
 })
 
 test('persist+hydrate keeps reusable session on recovered pending task', async () => {
@@ -126,10 +128,12 @@ test('persist+hydrate keeps reusable session on recovered pending task', async (
 
   await hydrateRuntimeState(restored)
 
-  expect(restored.tasks).toHaveLength(1)
-  expect(restored.tasks[0]?.status).toBe('pending')
-  expect(restored.tasks[0]?.startedAt).toBeUndefined()
-  expect(restored.tasks[0]?.sessionId).toBe('session-reuse-after-restart')
-  expect(restored.tasks[0]?.sessionState).toBe('reusable')
-  expect(restored.manager.threadId).toBe('session-manager-persisted')
+  expect(restored.domain.tasks).toHaveLength(1)
+  expect(restored.domain.tasks[0]?.status).toBe('pending')
+  expect(restored.domain.tasks[0]?.startedAt).toBeUndefined()
+  expect(restored.domain.tasks[0]?.sessionId).toBe(
+    'session-reuse-after-restart',
+  )
+  expect(restored.domain.tasks[0]?.sessionState).toBe('reusable')
+  expect(restored.process.manager.threadId).toBe('session-manager-persisted')
 })
