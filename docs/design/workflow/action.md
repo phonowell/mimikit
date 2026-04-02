@@ -9,9 +9,12 @@
 
 ## Turn 协议
 
-- manager 对外只接受单个结构化对象：`{ reply, actions }`
+- manager 对外只接受单个结构化对象：`{ reply, actions, decision }`
 - `reply`：用户可见文本
 - `actions`：结构化 action 数组
+- `decision`：本轮编排判断；仅用于显式声明 `continue | handoff | escalate`
+- 当 `decision.mode = handoff | escalate` 时，必须附结构化 `reason`
+- `decision` 不是自由文本捷径；运行时只会在当前批次已有匹配的结构化结果/反馈证据时承认该停下决定
 - 不存在 `version`
 - 不存在 `reply_text`
 - 不存在 XML 尾巴、`Parsed.attrs` 或外部/内部双语法
@@ -120,9 +123,12 @@
 ## Guardrail
 
 - 证据充分时默认推进；不要因“更稳妥”把已可执行事项退回成多余追问。
+- manager 默认工作模式是“继续推进并做常规判断”；不要把 worker 的“建议下一步”原样退回给用户。
 - `intent-evidence` 是风险分级门禁，不是所有 action 一刀切的字面重叠比较器。
 - `enqueue_task`、`task_control`、`set_plan`、`delete_plan`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
+- 没有新的用户输入时，`task_result` 仍可驱动同一目标内的低风险续跑、常规纠偏、补证据或停在 handoff；不能据此越过高风险门禁。
+- 当本轮是 `task_result`-only 且运行时能确认单一清晰续跑锚点（当前 active plan 与本轮 result task 一致，或本轮 result task 自身带有单条结构化 `handoff.nextSteps[]`）时，manager 若只返回 advisory text、未给任何具体推进 action，会被 follow-up guard 打回 correction；必须改成具体 action，或输出受当前结构化结果/反馈支撑的 `decision` 来明确停在 handoff / 上提。
 - 对 `enqueue_task`，若本轮存在新的用户输入，且当前 focus 中只有一个明确延续目标（单一 active plan 或单一 result task），guard 允许沿该目标继续派发下一步；判定只看结构化一致性：focus、cwd、resource mode 与合同方向是否延续，不要求用户逐字重复整份任务合同。
 - 对 `set_plan` 更新，若用户已明确引用当前 plan，guard 不只看 `title/goal/trigger` 的字面重叠，也会接受对 task contract 中 `scope/acceptance/out_of_scope` 这类方向性变更的直接表达；目标是避免“用户明确说了要改计划推进方式，却因整份替换文本不重叠而被误拦”。
 - `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外，不要求额外显式取消措辞

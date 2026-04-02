@@ -9,6 +9,7 @@ import { resolveManagerPacketMode } from '../prompts/manager-context-packet.js'
 import { resolveManagerContextBudgetDecision } from './context-budget.js'
 import { runManager } from './runner.js'
 
+import type { ManagerTurnDecision } from './manager-turn-schema.js'
 import type {
   ManagerActionFeedback,
   ManagerEnv,
@@ -57,6 +58,7 @@ export const runManagerRoundWithRecovery = async (params: {
 }): Promise<{
   output: string
   actions: Parsed[]
+  decision?: ManagerTurnDecision
   elapsedMs: number
   usage?: TokenUsage
   wakeProfile: ManagerWakeProfile
@@ -162,6 +164,7 @@ export const runManagerRoundWithRecovery = async (params: {
   return {
     output: result.output,
     actions: result.actions,
+    ...(result.decision ? { decision: result.decision } : {}),
     elapsedMs: result.elapsedMs,
     wakeProfile,
     batchId: params.batchId,

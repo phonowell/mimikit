@@ -9,7 +9,7 @@
 ## 现状回读
 
 - `prompts/manager/system.md` 已要求“涉及 task 结果必须附任务归档链接”。
-- `src/policy/manager/direct-task-result-reply.ts` 会在单条 compact 成功结果时直接回给用户。
+- 2026-04-01 起，单条 `task_result` 不再走 `direct-task-result-reply` 快路；result-only 回合同样进入 manager 主决策路径。
 - `src/policy/manager/loop-helpers.ts` 会在 manager fallback 场景下生成稳定 task-result reply。
 - 以上两条用户可见路径此前都缺少稳定的 task id 暴露；fallback 在无 handoff summary 时只会回落到英文通用句式，也不会把 `stopReason` 明确露出。
 
@@ -36,7 +36,6 @@
 ## 修改点
 
 - 新增 `src/policy/manager/task-result-visible-reply.ts`
-- 更新 `src/policy/manager/direct-task-result-reply.ts`
 - 更新 `src/policy/manager/loop-helpers.ts`
 - 更新 `prompts/manager/system.md`
 - 更新 `docs/design/workflow/task.md`
@@ -50,17 +49,18 @@
 - Green: `pnpm vitest run tests/manager-task-result-direct-reply.test.ts tests/manager-loop-helpers.test.ts`
   - 结果：通过。
 - Code review:
-  - 范围：`src/policy/manager/{task-result-visible-reply,direct-task-result-reply,loop-helpers}.ts`、`prompts/manager/system.md`、`docs/design/workflow/task.md`、对应测试与本归档
+  - 范围：`src/policy/manager/{task-result-visible-reply,loop-helpers}.ts`、`prompts/manager/system.md`、`docs/design/workflow/task.md`、对应测试与本归档
   - 结果：未发现需要阻塞合并的 P0/P1/P2 问题；新增 helper 职责单一，且未回渗到 manager 决策层
 - Gate 1: `pnpm type-check`
   - 首次结果：失败；命中 `exactOptionalPropertyTypes`，已改为条件展开 `task/detail` 并收紧 `stopReason` 类型读取
   - 二次结果：通过。
 - Gate 2: `pnpm review-code-changes`
-  - 结果：通过（147 files / 449 tests）。
+- 结果：通过（147 files / 449 tests）。
 
 ## 当前状态
 
 - 解释层最小改动已落地到 code + prompt + doc + tests。
 - 决策层、guard、任务合同与 worker 协议保持不变。
+- 2026-04-01 的 manager 中层化实现已删除 `src/policy/manager/direct-task-result-reply.ts`；当前 task-result 用户可见表达统一经 manager 主回合或 fallback reply 生成。
 - 当前 worktree 质量门禁已通过。
 - `main` 当前在另一 worktree（`/Users/mimiko/Projects/mimikit`）检出；本次 worker runtime 写边界仅覆盖当前 worktree，尚未在本轮内执行 merge back / cleanup。

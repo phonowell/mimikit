@@ -66,6 +66,20 @@ test('buildManagerTurnOutputSchema exposes optional action fields as required nu
   )
 })
 
+test('buildManagerTurnOutputSchema exposes optional top-level decision as required nullable field', () => {
+  const outputSchema = buildManagerTurnOutputSchema().schema as {
+    properties?: Record<string, unknown>
+    required?: string[]
+  }
+
+  expect(outputSchema.required).toContain('decision')
+  expect(outputSchema.properties?.decision).toEqual(
+    expect.objectContaining({
+      anyOf: expect.arrayContaining([{ type: 'null' }]),
+    }),
+  )
+})
+
 test('provider structured output formatting keeps manager action branches closed and fully required', () => {
   const formatted = buildStructuredOutputTextFormat(
     buildManagerTurnOutputSchema(),

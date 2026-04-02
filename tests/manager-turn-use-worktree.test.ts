@@ -12,11 +12,12 @@ test('buildManagerTurnOutputSchema emits a closed top-level object for reply + a
     strict: true,
     schema: {
       type: 'object',
-      required: ['reply', 'actions'],
+      required: ['reply', 'actions', 'decision'],
       additionalProperties: false,
       properties: expect.objectContaining({
         reply: expect.any(Object),
         actions: expect.any(Object),
+        decision: expect.any(Object),
       }),
     },
   })

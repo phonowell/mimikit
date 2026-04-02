@@ -8,10 +8,6 @@ import { resolveDefaultFocusId } from '../../work/focus/index.js'
 
 import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
 import { completeSuccessfulManagerBatch } from './batch-success-finalize.js'
-import {
-  finishBatchWithDirectTaskResultReply,
-  resolveDirectTaskResultReply,
-} from './direct-task-result-reply.js'
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import {
   finishBatchWithoutAgentReply,
@@ -64,27 +60,6 @@ export const processManagerBatch = async (params: {
         nextResultsCursor,
         startedAt,
       })
-      return
-    }
-    const directTaskResultCandidate = resolveDirectTaskResultReply({
-      inputs,
-      results,
-    })
-    const directTaskResultReply = directTaskResultCandidate
-      ? normalizeManagerReplyText(directTaskResultCandidate)
-      : ''
-    if (directTaskResultReply) {
-      await finishBatchWithDirectTaskResultReply({
-        runtime,
-        batchId: `batch-direct-${runtime.manager.turn + 1}`,
-        text: directTaskResultReply,
-        inputs,
-        results,
-        nextInputsCursor,
-        nextResultsCursor,
-        startedAt,
-      })
-      agentAppended = true
       return
     }
     runtime.manager.turn += 1

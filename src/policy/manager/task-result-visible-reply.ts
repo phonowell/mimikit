@@ -78,6 +78,26 @@ const resolveStopReasonLine = (
   return hint ? `停下原因：${reason}（${hint}）` : `停下原因：${reason}`
 }
 
+const resolveRiskLine = (params: {
+  result: TaskResult
+}): string | undefined => {
+  const stopReasonLine = resolveStopReasonLine(params.result.stopReason)
+  if (stopReasonLine) return `当前风险：${stopReasonLine}`
+  const risk = params.result.handoff?.risks?.find(
+    (item) => typeof item === 'string' && item.trim().length > 0,
+  )
+  return risk ? `当前风险：${risk.trim()}` : undefined
+}
+
+const resolveNextStepLine = (params: {
+  result: TaskResult
+}): string | undefined => {
+  const nextStep = params.result.handoff?.nextSteps?.find(
+    (item) => typeof item === 'string' && item.trim().length > 0,
+  )
+  return nextStep ? `下一步：${nextStep.trim()}` : undefined
+}
+
 export const formatManagerVisibleTaskResultReply = (params: {
   task?: Task
   result: TaskResult
@@ -88,9 +108,11 @@ export const formatManagerVisibleTaskResultReply = (params: {
   const lines = [
     `任务 ${resolveTaskResultRef(params.task, params.result)}：${resolveTaskResultStatusText(params.result)}。`,
   ]
-  if (detail) lines.push(detail)
-  const stopReasonLine = resolveStopReasonLine(params.result.stopReason)
-  if (stopReasonLine) lines.push(stopReasonLine)
+  if (detail) lines.push(`阶段结论：${detail}`)
+  const riskLine = resolveRiskLine({ result: params.result })
+  if (riskLine) lines.push(riskLine)
+  const nextStepLine = resolveNextStepLine({ result: params.result })
+  if (nextStepLine) lines.push(nextStepLine)
   lines.push(resolveTaskArchiveLine(params))
   return lines.join('\n')
 }

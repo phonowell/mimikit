@@ -13,6 +13,29 @@ import {
 } from './task-draft-schema.js'
 
 const s = z.string().trim().min(1)
+const managerDecisionReasonSchema = z.enum([
+  'high_risk',
+  'goal_change',
+  'acceptance_change',
+  'evidence_conflict',
+  'evidence_insufficient',
+  'repair_budget_exceeded',
+])
+
+export const managerDecisionSchema = z
+  .strictObject({
+    mode: z.enum(['continue', 'handoff', 'escalate']),
+    reason: managerDecisionReasonSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.mode === 'continue') return
+    if (value.reason) return
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['reason'],
+      message: `decision.mode="${value.mode}" 时必须给出结构化 reason`,
+    })
+  })
 
 export const managerPlanTriggerSchema = z.discriminatedUnion('type', [
   z.strictObject({
@@ -123,6 +146,7 @@ export const managerActionSchema = z.discriminatedUnion('type', [
 export const managerTurnSchema = z.strictObject({
   reply: z.string(),
   actions: z.array(managerActionSchema),
+  decision: managerDecisionSchema.optional(),
 })
 
 export const managerActionParseSchema = z.discriminatedUnion('type', [
@@ -138,8 +162,10 @@ export const managerActionParseSchema = z.discriminatedUnion('type', [
 export const managerTurnParseSchema = z.strictObject({
   reply: z.string(),
   actions: z.array(managerActionParseSchema),
+  decision: managerDecisionSchema.optional(),
 })
 
 export type ManagerTurnAction = z.infer<typeof managerActionSchema>
+export type ManagerTurnDecision = z.infer<typeof managerDecisionSchema>
 export type ManagerTaskDraft = z.infer<typeof managerTaskDraftSchema>
 export type ManagerPlanDraft = z.infer<typeof managerPlanDraftSchema>

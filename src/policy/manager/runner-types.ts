@@ -1,4 +1,7 @@
-import type { ManagerTurnAction } from './manager-turn-schema.js'
+import type {
+  ManagerTurnAction,
+  ManagerTurnDecision,
+} from './manager-turn-schema.js'
 import type {
   ManagerContextPacket,
   TokenUsage,
@@ -16,6 +19,7 @@ export type ManagerRetryPolicy = {
 export type RunManagerResult = {
   output: string
   actions: ManagerTurnAction[]
+  decision?: ManagerTurnDecision
   elapsedMs: number
   usage?: TokenUsage
   threadId?: string | null

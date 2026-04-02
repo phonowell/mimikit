@@ -40,6 +40,8 @@ duplicate_action_generic: |
   action 执行失败：重复 action。
 remember_memory_not_stable: |
   remember_memory 执行失败：content 必须是可跨轮复用的单行稳定规则/偏好 digest，不能直接写任务过程文本、checklist、协议标签或 runtime 引用。当前问题：{{ reason }}。
+missing_result_followup_action: |
+  当前是 `task_result`-only 回合，已有明确续跑锚点（{{ continuation_anchor }}）。不要只给“建议下一步”这类说明文本；请直接输出具体 action（如 `enqueue_task` / `set_plan` / 合法的治理动作），或输出带结构化 `decision` 的 handoff / 上提判断。
 stable_digest_issue_multiline: |
   包含多行文本；请收敛为单行 digest。
 stable_digest_issue_checklist: |

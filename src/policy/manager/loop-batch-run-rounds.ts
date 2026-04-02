@@ -18,6 +18,7 @@ import {
   updateManagerRoundDiagnostics,
 } from './loop-batch-run-rounds-diagnostics.js'
 
+import type { ManagerTurnDecision } from './manager-turn-schema.js'
 import type {
   FocusId,
   Task,
@@ -43,6 +44,7 @@ export const runManagerCorrectionRounds = async (params: {
   parsed: {
     text: string
     actions: Parsed[]
+    decision?: ManagerTurnDecision
   }
   usage?: TokenUsage
   elapsedMs: number
@@ -69,6 +71,7 @@ export const runManagerCorrectionRounds = async (params: {
   let lastParsed: {
     text: string
     actions: Parsed[]
+    decision?: ManagerTurnDecision
   } = { text: '', actions: [] }
   const resultTaskIds = new Set(results.map((item) => item.taskId))
   const allowAskUserChoice =
@@ -126,6 +129,7 @@ export const runManagerCorrectionRounds = async (params: {
     const parsed = {
       text: runResult.output,
       actions: runResult.actions,
+      ...(runResult.decision ? { decision: runResult.decision } : {}),
     }
     lastParsed = parsed
     const followup = await resolveRoundFollowup({
@@ -133,7 +137,9 @@ export const runManagerCorrectionRounds = async (params: {
       batchId: params.batchId,
       roundId: runResult.roundId,
       inputs,
+      results,
       parsed: parsed.actions,
+      ...(parsed.decision ? { decision: parsed.decision } : {}),
       output: runResult.output,
       allowAskUserChoice,
       resultTaskIds,

@@ -31,6 +31,24 @@ const resolveLatestResult = (results: TaskResult[]): TaskResult | undefined => {
   return sorted[0]
 }
 
+const FALLBACK_RESULT_OUTPUT_MAX_CHARS = 280
+const FALLBACK_RESULT_OUTPUT_MAX_LINES = 4
+
+const resolveFallbackResultDetail = (
+  result: TaskResult,
+): string | undefined => {
+  const handoffSummary = result.handoff?.summary?.trim()
+  if (handoffSummary) return handoffSummary
+  if (!result.ok || result.status !== 'succeeded') return undefined
+  const output = result.output.trim()
+  if (!output) return undefined
+  if (output.includes('```')) return undefined
+  if (output.length > FALLBACK_RESULT_OUTPUT_MAX_CHARS) return undefined
+  if (output.split(/\r?\n/).length > FALLBACK_RESULT_OUTPUT_MAX_LINES)
+    return undefined
+  return output
+}
+
 const buildFallbackResultReply = (params: {
   results: TaskResult[]
   tasks: RuntimeTaskCollection
@@ -39,12 +57,12 @@ const buildFallbackResultReply = (params: {
   const latestResult = resolveLatestResult(params.results)
   if (!latestResult) return undefined
   const task = params.tasks.find((item) => item.id === latestResult.taskId)
-  const handoffSummary = latestResult.handoff?.summary?.trim()
+  const detail = resolveFallbackResultDetail(latestResult)
   return formatManagerVisibleTaskResultReply({
     result: latestResult,
     workDir: params.workDir,
     ...(task ? { task } : {}),
-    ...(handoffSummary ? { detail: handoffSummary } : {}),
+    ...(detail ? { detail } : {}),
   })
 }
 

@@ -5,6 +5,7 @@ import { canonicalizeTaskDraft } from '../../foundation/shared/task-draft-canoni
 
 import {
   type ManagerTurnAction,
+  type ManagerTurnDecision,
   managerTurnParseSchema,
   managerTurnSchema,
 } from './manager-turn-schema.js'
@@ -56,7 +57,11 @@ export const buildManagerTurnOutputSchema = (): Record<string, unknown> => {
 
 export const parseManagerTurn = (
   value: unknown,
-): { reply: string; actions: ManagerTurnAction[] } => {
+): {
+  reply: string
+  actions: ManagerTurnAction[]
+  decision?: ManagerTurnDecision
+} => {
   const parsed = managerTurnParseSchema.parse(stripNullFields(value))
   const normalized = {
     reply: parsed.reply,
@@ -78,10 +83,12 @@ export const parseManagerTurn = (
       }
       return action
     }),
+    ...(parsed.decision ? { decision: parsed.decision } : {}),
   }
   const strictParsed = managerTurnSchema.parse(normalized)
   return {
     reply: strictParsed.reply,
     actions: strictParsed.actions,
+    ...(strictParsed.decision ? { decision: strictParsed.decision } : {}),
   }
 }

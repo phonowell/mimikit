@@ -35,7 +35,9 @@ test('buildFallbackReply uses stable template for input-only rounds', async () =
       tasks: [],
       workDir: '/tmp/mimikit',
     }),
-  ).resolves.toBe('继续处理。')
+  ).resolves.toBe(
+    '我会继续按当前目标推进；若出现高风险、证据冲突或需要改写目标/验收标准，我再抬给你决策。',
+  )
 })
 
 test('buildFallbackReply summarizes latest result instead of echoing raw output', async () => {
@@ -59,7 +61,7 @@ test('buildFallbackReply summarizes latest result instead of echoing raw output'
       workDir: '/tmp/mimikit',
     }),
   ).resolves.toBe(
-    '任务 Ship release（task-1）：已完成。\nRelease branch is ready for review.\n[任务归档](.mimikit/tasks/2026-03-23/task-1_ship-release.md)',
+    '任务 Ship release（task-1）：已完成。\n阶段结论：Release branch is ready for review.\n[任务归档](.mimikit/tasks/2026-03-23/task-1_ship-release.md)',
   )
 })
 
@@ -81,6 +83,6 @@ test('buildFallbackReply surfaces stop reason when result stops without summary'
       workDir: '/tmp/mimikit',
     }),
   ).resolves.toBe(
-    '任务 Ship release（task-1）：已失败。\n停下原因：input_required（需要补充输入）\n任务归档: 未生成',
+    '任务 Ship release（task-1）：已失败。\n当前风险：停下原因：input_required（需要补充输入）\n任务归档: 未生成',
   )
 })

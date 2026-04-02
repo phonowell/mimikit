@@ -73,6 +73,7 @@ export type ManagerEnv = {
 
 export type ManagerActionFeedbackCode =
   | 'intent_evidence_missing'
+  | 'missing_result_followup_action'
   | 'task_contract_missing'
   | 'invalid_action_args'
 

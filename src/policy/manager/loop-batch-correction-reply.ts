@@ -8,8 +8,9 @@ const collectUniqueHints = (feedback: ManagerActionFeedback[]): string[] =>
     (hint) => hint.length > 0,
   )
 
-const isSelfRepairableActionFeedback = (item: ManagerActionFeedback): boolean =>
-  item.error === 'invalid_action_args'
+const isRetryableActionFeedback = (item: ManagerActionFeedback): boolean =>
+  item.error === 'invalid_action_args' ||
+  item.code === 'missing_result_followup_action'
 
 export const shouldRetrySelfRepairRound = (
   round: number,
@@ -17,7 +18,7 @@ export const shouldRetrySelfRepairRound = (
 ): boolean =>
   round === 2 &&
   feedback.length > 0 &&
-  feedback.every((item) => isSelfRepairableActionFeedback(item))
+  feedback.every((item) => isRetryableActionFeedback(item))
 
 export const buildCorrectionFallbackReply = (
   feedback: ManagerActionFeedback[],
@@ -26,6 +27,8 @@ export const buildCorrectionFallbackReply = (
   if (!first) return GENERIC_CORRECTION_REPLY
   const uniqueHints = collectUniqueHints(feedback)
   if (uniqueHints.length === 0) return GENERIC_CORRECTION_REPLY
+  if (feedback.every((item) => item.code === 'missing_result_followup_action'))
+    return `当前结果回合还缺一个具体的继续推进动作，本轮先停止重试。${uniqueHints.join('；')}`
   if (feedback.every((item) => item.action === first.action))
     return `当前 ${first.action} 动作无法继续执行，本轮先停止重试。${uniqueHints.join('；')}`
 

@@ -8,8 +8,13 @@ import {
   hasNoFollowupRequests,
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
+import { resolveResultFollowupFeedback } from './task-result-followup-guard.js'
 
-import type { ManagerWakeProfile } from '../../foundation/types/index.js'
+import type { ManagerTurnDecision } from './manager-turn-schema.js'
+import type {
+  ManagerWakeProfile,
+  TaskResult,
+} from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
@@ -63,7 +68,9 @@ export const resolveRoundFollowup = async (params: {
   batchId?: string
   roundId?: string
   inputs?: Parameters<typeof buildActionFeedbackContext>[0]['inputs']
+  results?: TaskResult[]
   parsed: Parsed[]
+  decision?: ManagerTurnDecision
   output: string
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
@@ -86,13 +93,29 @@ export const resolveRoundFollowup = async (params: {
     },
     params.output,
   )
-  const actionFeedback = validation.feedback
   const filteredActions =
     validation.suppressedActionIndexes.length > 0
       ? params.parsed.filter(
           (_, index) => !validation.suppressedActionIndexes.includes(index),
         )
       : undefined
+  const actionableParsed = filteredActions ?? params.parsed
+  const resultFollowupFeedback = resolveResultFollowupFeedback({
+    runtime: params.runtime,
+    ...(params.inputs ? { inputs: params.inputs } : {}),
+    ...(params.results ? { results: params.results } : {}),
+    parsed: actionableParsed,
+    ...(params.decision ? { decision: params.decision } : {}),
+    wakeProfile: params.wakeProfile,
+    resultTaskIds: params.resultTaskIds,
+    currentFeedback: validation.feedback,
+    ...(params.roundExtra?.actionFeedback
+      ? { priorActionFeedback: params.roundExtra.actionFeedback }
+      : {}),
+  })
+  const actionFeedback = resultFollowupFeedback
+    ? [...validation.feedback, resultFollowupFeedback]
+    : validation.feedback
   if (validation.suppressedActionIndexes.length > 0) {
     await appendLog(params.runtime.paths.log, {
       event: 'manager_action_suppressed',

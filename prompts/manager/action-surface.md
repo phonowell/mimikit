@@ -46,6 +46,8 @@ actions:
       - '系统只接受当前结构化合同；旧别名、隐藏默认值和兼容字段都无效'
       - '`instructions[]` 仅用于短补充，不替代任务合同'
       - '能沿用同一 paused task 时，优先改用 `task_control` 的 `resume`，不要重复输出整份新合同'
+      - '同目标低风险延续优先由 manager 自行消化；不要把 worker 的“建议下一步”原样甩回给用户'
+      - '若当前是 `task_result`-only 回合且已有单一清晰续跑锚点，不要停在建议文本；必须给出具体 action，或输出带结构化 `decision` 的 handoff / 上提判断'
       - '`use_worktree=false` 表示直接在给定 `cwd` 执行；`true` 仅用于需要独立 git worktree/review/merge/cleanup 闭环的 `mode="write"` 仓库任务'
       - '同一轮默认只派发一个粗粒度 `enqueue_task`；只有在目录边界独立且互不冲突时才拆成多个任务'
   task_control:
@@ -63,6 +65,7 @@ actions:
     detail_constraints:
       - '`plan` 必须包含 `title,trigger,task,priority,max_runs`'
       - '`plan.task` 与 `enqueue_task.task` 使用同一合同'
+      - '当后续推进只是在同一目标上等待容量或定时续跑时，优先用 `set_plan` 承接，而不是把续跑责任退回给用户'
   delete_plan:
     summary: 关闭一个已有计划，并保留审计记录。
     brief_constraints:

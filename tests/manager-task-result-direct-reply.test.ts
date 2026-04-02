@@ -1,25 +1,47 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 
-const { requestMemoryRefreshMock } = vi.hoisted(() => ({
+const hoistedMocks = vi.hoisted(() => ({
   requestMemoryRefreshMock: vi.fn(),
+  runManagerBatchMock: vi.fn(),
 }))
 
 vi.mock('../src/policy/memory/refresh/singleflight.js', () => ({
-  requestMemoryRefresh: requestMemoryRefreshMock,
+  requestMemoryRefresh: hoistedMocks.requestMemoryRefreshMock,
+}))
+
+vi.mock('../src/policy/manager/loop-batch-run-manager.js', () => ({
+  runManagerBatch: hoistedMocks.runManagerBatchMock,
 }))
 
 import { readHistory } from '../src/persistence/history/store.js'
-import { resolveDirectTaskResultReply } from '../src/policy/manager/direct-task-result-reply.js'
 import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
 
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 beforeEach(() => {
-  requestMemoryRefreshMock.mockClear()
+  hoistedMocks.requestMemoryRefreshMock.mockClear()
+  hoistedMocks.runManagerBatchMock.mockReset()
+  hoistedMocks.runManagerBatchMock.mockResolvedValue({
+    parsed: {
+      text: '我会继续推进当前目标；如遇高风险或证据冲突，再抬给你决策。',
+      actions: [],
+    },
+    usage: {
+      input: 13,
+      output: 8,
+      total: 21,
+    },
+    elapsedMs: 25,
+    diagnostics: {
+      batchId: 'batch-manager-followup',
+      roundCount: 1,
+      roundId: 'round-manager-followup',
+    },
+  })
 })
 
-test('processManagerBatch directly delivers compact single task_result output', async () => {
+test('processManagerBatch routes single task_result batches through manager follow-up instead of direct reply fast path', async () => {
   const task = createTaskFixture({
     id: 'task-explain-reject',
     title: '解释 remember_memory provenance 校验被拒原因',
@@ -57,10 +79,12 @@ test('processManagerBatch directly delivers compact single task_result output', 
     nextResultsCursor: 1,
   })
 
+  expect(hoistedMocks.runManagerBatchMock).toHaveBeenCalledTimes(1)
+
   const history = await readHistory(runtime.paths.history)
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
-    text: '任务 解释 remember_memory provenance 校验被拒原因（task-explain-reject）：已完成。\n结论是：remember_memory 没有写入不是存储失败，而是 provenance 校验拒绝了该 action。\nsource_quote 没有命中当前用户输入原文，因此本轮不能写入长期记忆。\n[任务归档](.mimikit/tasks/2026-03-25/task-explain-reject.md)',
+    text: '我会继续推进当前目标；如遇高风险或证据冲突，再抬给你决策。',
     usage: {
       input: 13,
       output: 8,
@@ -68,59 +92,14 @@ test('processManagerBatch directly delivers compact single task_result output', 
     },
     elapsedMs: 25,
   })
-  expect(task.result?.output).toBe(`Task "${task.title}" completed.`)
   expect(runtime.queues.resultsCursor).toBe(1)
 })
 
-test('resolveDirectTaskResultReply rejects oversized output', () => {
-  expect(
-    resolveDirectTaskResultReply({
-      inputs: [],
-      results: [
-        {
-          taskId: 'task-long-output',
-          status: 'succeeded',
-          ok: true,
-          output: `长输出\n${'x'.repeat(1300)}`,
-          durationMs: 25,
-          completedAt: '2026-03-25T06:08:56.942Z',
-        },
-      ],
-    }),
-  ).toBeUndefined()
-})
-
-test('resolveDirectTaskResultReply rejects mixed wake batches', () => {
-  expect(
-    resolveDirectTaskResultReply({
-      inputs: [
-        {
-          id: 'input-user',
-          role: 'user',
-          text: '解释一下',
-          createdAt: '2026-03-25T06:07:45.613Z',
-          focusId: 'focus-global',
-        },
-      ],
-      results: [
-        {
-          taskId: 'task-explain-reject',
-          status: 'succeeded',
-          ok: true,
-          output: '结论正文',
-          durationMs: 25,
-          completedAt: '2026-03-25T06:08:56.942Z',
-        },
-      ],
-    }),
-  ).toBeUndefined()
-})
-
-test('processManagerBatch flushes pending restart before memory refresh on direct task_result reply', async () => {
+test('processManagerBatch flushes pending restart after result-only manager follow-up', async () => {
   const requestExitMock = vi.fn()
   const task = createTaskFixture({
     id: 'task-direct-restart',
-    title: '直接回复后触发 manager restart',
+    title: '结果回合继续推进后触发 manager restart',
     status: 'running',
   })
   const runtime = await createTestRuntimeState({
@@ -151,10 +130,11 @@ test('processManagerBatch flushes pending restart before memory refresh on direc
     nextResultsCursor: 1,
   })
 
+  expect(hoistedMocks.runManagerBatchMock).toHaveBeenCalledTimes(1)
   expect(requestExitMock).toHaveBeenCalledWith({
     code: 75,
     reason: 'manager_restart_requested',
     skipPersist: true,
   })
-  expect(requestMemoryRefreshMock).not.toHaveBeenCalled()
+  expect(hoistedMocks.requestMemoryRefreshMock).not.toHaveBeenCalled()
 })

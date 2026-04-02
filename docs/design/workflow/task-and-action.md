@@ -12,11 +12,11 @@
 
 ## 关系图
 
-1. manager 输出单个结构化 turn：`{ reply, actions }`
+1. manager 输出单个结构化 turn：`{ reply, actions, decision }`
 2. `enqueue_task` 直接创建 task
 3. `set_plan` 创建或整体替换持续触发计划；计划触发后只派发 `enqueue_task`
 4. task / plan / history 通过 `assign_focus` 归属到某个 `focusId`
-5. worker 把执行结果压缩后回流给 manager
+5. worker 把执行结果压缩后回流给 manager；manager 在同目标低风险场景下默认继续推进，只在真正的例外场景上提
 
 ## 单一事实源
 

@@ -1,7 +1,16 @@
-import { expect, test, vi } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
+
+const hoistedMocks = vi.hoisted(() => ({
+  requestMemoryRefreshMock: vi.fn(),
+  runManagerBatchMock: vi.fn(),
+}))
 
 vi.mock('../src/policy/memory/refresh/singleflight.js', () => ({
-  requestMemoryRefresh: vi.fn(),
+  requestMemoryRefresh: hoistedMocks.requestMemoryRefreshMock,
+}))
+
+vi.mock('../src/policy/manager/loop-batch-run-manager.js', () => ({
+  runManagerBatch: hoistedMocks.runManagerBatchMock,
 }))
 
 import { readHistory } from '../src/persistence/history/store.js'
@@ -9,6 +18,24 @@ import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
 
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
+
+beforeEach(() => {
+  hoistedMocks.requestMemoryRefreshMock.mockClear()
+  hoistedMocks.runManagerBatchMock.mockReset()
+  hoistedMocks.runManagerBatchMock.mockResolvedValue({
+    parsed: {
+      text: '',
+      actions: [],
+    },
+    usage: undefined,
+    elapsedMs: 18,
+    diagnostics: {
+      batchId: 'batch-closure-pending',
+      roundCount: 1,
+      roundId: 'round-closure-pending',
+    },
+  })
+})
 
 test('processManagerBatch renders closure-pending result as not-yet-completed', async () => {
   const task = createTaskFixture({
@@ -48,6 +75,6 @@ test('processManagerBatch renders closure-pending result as not-yet-completed', 
   const history = await readHistory(runtime.paths.history)
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
-    text: '任务 收尾 output tokens 收缩（task-closure-pending）：待收尾。\n实现完成，待主仓收尾。\n停下原因：closure_pending（待执行 merge/cleanup 收尾）\n[任务归档](.mimikit/tasks/2026-04-01/task-closure-pending.md)',
+    text: '任务 收尾 output tokens 收缩（task-closure-pending）：待收尾。\n阶段结论：实现完成，待主仓收尾。\n当前风险：停下原因：closure_pending（待执行 merge/cleanup 收尾）\n[任务归档](.mimikit/tasks/2026-04-01/task-closure-pending.md)',
   })
 })

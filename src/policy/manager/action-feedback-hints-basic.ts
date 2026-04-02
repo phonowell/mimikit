@@ -131,3 +131,10 @@ export const formatStableDigestIssueHint = (
 
 export const formatRememberMemoryNotStableHint = (reason: string): string =>
   renderActionFeedbackHint('remember_memory_not_stable', { reason })
+
+export const formatMissingResultFollowupActionHint = (
+  continuationAnchor: string,
+): string =>
+  renderActionFeedbackHint('missing_result_followup_action', {
+    continuation_anchor: continuationAnchor,
+  })
