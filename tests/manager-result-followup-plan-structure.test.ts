@@ -5,24 +5,29 @@ import { resolveRoundFollowup } from '../src/policy/manager/loop-batch-round-fol
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-test('resolveRoundFollowup allows advisory-only follow-up when multiple active plans exist but exactly one is structurally anchored to the finished task', async () => {
+test('resolveRoundFollowup rejects advisory-only result follow-up when the only active plan changes worktree semantics', async () => {
   const runtime = await createTestRuntimeState({
-    workDir: '/tmp/mimikit-followup-plan-anchor-multi-test',
+    workDir: '/tmp/mimikit-followup-plan-structure-test',
     withGlobalFocus: false,
     patch: {
       tasks: [
         createTaskFixture({
-          id: 'task-finished-plan-anchor-multi',
+          id: 'task-finished-plan-structure',
           title: '实现 auth guard 下一步落地修改',
           cwd: '/repo/mimikit',
           resourceMode: 'write',
           focusId: 'focus-inbox',
           status: 'succeeded',
+          git: {
+            worktreePath: '/repo/.worktrees/auth-guard',
+            branch: 'fix/auth-guard',
+            closureRequired: true,
+          },
         }),
       ],
       taskPlans: [
         {
-          id: 'plan-followup-anchor-target',
+          id: 'plan-followup-structure-mismatch',
           title: '按整体方案推进 auth guard 主线',
           focusId: 'focus-inbox',
           priority: 'normal',
@@ -32,7 +37,7 @@ test('resolveRoundFollowup allows advisory-only follow-up when multiple active p
           },
           effect: {
             kind: 'enqueue_task',
-            taskKey: 'task-key-followup-anchor-target',
+            taskKey: 'task-key-followup-structure-mismatch',
             taskContract: {
               goal: '按整体方案推进 auth guard 主线',
               scope: '只处理 auth guard 主线',
@@ -40,47 +45,16 @@ test('resolveRoundFollowup allows advisory-only follow-up when multiple active p
             },
             taskTemplate: {
               title: '按整体方案推进 auth guard 主线',
-              executionSpecId: 'spec-followup-anchor-target',
+              executionSpecId: 'spec-followup-structure-mismatch',
               cwd: '/repo/mimikit',
               resourceMode: 'write',
+              useWorktree: false,
             },
           },
           createdAt: '2026-04-02T00:04:00.000Z',
           updatedAt: '2026-04-02T00:04:00.000Z',
           runtime: {
             runCount: 1,
-            lastTaskId: 'task-finished-plan-anchor-multi',
-          },
-        },
-        {
-          id: 'plan-followup-anchor-other',
-          title: '并行的另一个 active plan',
-          focusId: 'focus-inbox',
-          priority: 'normal',
-          status: 'active',
-          trigger: {
-            mode: 'on_worker_slot_freed',
-          },
-          effect: {
-            kind: 'enqueue_task',
-            taskKey: 'task-key-followup-anchor-other',
-            taskContract: {
-              goal: '处理另一条主线',
-              scope: '只处理另一条主线',
-              acceptance: ['另一条主线继续推进'],
-            },
-            taskTemplate: {
-              title: '另一条主线任务',
-              executionSpecId: 'spec-followup-anchor-other',
-              cwd: '/repo/other',
-              resourceMode: 'write',
-            },
-          },
-          createdAt: '2026-04-02T00:04:00.000Z',
-          updatedAt: '2026-04-02T00:04:00.000Z',
-          runtime: {
-            runCount: 1,
-            lastTaskId: 'task-other',
           },
         },
       ],
@@ -92,26 +66,31 @@ test('resolveRoundFollowup allows advisory-only follow-up when multiple active p
     inputs: [],
     results: [
       {
-        taskId: 'task-finished-plan-anchor-multi',
+        taskId: 'task-finished-plan-structure',
         status: 'succeeded',
         ok: true,
-        output: '已完成当前子步，继续推进下一批整改。',
+        output: '已完成当前子步。',
         durationMs: 12,
         completedAt: '2026-04-02T00:05:00.000Z',
         stopReason: 'completed',
         handoff: {
           summary: '当前子步已完成。',
+          nextSteps: ['继续推进同一目标的下一步闭环'],
         },
       },
     ],
     parsed: [],
     output: '建议下一步继续推进同一目标，但我先停在这里。',
     allowAskUserChoice: true,
-    resultTaskIds: new Set(['task-finished-plan-anchor-multi']),
+    resultTaskIds: new Set(['task-finished-plan-structure']),
     wakeProfile: 'task_result',
   })
 
-  expect(followup).toMatchObject({
-    done: true,
+  expect(followup.done).toBe(false)
+  if (followup.done) return
+  expect(followup.extra.actionFeedback?.[0]).toMatchObject({
+    action: 'manager_followup',
+    error: 'action_execution_rejected',
+    code: 'missing_result_followup_action',
   })
 })

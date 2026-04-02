@@ -8,9 +8,6 @@ const hasExplicitStopDecision = (
   decision: ManagerTurnDecision | undefined,
 ): boolean => decision?.mode === 'handoff' || decision?.mode === 'escalate'
 
-const hasStructuredRisks = (result: TaskResult): boolean =>
-  (result.handoff?.risks ?? []).some((item) => item.trim().length > 0)
-
 export const hasSupportedStopDecision = (params: {
   decision: ManagerTurnDecision | undefined
   result: TaskResult
@@ -23,7 +20,7 @@ export const hasSupportedStopDecision = (params: {
     case 'high_risk':
     case 'evidence_conflict':
     case 'evidence_insufficient':
-      return hasStructuredRisks(params.result)
+      return true
     case 'repair_budget_exceeded':
       return Boolean(params.priorActionFeedback?.length)
     default:

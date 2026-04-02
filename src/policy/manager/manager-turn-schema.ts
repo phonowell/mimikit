@@ -13,6 +13,7 @@ import {
 } from './task-draft-schema.js'
 
 const s = z.string().trim().min(1)
+const optionalInlineString = z.string().trim().optional()
 const managerContinuationAnchorSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('task'),
@@ -137,14 +138,14 @@ export const rememberMemoryActionSchema = z.strictObject({
   type: z.literal('remember_memory'),
   content: s,
   source_input_id: s,
-  source_quote: s,
+  source_quote: optionalInlineString,
 })
 
 export const rememberProjectProfileActionSchema = z.strictObject({
   type: z.literal('remember_project_profile'),
   content: s,
   source_input_id: s,
-  source_quote: s,
+  source_quote: optionalInlineString,
 })
 
 export const managerActionSchema = z.discriminatedUnion('type', [

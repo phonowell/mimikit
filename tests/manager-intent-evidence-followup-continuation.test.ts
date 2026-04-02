@@ -68,7 +68,7 @@ test('resolveRoundFollowup keeps enqueue_task continuation when a single current
   expect(followup.done).toBe(true)
 })
 
-test('resolveRoundFollowup rejects advisory-only result follow-up when a single current plan clearly anchors continuation', async () => {
+test('resolveRoundFollowup allows advisory-only result follow-up when a single current plan already provides runtime-managed continuation', async () => {
   const runtime = await createTestRuntimeState({
     workDir: '/tmp/mimikit-followup-requires-action-test',
     withGlobalFocus: false,
@@ -135,15 +135,7 @@ test('resolveRoundFollowup rejects advisory-only result follow-up when a single 
     wakeProfile: 'task_result',
   })
 
-  expect(followup.done).toBe(false)
-  if (followup.done) return
-  expect(followup.extra.actionFeedback).toHaveLength(1)
-  expect(followup.extra.actionFeedback?.[0]).toMatchObject({
-    action: 'manager_followup',
-    error: 'action_execution_rejected',
-    code: 'missing_result_followup_action',
+  expect(followup).toMatchObject({
+    done: true,
   })
-  expect(followup.extra.actionFeedback?.[0]?.hint).toContain('task_result')
-  expect(followup.extra.actionFeedback?.[0]?.hint).toContain('具体 action')
-  expect(followup.extra.actionFeedback?.[0]?.hint).toContain('decision')
 })

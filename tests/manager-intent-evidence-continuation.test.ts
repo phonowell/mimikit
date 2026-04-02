@@ -109,7 +109,7 @@ test('enqueue_task stays allowed when a single result task is the only current c
   expect(feedback).toHaveLength(0)
 })
 
-test('enqueue_task stays blocked when the single result task does not match the proposed next step', () => {
+test('enqueue_task stays blocked when the single result task changes execution lane', () => {
   const finishedTask = createIntentEvidenceTask({
     id: 'task-finished-auth-guard-unrelated',
     title: '收敛 auth guard 的主链',
@@ -129,7 +129,7 @@ test('enqueue_task stays blocked when the single result task does not match the 
         type: 'enqueue_task',
         task: {
           title: '重写支付结算链路',
-          cwd: '/repo/auth-guard',
+          cwd: '/repo/payments',
           mode: 'write',
           goal: '重写支付结算链路并补齐回归测试',
           in_scope: ['只处理 payment checkout'],

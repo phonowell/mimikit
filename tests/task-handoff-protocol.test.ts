@@ -34,3 +34,17 @@ test('buildStructuredTaskHandoff ignores worker-provided git lifecycle writes', 
     cleaned: false,
   })
 })
+
+test('buildStructuredTaskHandoff keeps auxiliary fields even when summary is omitted', () => {
+  const handoff = buildStructuredTaskHandoff({
+    handoff: {
+      decisions: ['Enabled feature flag'],
+      next_steps: ['Monitor rollout'],
+    },
+  })
+
+  expect(handoff).toEqual({
+    decisions: ['Enabled feature flag'],
+    nextSteps: ['Monitor rollout'],
+  })
+})

@@ -1,10 +1,6 @@
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 
-import {
-  formatDialogActionSourceInputMissingHint,
-  formatDialogActionSourceQuoteMissingHint,
-  formatDialogActionSourceQuoteUnanchoredHint,
-} from './action-evidence-hints.js'
+import { formatDialogActionSourceInputMissingHint } from './action-evidence-hints.js'
 import {
   rememberMemoryActionSchema,
   rememberProjectProfileActionSchema,
@@ -17,7 +13,7 @@ type DialogEvidenceActionName = 'remember_memory' | 'remember_project_profile'
 
 type DialogActionWithProvenance = {
   source_input_id: string
-  source_quote: string
+  source_quote?: string | undefined
 }
 
 const validateDialogActionIntentEvidence = <
@@ -38,11 +34,8 @@ const validateDialogActionIntentEvidence = <
   if (!sourceInput)
     return formatDialogActionSourceInputMissingHint(params.actionName)
   const sourceText = normalizeInlineWhitespace(sourceInput.text)
-  const sourceQuote = normalizeInlineWhitespace(parsed.data.source_quote)
-  if (!sourceText || !sourceQuote)
-    return formatDialogActionSourceQuoteMissingHint(params.actionName)
-  if (!sourceText.includes(sourceQuote))
-    return formatDialogActionSourceQuoteUnanchoredHint(params.actionName)
+  if (!sourceText)
+    return formatDialogActionSourceInputMissingHint(params.actionName)
   return undefined
 }
 

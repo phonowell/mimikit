@@ -13,8 +13,6 @@ const actionEvidenceHintSchema = z
     task_control_intent_evidence_missing: z.string().trim().min(1),
     set_plan_intent_evidence_missing: z.string().trim().min(1),
     dialog_action_source_input_missing: z.string().trim().min(1),
-    dialog_action_source_quote_missing: z.string().trim().min(1),
-    dialog_action_source_quote_unanchored: z.string().trim().min(1),
   })
   .strict()
 
@@ -64,19 +62,5 @@ export const formatDialogActionSourceInputMissingHint = (
   actionName: 'remember_memory' | 'remember_project_profile',
 ): string =>
   renderHint('dialog_action_source_input_missing', {
-    action_name: actionName,
-  })
-
-export const formatDialogActionSourceQuoteMissingHint = (
-  actionName: 'remember_memory' | 'remember_project_profile',
-): string =>
-  renderHint('dialog_action_source_quote_missing', {
-    action_name: actionName,
-  })
-
-export const formatDialogActionSourceQuoteUnanchoredHint = (
-  actionName: 'remember_memory' | 'remember_project_profile',
-): string =>
-  renderHint('dialog_action_source_quote_unanchored', {
     action_name: actionName,
   })

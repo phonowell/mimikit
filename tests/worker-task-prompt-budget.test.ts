@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, expect, test } from 'vitest'
 
 import {
+  normalizeWorkerTaskPrompt,
   prepareWorkerTaskPrompt,
   WORKER_TASK_PROMPT_INLINE_MAX_BYTES,
 } from '../src/execution/prompts/build-worker-task-prompt.js'
@@ -36,10 +37,7 @@ test('prepareWorkerTaskPrompt keeps tiny prompts inline', async () => {
   expect(result).toBe(prompt)
   await expect(
     access(
-      join(
-        workDir,
-        'generated/worker-task-prompts/2026-03-23/task-inline.md',
-      ),
+      join(workDir, 'generated/worker-task-prompts/2026-03-23/task-inline.md'),
     ),
   ).rejects.toBeDefined()
 })
@@ -63,4 +61,24 @@ test('prepareWorkerTaskPrompt externalizes prompts above the inline threshold', 
   expect(result).toContain('full_prompt_path:')
   expect(result).toContain(promptPath)
   expect(await readFile(promptPath, 'utf8')).toBe(prompt)
+})
+
+test('normalizeWorkerTaskPrompt extracts wrapped prompt even without environment block', () => {
+  expect(
+    normalizeWorkerTaskPrompt('<M:prompt>\n只执行当前任务正文。\n</M:prompt>'),
+  ).toBe('只执行当前任务正文。')
+})
+
+test('normalizeWorkerTaskPrompt drops environment wrapper without requiring prompt wrapper', () => {
+  expect(
+    normalizeWorkerTaskPrompt(
+      [
+        '<M:environment>',
+        'cwd: /repo/mimikit',
+        '</M:environment>',
+        '',
+        '直接执行当前任务正文。',
+      ].join('\n'),
+    ),
+  ).toBe('直接执行当前任务正文。')
 })

@@ -22,7 +22,7 @@ export const rememberMemorySchema = z
   .object({
     content: nonEmptyString,
     source_input_id: nonEmptyString,
-    source_quote: nonEmptyString,
+    source_quote: z.string().trim().optional(),
   })
   .strict()
 
@@ -30,7 +30,7 @@ export const rememberProjectProfileSchema = z
   .object({
     content: nonEmptyString,
     source_input_id: nonEmptyString,
-    source_quote: nonEmptyString,
+    source_quote: z.string().trim().optional(),
   })
   .strict()
 

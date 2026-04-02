@@ -57,7 +57,7 @@ test('runManagerCorrectionRounds explains insufficient evidence for risky action
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('enqueue_task 动作无法继续执行')
-  expect(result.parsed.text).toContain('intent-evidence guard 未通过')
-  expect(result.parsed.text).toContain('task_result')
+  expect(result.parsed.text).toContain('没有足够的直接授权')
+  expect(result.parsed.text).toContain('要执行什么')
+  expect(result.parsed.text).toContain('现有任务或计划')
 })

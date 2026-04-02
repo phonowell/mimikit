@@ -1,6 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
+import {
+  collectManagerActionFeedback,
+  collectManagerActionValidationOutcome,
+} from '../src/policy/manager/action-feedback-collect.js'
 
 import type { UserInput } from '../src/foundation/types/index.js'
 
@@ -12,8 +15,8 @@ const createUserInput = (text: string): UserInput => ({
   focusId: 'focus-inbox',
 })
 
-test('remember_memory is blocked for unstable multiline process text', () => {
-  const feedback = collectManagerActionFeedback(
+test('remember_memory suppresses unstable multiline process text instead of surfacing reply-breaking feedback', () => {
+  const outcome = collectManagerActionValidationOutcome(
     [
       {
         type: 'remember_memory',
@@ -33,14 +36,12 @@ test('remember_memory is blocked for unstable multiline process text', () => {
     },
   )
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('remember_memory')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('单行稳定规则/偏好 digest')
+  expect(outcome.feedback).toHaveLength(0)
+  expect(outcome.suppressedActionIndexes).toEqual([0])
 })
 
-test('remember_memory is blocked for runtime object references', () => {
-  const feedback = collectManagerActionFeedback(
+test('remember_memory suppresses runtime object references instead of surfacing reply-breaking feedback', () => {
+  const outcome = collectManagerActionValidationOutcome(
     [
       {
         type: 'remember_memory',
@@ -58,19 +59,17 @@ test('remember_memory is blocked for runtime object references', () => {
     },
   )
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('remember_memory')
-  expect(feedback[0]?.hint).toContain('运行时对象引用')
+  expect(outcome.feedback).toHaveLength(0)
+  expect(outcome.suppressedActionIndexes).toEqual([0])
 })
 
-test('remember_memory rejects source quote that is not anchored in the current user input', () => {
-  const feedback = collectManagerActionFeedback(
+test('remember_memory suppresses unmatched source_input_id instead of surfacing auxiliary write failure', () => {
+  const outcome = collectManagerActionValidationOutcome(
     [
       {
         type: 'remember_memory',
         content: 'Always keep replies concise and in Chinese.',
-        source_input_id: 'input-user',
-        source_quote: '后续都请保持中文且简洁回复。',
+        source_input_id: 'input-other',
       },
     ],
     {
@@ -78,10 +77,8 @@ test('remember_memory rejects source quote that is not anchored in the current u
     },
   )
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('remember_memory')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('source_quote')
+  expect(outcome.feedback).toHaveLength(0)
+  expect(outcome.suppressedActionIndexes).toEqual([0])
 })
 
 test('remember_memory requires current user input provenance fields', () => {
@@ -113,7 +110,6 @@ test('remember_memory stays allowed for direct stable preference evidence', () =
         type: 'remember_memory',
         content: 'Always keep replies concise and in Chinese.',
         source_input_id: 'input-user',
-        source_quote: '后续都请保持中文且简洁回复',
       },
     ],
     {
@@ -128,7 +124,7 @@ test('remember_memory stays allowed for direct stable preference evidence', () =
   expect(feedback).toHaveLength(0)
 })
 
-test('remember_memory allows normalized stable digest when source quote is anchored in the current user input', () => {
+test('remember_memory still accepts optional source_quote when provided', () => {
   const feedback = collectManagerActionFeedback(
     [
       {

@@ -70,6 +70,7 @@
 - 结构：`{ type: "task_control", task_id, action, instructions }`
 - `action = pause | resume | cancel`
 - `instructions[]` 仅在 `action="resume"` 时作为下一轮恢复补充说明，其余情况必须为空数组。
+- 对 `resume`，若当前 focus 下只有一个 paused task，guard 允许把泛化续跑输入直接落到该 task；不再要求用户重复 `task_id/title` 或旧合同词面。
 
 ### `set_plan`
 
@@ -93,22 +94,25 @@
 - 结构：`{ type: "assign_focus", target_type, target_id, focus_id }`
 - `target_type = task | plan | history`
 - 这是唯一保留的 focus action；不再允许 manager 直接写 `summary/openItems`
+- 属于辅助归属写入；schema 不完整或 target 在当前 runtime snapshot 中不可用时，优先 suppress，不得污染主回复
 
 ### `remember_memory`
 
-- 结构：`{ type: "remember_memory", content, source_input_id, source_quote }`
+- 结构：`{ type: "remember_memory", content, source_input_id, source_quote? }`
 - `content` 必须是单行稳定 digest，且 `<= 240 chars`
 - checklist、多行过程文本、协议标签和 runtime 引用会被拒绝
 - `source_input_id` 必须命中当前轮真实用户输入
-- `source_quote` 必须是该输入中的原文片段
+- `source_quote` 为可选审计提示；拿不准原文片段时留空
 - runtime 只校验 provenance 与内容 hygiene；不再用词面 overlap / 历史重复命中去猜测 `content` 是否“被用户说过”
+- 这类记忆/档案写入属于辅助动作；即使落盘阶段失败，也只能记录内部 apply feedback，不得污染主回复
 
 ### `remember_project_profile`
 
-- 结构：`{ type: "remember_project_profile", content, source_input_id, source_quote }`
+- 结构：`{ type: "remember_project_profile", content, source_input_id, source_quote? }`
 - 复用 `remember_memory` 的内容 hygiene guard 与 provenance 必填要求
-- `content` 可以在 `source_quote` 基础上做最小归纳，但不得脱离原意
+- `content` 可以基于当前输入做最小归纳，但不得脱离原意
 - 文件路径按 `runtime.startup.worktree` 绑定；不同 repo / worktree 不共享 profile
+- apply 阶段若写盘失败，同样只允许内部记录，不得把失败升级成用户可见主链阻塞
 
 ## 执行语义
 
@@ -128,12 +132,13 @@
 - `enqueue_task`、`task_control`、`set_plan`、`delete_plan`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
 - 没有新的用户输入时，`task_result` 仍可驱动同一目标内的低风险续跑、常规纠偏、补证据或停在 handoff；不能据此越过高风险门禁。
-- 当本轮是 `task_result`-only 且运行时能确认单一清晰续跑锚点（当前 active plan 与本轮 result task 一致，或本轮 result task 自身带有单条结构化 `handoff.nextSteps[]`）时，manager 若只返回 advisory text、未给任何具体推进 action，会被 follow-up guard 打回 correction；必须改成具体 action，或输出受当前结构化结果/反馈支撑的 `decision` 来明确停在 handoff / 上提。
+- 当本轮是 `task_result`-only 且运行时能确认单一清晰续跑锚点（当前 active plan 与本轮 result task 在 `cwd/resource mode/useWorktree` 上一致，或本轮 result task 自身带有单条结构化 `handoff.nextSteps[]`）时，manager 若只返回 advisory text、未给任何具体推进 action，会被 follow-up guard 打回 correction；必须改成具体 action，或输出受当前结构化结果/反馈支撑的 `decision` 来明确停在 handoff / 上提。
 - 当 `enqueue_task` / `set_plan` 明确是在延续当前单一锚点时，应优先填写结构化 `continuation_of={ type:"plan"|"task", id }`；guard 先按该锚点判定是否允许续跑，再退回文本证据兜底。
-- 对 `enqueue_task`，若本轮存在新的用户输入，且当前 focus 中只有一个明确延续目标（单一 active plan 或单一 result task），guard 允许沿该目标继续派发下一步；判定只看结构化一致性：focus、cwd、resource mode 与合同方向是否延续，不要求用户逐字重复整份任务合同。
-- 对 `set_plan` 更新，若用户已明确引用当前 plan，guard 不只看 `title/goal/trigger` 的字面重叠，也会接受对 task contract 中 `scope/acceptance/out_of_scope` 这类方向性变更的直接表达；目标是避免“用户明确说了要改计划推进方式，却因整份替换文本不重叠而被误拦”。
-- `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外，不要求额外显式取消措辞
-- 两个 remember action 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入，且 `source_quote` 必须命中该输入原文；不满足时显式拒绝，不再静默 suppress
+- 对 `enqueue_task`，若本轮存在新的用户输入，且当前 focus 中只有一个明确延续目标（单一 active plan 或单一 result task），guard 允许沿该目标继续派发下一步；当前判定只看结构化一致性：focus、cwd、resource mode 与 worktree 语义是否延续，不要求用户逐字重复整份任务合同，也不再把词面相似度当成主链准入条件。
+- 对 `set_plan` 更新，若用户已明确引用当前 plan，且更新仍保持同一执行 lane（`cwd/resource mode/useWorktree` 不变），guard 会按结构化变更放行：`title/trigger/priority/max_runs` 与 task contract 中 `goal/scope/acceptance/out_of_scope` 的真实差异都可直接支撑更新，不再要求模型碰巧复述对应词面。
+- `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外；只要 replacement `enqueue_task` 本身有当前输入支撑，就不要求再额外命中同题材词面或显式取消措辞
+- `task_control(resume)` 支持“当前 focus 下只有一个 paused task”这一结构化例外；只要目标 task 就是该唯一 paused task，就不要求用户额外点名 `task_id/title` 或复述旧合同。若当前 focus 下存在多个 paused task，则仍需显式指认或更强证据。
+- 两个 remember action 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入；`source_quote` 仅作可选审计提示，不再作为硬门槛
 
 ## Action Surface
 

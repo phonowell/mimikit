@@ -7,7 +7,10 @@ import {
   formatStableDigestIssueHint,
 } from './action-feedback-hints.js'
 import { validateRememberMemoryIntentEvidence } from './action-intent-evidence-dialog-memory.js'
-import { rejected, type ValidationIssue } from './action-validation-helpers.js'
+import {
+  suppressed,
+  type ValidationIssue,
+} from './action-validation-helpers.js'
 import { rememberMemoryActionSchema } from './manager-turn-schema.js'
 
 import type { UserInput } from '../../foundation/types/index.js'
@@ -30,7 +33,7 @@ export const validateRememberMemoryAction = (
 
   const contentIssue = resolveRememberMemoryContentIssue(result.data.content)
   if (contentIssue) {
-    return rejected(
+    return suppressed(
       formatRememberMemoryNotStableHint(
         formatRememberMemoryIssue(contentIssue),
       ),
@@ -41,5 +44,5 @@ export const validateRememberMemoryAction = (
     item,
     ...(context.inputs ? { inputs: context.inputs } : {}),
   })
-  return evidenceResult ? rejected(evidenceResult) : []
+  return evidenceResult ? suppressed(evidenceResult) : []
 }

@@ -6,12 +6,11 @@ import {
   createContinueAction,
   type ManagerActionDefinition,
 } from './action-registry-shared.js'
+import { validateAssignFocusAction } from './action-validation-assign-focus.js'
 import {
   validateRememberMemory,
   validateRememberProjectProfile,
-  validateWithSchema,
 } from './action-validation.js'
-import { assignFocusActionSchema } from './manager-turn-schema.js'
 
 export const DIALOG_ACTION_DEFINITIONS = [] satisfies ManagerActionDefinition[]
 
@@ -22,7 +21,7 @@ export const FOCUS_ACTION_DEFINITIONS = [
       domain: 'focus',
       prompt: ACTION_PROMPT_SPECS.assign_focus,
     },
-    (item) => validateWithSchema(item, assignFocusActionSchema),
+    (item, context) => validateAssignFocusAction(item, context),
     applyAssignFocusAction,
   ),
 ] satisfies ManagerActionDefinition[]

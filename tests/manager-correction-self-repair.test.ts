@@ -114,10 +114,10 @@ test('runManagerCorrectionRounds summarizes repeated invalid set_plan feedback i
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('当前 set_plan 动作无法继续执行')
-  expect(result.parsed.text).toContain('plan.trigger')
-  expect(result.parsed.text).toContain('plan.task.done_when')
-  expect(result.parsed.text).not.toContain('最终要我产出什么')
+  expect(result.parsed.text).toContain('当前这轮计划没有形成合法配置')
+  expect(result.parsed.text).toContain('何时触发')
+  expect(result.parsed.text).toContain('任务边界')
+  expect(result.parsed.text).not.toContain('plan.trigger')
 })
 
 test('runManagerCorrectionRounds gives manager one repair round when result-only follow-up is missing a concrete action', async () => {

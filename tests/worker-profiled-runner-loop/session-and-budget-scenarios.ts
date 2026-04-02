@@ -76,30 +76,30 @@ test('runWorkerLoop attaches provider diagnostics to archived failure errors', a
   }
 })
 
-test('runWorkerLoop makes a single provider call and fails when completion protocol is missing', async () => {
+test('runWorkerLoop keeps reply-only structured output and lets runtime backfill handoff', async () => {
   const stateDir = await createTmpDir()
   const prompts: string[] = []
   const task = createTask('test-threaded-continue')
 
   try {
-    await expect(
-      runWorkerLoop({
-        stateDir,
-        task,
-        prompt: task.title,
-        archiveBase: { role: 'worker', taskId: task.id },
-        runModel: ({ prompt }) => {
-          prompts.push(prompt)
-          return Promise.resolve({
-            output: 'ROUND_ONE_SENTINEL',
-            elapsedMs: 10,
-            threadId: 'session-worker-1',
-          })
-        },
-      }),
-    ).rejects.toThrow('missing structured result')
+    const result = await runWorkerLoop({
+      stateDir,
+      task,
+      prompt: task.title,
+      archiveBase: { role: 'worker', taskId: task.id },
+      runModel: ({ prompt }) => {
+        prompts.push(prompt)
+        return Promise.resolve({
+          output: '{"reply":"ROUND_ONE_SENTINEL"}',
+          elapsedMs: 10,
+          threadId: 'session-worker-1',
+        })
+      },
+    })
 
     expect(prompts).toEqual([task.title])
+    expect(result.output).toBe('ROUND_ONE_SENTINEL')
+    expect(result.handoff).toEqual({})
   } finally {
     await rm(stateDir, { recursive: true, force: true })
   }

@@ -106,7 +106,7 @@ export const runWorkerLoop = async (
     }
     if (!parsedTurn) {
       throw new Error(
-        `[worker] task incomplete after single run: missing structured result {reply,handoff}; last_output=${JSON.stringify(output || 'empty_output')}`,
+        `[worker] task incomplete after single run: missing structured result {reply}; last_output=${JSON.stringify(output || 'empty_output')}`,
       )
     }
     const finalOutput = parsedTurn.reply.trim()

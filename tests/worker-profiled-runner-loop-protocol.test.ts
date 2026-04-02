@@ -29,7 +29,7 @@ const createTask = (id: string): Task => ({
   createdAt: '2026-03-04T00:00:00.000Z',
 })
 
-test('worker structured output schema requires a single reply + handoff object', () => {
+test('worker structured output schema requires reply and allows optional handoff', () => {
   expect(buildWorkerTurnOutputSchema()).toMatchObject({
     type: 'json_schema',
     name: 'worker_turn',
@@ -38,7 +38,20 @@ test('worker structured output schema requires a single reply + handoff object',
       type: 'object',
       required: ['reply', 'handoff'],
       additionalProperties: false,
+      properties: {
+        handoff: {
+          anyOf: expect.any(Array),
+        },
+      },
     },
+  })
+
+  expect(
+    parseWorkerTurn({
+      reply: '结论：已完成',
+    }),
+  ).toEqual({
+    reply: '结论：已完成',
   })
 
   expect(

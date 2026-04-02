@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { collectManagerActionFeedback } from '../../src/policy/manager/action-feedback-collect.js'
+import { collectManagerActionValidationOutcome } from '../../src/policy/manager/action-feedback-collect.js'
 
 test('ask_user_choice is treated as an unregistered action', () => {
-  const feedback = collectManagerActionFeedback([
+  const feedback = collectManagerActionValidationOutcome([
     {
       type: 'ask_user_choice',
       question: 'choose format',
@@ -15,13 +15,13 @@ test('ask_user_choice is treated as an unregistered action', () => {
     },
   ])
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('ask_user_choice')
-  expect(feedback[0]?.error).toBe('unregistered_action')
+  expect(feedback.feedback).toHaveLength(1)
+  expect(feedback.feedback[0]?.action).toBe('ask_user_choice')
+  expect(feedback.feedback[0]?.error).toBe('unregistered_action')
 })
 
-test('assign_focus requires explicit target_type', () => {
-  const feedback = collectManagerActionFeedback([
+test('assign_focus suppresses malformed auxiliary focus writes instead of surfacing invalid_action_args', () => {
+  const outcome = collectManagerActionValidationOutcome([
     {
       type: 'assign_focus',
       target_id: 'task-1',
@@ -29,8 +29,25 @@ test('assign_focus requires explicit target_type', () => {
     },
   ] as never)
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('assign_focus')
-  expect(feedback[0]?.error).toBe('invalid_action_args')
-  expect(feedback[0]?.hint).toContain('target_type')
+  expect(outcome.feedback).toHaveLength(0)
+  expect(outcome.suppressedActionIndexes).toEqual([0])
+})
+
+test('assign_focus suppresses missing task targets instead of surfacing auxiliary write failure', () => {
+  const outcome = collectManagerActionValidationOutcome(
+    [
+      {
+        type: 'assign_focus',
+        target_type: 'task',
+        target_id: 'task-missing',
+        focus_id: 'focus-demo',
+      },
+    ],
+    {
+      taskById: new Map(),
+    },
+  )
+
+  expect(outcome.feedback).toHaveLength(0)
+  expect(outcome.suppressedActionIndexes).toEqual([0])
 })

@@ -123,12 +123,14 @@ export const buildTaskResultHandoff = (
 
 export const normalizeWorkerStructuredHandoff = (params: {
   task: Task
-  handoff: unknown
+  handoff?: unknown
 }): TaskResultHandoff =>
-  buildStructuredTaskHandoff({
-    git: params.task.git,
-    handoff: params.handoff,
-  }) ?? {}
+  params.handoff === undefined
+    ? {}
+    : (buildStructuredTaskHandoff({
+        git: params.task.git,
+        handoff: params.handoff,
+      }) ?? {})
 
 export const withTaskArchiveEvidence = (
   handoff: TaskResultHandoff | undefined,

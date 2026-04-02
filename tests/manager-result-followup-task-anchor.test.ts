@@ -116,7 +116,7 @@ test('resolveRoundFollowup allows explicit escalation decision without actions w
   })
 })
 
-test('resolveRoundFollowup rejects explicit escalation decision without structured stop evidence', async () => {
+test('resolveRoundFollowup allows explicit escalation decision without requiring worker risks scaffolding', async () => {
   const runtime = await createTestRuntimeState({
     workDir: '/tmp/mimikit-followup-task-anchor-unsupported-escalate-test',
     withGlobalFocus: false,
@@ -164,10 +164,7 @@ test('resolveRoundFollowup rejects explicit escalation decision without structur
     wakeProfile: 'task_result',
   })
 
-  expect(followup.done).toBe(false)
-  if (followup.done) return
-  expect(followup.extra.actionFeedback?.[0]).toMatchObject({
-    action: 'manager_followup',
-    code: 'missing_result_followup_action',
+  expect(followup).toMatchObject({
+    done: true,
   })
 })

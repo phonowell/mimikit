@@ -1,6 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { collectManagerActionFeedback } from '../src/policy/manager/action-feedback-collect.js'
+import {
+  collectManagerActionFeedback,
+  collectManagerActionValidationOutcome,
+} from '../src/policy/manager/action-feedback-collect.js'
 
 import type { UserInput } from '../src/foundation/types/index.js'
 
@@ -12,14 +15,13 @@ const createUserInput = (text: string): UserInput => ({
   focusId: 'focus-inbox',
 })
 
-test('remember_project_profile stays allowed for repo-bound digest anchored by source quote', () => {
+test('remember_project_profile stays allowed for repo-bound digest with current-input provenance only', () => {
   const feedback = collectManagerActionFeedback(
     [
       {
         type: 'remember_project_profile',
         content: '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
         source_input_id: 'input-user',
-        source_quote: '后续统一用 pnpm + tsx 命令，不再补 npm 兼容脚本',
       },
     ],
     {
@@ -34,14 +36,13 @@ test('remember_project_profile stays allowed for repo-bound digest anchored by s
   expect(feedback).toHaveLength(0)
 })
 
-test('remember_project_profile rejects source quote that is not anchored in the current user input', () => {
-  const feedback = collectManagerActionFeedback(
+test('remember_project_profile suppresses unmatched source_input_id instead of surfacing auxiliary write failure', () => {
+  const outcome = collectManagerActionValidationOutcome(
     [
       {
         type: 'remember_project_profile',
         content: '当前阶段先只收敛 manager，不动 worker。',
-        source_input_id: 'input-user',
-        source_quote: '先只收敛 manager，不动 worker',
+        source_input_id: 'input-other',
       },
     ],
     {
@@ -49,13 +50,11 @@ test('remember_project_profile rejects source quote that is not anchored in the 
     },
   )
 
-  expect(feedback).toHaveLength(1)
-  expect(feedback[0]?.action).toBe('remember_project_profile')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('source_quote')
+  expect(outcome.feedback).toHaveLength(0)
+  expect(outcome.suppressedActionIndexes).toEqual([0])
 })
 
-test('remember_project_profile allows minimal summarization without requiring content overlap with the current user input', () => {
+test('remember_project_profile still accepts optional source_quote when provided', () => {
   const feedback = collectManagerActionFeedback(
     [
       {

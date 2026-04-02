@@ -7,7 +7,10 @@ import {
   formatStableDigestIssueHint,
 } from './action-feedback-hints.js'
 import { validateRememberProjectProfileIntentEvidence } from './action-intent-evidence-dialog-memory.js'
-import { rejected, type ValidationIssue } from './action-validation-helpers.js'
+import {
+  suppressed,
+  type ValidationIssue,
+} from './action-validation-helpers.js'
 import { rememberProjectProfileActionSchema } from './manager-turn-schema.js'
 
 import type { UserInput } from '../../foundation/types/index.js'
@@ -31,7 +34,7 @@ export const validateRememberProjectProfileAction = (
 
   const contentIssue = resolveRememberMemoryContentIssue(result.data.content)
   if (contentIssue) {
-    return rejected(
+    return suppressed(
       formatRememberMemoryNotStableHint(
         formatRememberProjectProfileIssue(contentIssue),
       ),
@@ -42,5 +45,5 @@ export const validateRememberProjectProfileAction = (
     item,
     ...(context.inputs ? { inputs: context.inputs } : {}),
   })
-  return evidenceResult ? rejected(evidenceResult) : []
+  return evidenceResult ? suppressed(evidenceResult) : []
 }

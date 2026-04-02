@@ -58,9 +58,10 @@ export const formatProjectProfilePrompt = (
   entries: ProjectProfileEntry[],
 ): string =>
   entries
-    .map(
-      (entry) =>
-        `- ${entry.content}\n  source_quote: ${entry.sourceQuote || '未记录'}`,
+    .map((entry) =>
+      entry.sourceQuote
+        ? `- ${entry.content}\n  source_quote: ${entry.sourceQuote}`
+        : `- ${entry.content}`,
     )
     .join('\n')
 
@@ -71,7 +72,7 @@ export const rememberProjectProfileEntry = (
   runSerialized(profilePath, async () => {
     const content = normalizeText(input.content)
     const sourceInputId = normalizeInline(input.sourceInputId)
-    const sourceQuote = normalizeInline(input.sourceQuote)
+    const sourceQuote = normalizeInline(input.sourceQuote ?? '')
     const entries = await readProjectProfileEntries(profilePath)
     const normalizedContent = normalizeInline(content).toLowerCase()
     const existingIndex = entries.findIndex(
@@ -102,7 +103,7 @@ export const rememberProjectProfileEntry = (
     const current = entries[existingIndex]
     if (
       current?.sourceInputId === sourceInputId &&
-      current.sourceQuote === sourceQuote
+      (current.sourceQuote ?? '') === sourceQuote
     ) {
       return {
         entryId: current.id,
@@ -114,12 +115,14 @@ export const rememberProjectProfileEntry = (
 
     if (!current)
       throw new Error('project_profile_entry_not_found_after_lookup')
-    const updated: ProjectProfileEntry = {
+    const updatedBase = {
       ...current,
       sourceInputId,
-      sourceQuote,
       updatedAt: nowIso(),
     }
+    const updated: ProjectProfileEntry = sourceQuote
+      ? { ...updatedBase, sourceQuote }
+      : updatedBase
     const nextEntries = [...entries]
     nextEntries[existingIndex] = updated
     await writeProjectProfileEntries(

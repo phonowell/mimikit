@@ -15,8 +15,6 @@ export const WORKER_TASK_PROMPT_INLINE_MAX_BYTES = 256
 export const WORKER_TASK_PROMPT_PREVIEW_MAX_CHARS = 150
 
 const WORKER_SECTION_PROMPT_RE = /<M:prompt>\s*([\s\S]*?)\s*<\/M:prompt>/i
-const WORKER_SECTION_ENVIRONMENT_TEST_RE =
-  /<M:environment>[\s\S]*?<\/M:environment>/i
 const WORKER_SECTION_ENVIRONMENT_GLOBAL_RE =
   /<M:environment>[\s\S]*?<\/M:environment>/gi
 const WORKER_BLANK_LINE_RUN_RE = /\n{3,}/g
@@ -40,7 +38,6 @@ const withWorkerPromptBudget = (value: string): string => {
 }
 
 const extractWrappedTaskPrompt = (value: string): string | undefined => {
-  if (!WORKER_SECTION_ENVIRONMENT_TEST_RE.test(value)) return undefined
   const match = WORKER_SECTION_PROMPT_RE.exec(value)
   if (!match?.[1]) return undefined
   const extracted = match[1].trim()

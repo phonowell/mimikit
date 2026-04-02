@@ -39,7 +39,7 @@ const handoffGitLifecycleSchema = z
 
 export const workerTaskHandoffSchema = z
   .object({
-    summary: z.string().trim().min(1),
+    summary: z.string().trim().min(1).optional(),
     decisions: z.array(z.string().trim().min(1)).max(8).optional(),
     next_steps: z.array(z.string().trim().min(1)).max(8).optional(),
     risks: z.array(z.string().trim().min(1)).max(8).optional(),
@@ -62,7 +62,7 @@ export const buildStructuredTaskHandoff = (params: {
       ...params.git,
     } satisfies TaskGitExecution)
   return {
-    summary: parsed.summary,
+    ...(parsed.summary ? { summary: parsed.summary } : {}),
     ...(parsed.decisions ? { decisions: [...parsed.decisions] } : {}),
     ...(parsed.next_steps ? { nextSteps: [...parsed.next_steps] } : {}),
     ...(parsed.risks ? { risks: [...parsed.risks] } : {}),

@@ -3,6 +3,7 @@ import {
   buildMissingIntentEvidenceHint,
   isSupportedByInputs,
 } from './action-intent-evidence-match.js'
+import { hasStructuredSetPlanReferenceUpdate } from './action-intent-evidence-set-plan-structure.js'
 import {
   collectSetPlanCandidates,
   collectSetPlanChangedCandidates,
@@ -34,13 +35,8 @@ export const validateSetPlanIntentEvidence = (params: {
         : {}),
     },
   )
-  if (explicitContinuationSupport !== undefined) {
+  if (explicitContinuationSupport !== undefined)
     if (explicitContinuationSupport) return undefined
-    return buildMissingIntentEvidenceHint({
-      actionName: params.item.type,
-      evidenceSources: params.supplementalEvidenceSources,
-    })
-  }
 
   const candidates = collectSetPlanCandidates(params.item)
   const combinedCandidate = [
@@ -70,13 +66,23 @@ export const validateSetPlanIntentEvidence = (params: {
       isSupportedByInputs({
         candidates: planReferenceCandidates,
         inputs: params.inputTexts,
-      }) &&
-      hasLooseSetPlanSupport({
-        candidates: collectSetPlanChangedCandidates(params.item, currentPlan),
-        inputTexts: params.inputTexts,
       })
-    )
-      return undefined
+    ) {
+      if (
+        hasStructuredSetPlanReferenceUpdate({
+          item: params.item,
+          currentPlan,
+        })
+      )
+        return undefined
+      if (
+        hasLooseSetPlanSupport({
+          candidates: collectSetPlanChangedCandidates(params.item, currentPlan),
+          inputTexts: params.inputTexts,
+        })
+      )
+        return undefined
+    }
   }
 
   return buildMissingIntentEvidenceHint({

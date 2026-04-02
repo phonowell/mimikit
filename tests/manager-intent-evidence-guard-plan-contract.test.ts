@@ -78,3 +78,78 @@ test('set_plan update stays allowed when user references the current plan and ch
 
   expect(feedback).toHaveLength(0)
 })
+
+test('set_plan update stays allowed when user references the current plan and only changes schedule priority and run budget', () => {
+  const currentPlan: TaskPlan = {
+    id: 'plan-soften-schedule-budget',
+    title: '按整体方案推进后续整改',
+    focusId: 'focus-inbox',
+    priority: 'high',
+    status: 'active',
+    trigger: {
+      mode: 'cron',
+      cron: '0 */30 * * * *',
+      timeZone: 'Asia/Shanghai',
+    },
+    effect: {
+      kind: 'enqueue_task',
+      taskKey: 'task-key-soften-schedule-budget',
+      taskContract: {
+        goal: '持续推进整体方案中的剩余整改',
+        scope: '按当前节奏持续推进',
+        acceptance: ['当前轮次推进完成'],
+      },
+      taskTemplate: {
+        title: '按整体方案推进后续整改',
+        executionSpecId: 'spec-soften-schedule-budget',
+        cwd: '/repo/mimikit',
+        resourceMode: 'write',
+      },
+    },
+    createdAt: '2026-03-29T03:00:00.000Z',
+    updatedAt: '2026-03-29T03:00:00.000Z',
+    runtime: {
+      runCount: 0,
+    },
+  }
+
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'set_plan',
+        plan_id: currentPlan.id,
+        plan: {
+          title: currentPlan.title,
+          trigger: {
+            type: 'on_worker_slot_freed',
+          },
+          task: {
+            title: currentPlan.effect.taskTemplate.title,
+            cwd: '/repo/mimikit',
+            mode: 'write',
+            goal: currentPlan.effect.taskContract?.goal ?? '',
+            in_scope: ['按当前节奏持续推进'],
+            out_of_scope: [],
+            done_when: ['当前轮次推进完成'],
+            context_refs: [],
+            instructions: [],
+          },
+          priority: 'low',
+          max_runs: 1,
+        },
+      },
+    ],
+    {
+      inputs: [
+        createUserInput(
+          'plan-soften-schedule-budget 这个计划别再每隔半小时硬跑了，等有空闲 worker 再继续，只保留一轮，优先级也降下来。',
+        ),
+      ],
+      planStatusById: new Map([[currentPlan.id, currentPlan.status]]),
+      planById: new Map([[currentPlan.id, currentPlan]]),
+      supplementalEvidenceSources: new Set(['task_result'] as const),
+    },
+  )
+
+  expect(feedback).toHaveLength(0)
+})

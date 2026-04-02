@@ -12,7 +12,7 @@ beforeEach(() => {
   resetRememberMemoryMocks()
 })
 
-test('runManagerCorrectionRounds keeps remember_memory actions when source quote is anchored in current input', async () => {
+test('runManagerCorrectionRounds keeps remember_memory actions when current input provenance is valid', async () => {
   mockRememberMemoryRound(
     '我会记住这条规则。',
     'session-remember-memory-kept',
@@ -148,7 +148,7 @@ test('runManagerCorrectionRounds preserves non-memory reply text when remember_m
   })
 })
 
-test('runManagerCorrectionRounds keeps remember_project_profile reply and action when source quote is anchored in current input', async () => {
+test('runManagerCorrectionRounds keeps remember_project_profile reply and action when current input provenance is valid', async () => {
   mockRememberMemoryRound(
     '我现在把这条仓库规则写入项目档案。',
     'session-project-profile-kept-claim',

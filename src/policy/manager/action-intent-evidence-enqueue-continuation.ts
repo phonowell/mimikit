@@ -8,8 +8,6 @@ import { buildTaskContractFromDraft } from './task-contract.js'
 import type { Task, TaskPlan } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-const PLAN_CONTINUATION_OVERLAP_THRESHOLD = 0.35
-const RESULT_TASK_CONTINUATION_OVERLAP_THRESHOLD = 0.2
 const PAUSED_TASK_CONTINUATION_OVERLAP_THRESHOLD = 0.35
 
 const buildEnqueueContractText = (params: {
@@ -37,18 +35,6 @@ const buildTaskContinuationText = (task: Task): string =>
       title: task.title,
       goal: contract?.goal ?? task.title,
       scope: contract?.scope ?? task.title,
-      acceptance: contract?.acceptance ?? [],
-      ...(contract?.outOfScope ? { outOfScope: contract.outOfScope } : {}),
-    })
-  })()
-
-const buildPlanContinuationText = (plan: TaskPlan): string =>
-  (() => {
-    const contract = compactTaskContractForMatching(plan.effect.taskContract)
-    return buildEnqueueContractText({
-      title: plan.effect.taskTemplate.title,
-      goal: contract?.goal ?? plan.title,
-      scope: contract?.scope ?? plan.title,
       acceptance: contract?.acceptance ?? [],
       ...(contract?.outOfScope ? { outOfScope: contract.outOfScope } : {}),
     })
@@ -128,12 +114,9 @@ const supportsPlanContinuation = (params: {
   )
     return false
 
-  const taskText = buildDraftContinuationText(params.item)
-  if (!taskText) return false
-  return hasContinuationMatch(
-    buildPlanContinuationText(plan),
-    taskText,
-    PLAN_CONTINUATION_OVERLAP_THRESHOLD,
+  return (
+    Boolean(plan.effect.taskTemplate.useWorktree) ===
+    (params.item.task.use_worktree === true)
   )
 }
 
@@ -159,13 +142,7 @@ const supportsResultTaskContinuation = (params: {
   if (task.cwd.trim() !== params.item.task.cwd.trim()) return false
   if (!matchesDraftTaskMode({ task, item: params.item })) return false
 
-  const taskText = buildDraftContinuationText(params.item)
-  if (!taskText) return false
-  return hasContinuationMatch(
-    buildTaskContinuationText(task),
-    taskText,
-    RESULT_TASK_CONTINUATION_OVERLAP_THRESHOLD,
-  )
+  return true
 }
 
 export const supportsEnqueueContinuationIntentEvidence = (params: {

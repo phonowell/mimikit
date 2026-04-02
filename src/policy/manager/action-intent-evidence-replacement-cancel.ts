@@ -1,4 +1,3 @@
-import { scoreTextOverlap } from '../../foundation/shared/text-search.js'
 import {
   buildTaskFingerprint,
   isActiveTask,
@@ -66,29 +65,6 @@ const supportsReplacementTask = (params: {
   })
 }
 
-const matchesReplacementTask = (params: {
-  task: Task
-  enqueueAction: Extract<Parsed, { type: 'enqueue_task' }>
-}): boolean => {
-  const contract = buildTaskContractFromDraft(params.enqueueAction.task)
-  if (!contract) return false
-  const taskSemanticText =
-    typeof (params.task as { semanticKey?: unknown }).semanticKey === 'string'
-      ? params.task.semanticKey
-      : params.task.title
-  const currentTaskText = [params.task.title, taskSemanticText]
-    .filter((item) => item.trim().length > 0)
-    .join('\n')
-  const replacementText = [
-    params.enqueueAction.task.title,
-    contract.goal,
-    contract.scope,
-    ...contract.acceptance,
-    ...(contract.outOfScope ? [contract.outOfScope] : []),
-  ].join('\n')
-  return scoreTextOverlap(currentTaskText, replacementText) >= 0.35
-}
-
 export const supportsReplacementCancelIntentEvidence = (params: {
   item: Extract<Parsed, { type: 'task_control' }>
   actions: Parsed[] | undefined
@@ -118,8 +94,6 @@ export const supportsReplacementCancelIntentEvidence = (params: {
       ...(params.stateDir ? { stateDir: params.stateDir } : {}),
     })
   )
-    return false
-  if (!matchesReplacementTask({ task: params.task, enqueueAction }))
     return false
 
   const replacementFocusId = params.defaultFocusId?.trim() ?? ''

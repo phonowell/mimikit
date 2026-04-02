@@ -2,14 +2,14 @@ export type ProjectProfileEntry = {
   id: string
   content: string
   sourceInputId: string
-  sourceQuote: string
+  sourceQuote?: string
   updatedAt: string
 }
 
 export type RememberProjectProfileInput = {
   content: string
   sourceInputId: string
-  sourceQuote: string
+  sourceQuote?: string
 }
 
 export type RememberProjectProfileResult = {

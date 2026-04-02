@@ -37,13 +37,8 @@ export const validateEnqueueTaskIntentEvidence = (params: {
         : {}),
     },
   )
-  if (explicitContinuationSupport !== undefined) {
+  if (explicitContinuationSupport !== undefined)
     if (explicitContinuationSupport) return undefined
-    return buildMissingIntentEvidenceHint({
-      actionName: params.item.type,
-      evidenceSources: params.supplementalEvidenceSources,
-    })
-  }
 
   const candidates = [params.item.task.title, contract.goal, contract.scope]
   const combinedCandidate = [

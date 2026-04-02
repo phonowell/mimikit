@@ -5,7 +5,7 @@ import { resolveRoundFollowup } from '../src/policy/manager/loop-batch-round-fol
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-test('resolveRoundFollowup rejects advisory-only result follow-up when the active plan is explicitly anchored to the finished task even without contract text overlap', async () => {
+test('resolveRoundFollowup allows advisory-only result follow-up when the active plan is explicitly anchored to the finished task', async () => {
   const runtime = await createTestRuntimeState({
     workDir: '/tmp/mimikit-followup-plan-anchor-test',
     withGlobalFocus: false,
@@ -80,10 +80,7 @@ test('resolveRoundFollowup rejects advisory-only result follow-up when the activ
     wakeProfile: 'task_result',
   })
 
-  expect(followup.done).toBe(false)
-  if (followup.done) return
-  expect(followup.extra.actionFeedback?.[0]).toMatchObject({
-    action: 'manager_followup',
-    code: 'missing_result_followup_action',
+  expect(followup).toMatchObject({
+    done: true,
   })
 })

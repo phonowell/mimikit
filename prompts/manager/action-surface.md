@@ -59,6 +59,7 @@ actions:
     detail_constraints:
       - '`action=pause|resume|cancel`'
       - '`instructions[]` 仅在 `action="resume"` 时可选附带，用于下一轮恢复补充说明'
+      - '若当前 focus 下目标 task 是唯一 paused task，且本轮只是泛化续跑，可直接用 `task_control` + `action="resume"`；不要强迫自己再复述 `task_id/title` 或整份旧合同来“证明”它还是同一条线'
   set_plan:
     summary: 创建或整体替换一个持续触发计划。
     brief_constraints:
@@ -69,6 +70,7 @@ actions:
       - '`continuation_of` 可选；仅在当前 plan 只是承接同一续跑锚点时使用，结构为 `{ type:"plan"|"task", id }`'
       - '`plan` 必须包含 `title,trigger,task,priority,max_runs`'
       - '`plan.task` 与 `enqueue_task.task` 使用同一合同'
+      - '若用户已明确引用当前 plan，且更新仍保持同一 `cwd/mode/use_worktree`，则 `trigger/priority/max_runs` 与 task contract 的结构化差异本身即可支撑更新；不要要求用户复述字段字面量'
       - '当后续推进只是在同一目标上等待容量或定时续跑时，优先用 `set_plan` 承接，而不是把续跑责任退回给用户'
   delete_plan:
     summary: 关闭一个已有计划，并保留审计记录。
@@ -78,24 +80,30 @@ actions:
     summary: 给 task、plan 或 history 绑定 focus。
     brief_constraints:
       - 必填 `target_type,target_id,focus_id`
+    detail_constraints:
+      - '这是辅助归属写入；若 target 当前不可用或字段不完整，允许静默丢弃，不要让它覆盖主结论'
   remember_memory:
     summary: 写入长期记忆。
     brief_constraints:
-      - 必填 `content,source_input_id,source_quote`
+      - 必填 `content,source_input_id`
     detail_constraints:
       - 只保存稳定偏好或长期约束
       - '`content` 必须是单行 digest，且 `<=240 chars`'
       - '`source_input_id` 必须引用当前轮用户输入'
-      - '`source_quote` 必须是该输入中的原文片段'
+      - '`source_quote` 非必填；若拿不准原文片段就留空，不要冒险摘取'
       - '禁止 checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用'
+      - 'remember 是辅助动作；reply 必须在该动作被静默丢弃时仍然保持为真'
+      - '若落盘失败，只允许内部记录 apply feedback；不要让辅助写入失败覆盖主结论'
   remember_project_profile:
     summary: 写入 repo 绑定的项目档案。
     brief_constraints:
-      - 必填 `content,source_input_id,source_quote`
+      - 必填 `content,source_input_id`
     detail_constraints:
       - 只保存当前仓库可跨后续多轮复用的稳定事实或阶段方向
       - '`content` 必须是单行 digest，且 `<=240 chars`'
       - '`source_input_id` 必须引用当前轮用户输入'
-      - '`source_quote` 必须是该输入中的原文片段'
-      - '`content` 可在 `source_quote` 基础上做最小归纳，但不得脱离原意扩写'
+      - '`source_quote` 非必填；若拿不准原文片段就留空，不要冒险摘取'
+      - '`content` 可基于当前用户输入做最小归纳，但不得脱离原意扩写'
       - '禁止 checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用'
+      - 'remember 是辅助动作；reply 必须在该动作被静默丢弃时仍然保持为真'
+      - '若落盘失败，只允许内部记录 apply feedback；不要让辅助写入失败覆盖主结论'

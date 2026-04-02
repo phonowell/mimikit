@@ -65,7 +65,7 @@ test('processManagerBatch routes single task_result batches through manager foll
         status: 'succeeded',
         ok: true,
         output:
-          '结论是：remember_memory 没有写入不是存储失败，而是 provenance 校验拒绝了该 action。\nsource_quote 没有命中当前用户输入原文，因此本轮不能写入长期记忆。',
+          '结论是：remember_memory 没有写入不是存储失败，而是当前输入 provenance 不成立，因此该辅助动作被静默丢弃，主回复继续保留。',
         durationMs: 25,
         usage: {
           input: 13,

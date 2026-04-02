@@ -60,9 +60,9 @@ test('runManagerCorrectionRounds keeps blocked follow-up replies generic when ta
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('enqueue_task 动作无法继续执行')
-  expect(result.parsed.text).toContain('intent-evidence guard 未通过')
-  expect(result.parsed.text).toContain('task_result')
+  expect(result.parsed.text).toContain('没有足够的直接授权')
+  expect(result.parsed.text).toContain('范围是什么')
+  expect(result.parsed.text).toContain('现有任务或计划')
   expect(result.parsed.text).not.toContain('对齐 plan action schema')
 })
 
@@ -115,7 +115,7 @@ test('runManagerCorrectionRounds does not replay quoted follow-up titles in bloc
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('intent-evidence guard 未通过')
-  expect(result.parsed.text).toContain('task_result')
+  expect(result.parsed.text).toContain('没有足够的直接授权')
+  expect(result.parsed.text).toContain('怎样算完成')
   expect(result.parsed.text).not.toContain('trigger_mode')
 })

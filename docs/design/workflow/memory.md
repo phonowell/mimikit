@@ -32,7 +32,7 @@
 
 ## 立即记忆（remember）
 
-- 入口：`remember_memory(content, source_input_id, source_quote)`。
+- 入口：`remember_memory(content, source_input_id, source_quote?)`。
 - 行为：
   - 生成稳定 `dedupeKey`
   - 命中同 key 时合并段落（`merged`）或无变化（`noop`）
@@ -40,7 +40,7 @@
 - 输入门禁：
   - `content` 必须是单行稳定 digest（`<=240 chars`）。
   - `source_input_id` 必须指向当前轮真实用户输入；不接受历史输入、task result 或系统事件作为来源。
-  - `source_quote` 必须是该输入中的原文片段；runtime 只校验来源可追溯性，不再用词面 overlap / 历史重复命中来猜测是否“被用户说过”。
+  - `source_quote` 仅作可选审计提示；拿不准原文片段时留空，不再把逐字命中当成硬门槛。
   - checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会被拒绝，不进入长期 memory。
   - 只有当当前轮用户输入直接给出可跨多轮复用的稳定规则/偏好/约束时，才允许立即写入。
   - repo 绑定的项目事实、阶段方向不要挤进长期 memory，应改走 `remember_project_profile`。
@@ -54,20 +54,20 @@
 
 ## 项目档案（project profile）
 
-- 入口：`remember_project_profile(content, source_input_id, source_quote)`。
+- 入口：`remember_project_profile(content, source_input_id, source_quote?)`。
 - 归属边界：
   - 只保存当前 repo 可跨后续多轮复用的稳定项目事实，或可延续的阶段方向。
   - `content` 仍要求单行稳定 digest（`<=240 chars`），并复用与 `remember_memory` 相同的 hygiene guard：拒绝 checklist、多行过程文本、协议标签与 runtime 引用。
-  - `source_input_id` 必须命中当前轮真实用户输入；`source_quote` 必须是该输入中的原文片段。
-  - 与 `remember_memory` 不同，`content` 可在 `source_quote` 基础上做最小归纳，不要求字面子串命中；来源锚点会随条目一起持久化。
-  - provenance 不满足时显式拒绝该 action；不再静默 suppress。
+  - `source_input_id` 必须命中当前轮真实用户输入；`source_quote` 仅作可选审计提示。
+  - `content` 可基于当前输入做最小归纳；来源锚点仍随条目一起持久化。
+  - provenance 只再强制校验 `source_input_id`；辅助审计信息缺失时不阻塞主链。
   - repo 绑定的阶段方向可以进入 `project_profile`；执行中的待办、恢复步骤、当前状态仍不得进入。
 - 存储：
   - 文件路径按 `runtime.startup.worktree` 绑定：`.mimikit/memory/project-profiles/project-profile-<worktree-hash>.md`
-  - 每条记录保存 `id/content/source_input_id/source_quote/updated_at`
+  - 每条记录保存 `id/content/source_input_id/source_quote?/updated_at`
 - prompt 注入：
   - manager 稳定上下文新增 `M:project_profile`
-  - 注入内容直接展示 digest 与对应 `source_quote`，用于可追溯的 repo 档案提示
+  - 注入内容默认展示 digest；若存在 `source_quote` 再附带显示
 - 回执：
   - 写入 `project_profile_remembered` system event（含 `entry_id/ref/operation`）
 - 代码：

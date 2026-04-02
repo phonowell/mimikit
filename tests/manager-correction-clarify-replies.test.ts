@@ -88,7 +88,7 @@ test('runManagerCorrectionRounds explains missing execution boundary in user ter
   const result = await runCorrectionRounds({ runtime })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('enqueue_task 动作无法继续执行')
+  expect(result.parsed.text).toContain('继续执行前还缺最小执行边界')
   expect(result.parsed.text).toContain('goal')
   expect(result.parsed.text).toContain('in_scope')
   expect(result.parsed.text).toContain('done_when')
@@ -118,7 +118,7 @@ test('runManagerCorrectionRounds returns concrete invalid action args instead of
   const result = await runCorrectionRounds({ runtime })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('当前 enqueue_task 动作无法继续执行')
-  expect(result.parsed.text).toContain('provider')
-  expect(result.parsed.text).not.toContain('goal（最终要什么结果）')
+  expect(result.parsed.text).toContain('当前这轮执行单没有形成合法配置')
+  expect(result.parsed.text).toContain('目标、范围、验收')
+  expect(result.parsed.text).not.toContain('provider')
 })

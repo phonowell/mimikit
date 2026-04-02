@@ -1,5 +1,3 @@
-import { compactTaskContractForMatching } from '../../foundation/shared/task-contract-compact.js'
-import { scoreTextOverlap } from '../../foundation/shared/text-search.js'
 import { resolveDefaultFocusId } from '../../work/focus/index.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
@@ -11,65 +9,18 @@ import type { ManagerTurnDecision } from './manager-turn-schema.js'
 import type {
   ManagerActionFeedback,
   ManagerWakeProfile,
-  Task,
-  TaskPlan,
   TaskResult,
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-const RESULT_FOLLOWUP_OVERLAP_THRESHOLD = 0.35
 const CONTINUATION_ACTION_TYPES = new Set([
   'enqueue_task',
   'task_control',
   'set_plan',
   'delete_plan',
 ])
-
-const buildContinuationText = (params: {
-  title: string
-  goal: string
-  scope: string
-  acceptance: string[]
-  outOfScope?: string | undefined
-}): string =>
-  [
-    params.title,
-    params.goal,
-    params.scope,
-    ...params.acceptance,
-    ...(params.outOfScope ? [params.outOfScope] : []),
-  ]
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .join('\n')
-
-const buildTaskContinuationText = (task: Task): string => {
-  const contract = compactTaskContractForMatching(task.contract)
-  return buildContinuationText({
-    title: task.title,
-    goal: contract?.goal ?? task.title,
-    scope: contract?.scope ?? task.title,
-    acceptance: contract?.acceptance ?? [],
-    ...(contract?.outOfScope ? { outOfScope: contract.outOfScope } : {}),
-  })
-}
-
-const buildPlanContinuationText = (plan: TaskPlan): string => {
-  const contract = compactTaskContractForMatching(plan.effect.taskContract)
-  return buildContinuationText({
-    title: plan.effect.taskTemplate.title,
-    goal: contract?.goal ?? plan.title,
-    scope: contract?.scope ?? plan.title,
-    acceptance: contract?.acceptance ?? [],
-    ...(contract?.outOfScope ? { outOfScope: contract.outOfScope } : {}),
-  })
-}
-
-const hasContinuationMatch = (left: string, right: string): boolean =>
-  Math.max(scoreTextOverlap(left, right), scoreTextOverlap(right, left)) >=
-  RESULT_FOLLOWUP_OVERLAP_THRESHOLD
 
 const hasConcreteFollowupAction = (actions: Parsed[]): boolean =>
   actions.some((item) => CONTINUATION_ACTION_TYPES.has(item.type))
@@ -80,6 +31,23 @@ const resolveSingleNextStep = (result: TaskResult): string | undefined => {
     .filter(Boolean)
   if (nextSteps.length !== 1) return undefined
   return nextSteps[0]
+}
+
+const supportsSinglePlanRuntimeContinuation = (params: {
+  plan: NonNullable<ManagerRuntime['domain']['taskPlans'][number]> | undefined
+  task: NonNullable<ManagerRuntime['domain']['tasks'][number]> | undefined
+}): boolean => {
+  const { plan, task } = params
+  if (!plan || !task) return false
+  if (plan.effect.taskTemplate.cwd.trim() !== task.cwd.trim()) return false
+  if (
+    resolveTaskResourceMode(plan.effect.taskTemplate.resourceMode) !==
+    resolveTaskResourceMode(task.resourceMode)
+  )
+    return false
+  if (Boolean(plan.effect.taskTemplate.useWorktree) !== Boolean(task.git))
+    return false
+  return true
 }
 
 export const resolveResultFollowupFeedback = (params: {
@@ -127,40 +95,13 @@ export const resolveResultFollowupFeedback = (params: {
   })
   if (structuredAnchoredPlan || activePlans.length === 1) {
     const plan = structuredAnchoredPlan ?? activePlans[0]
-    if (!plan) return undefined
-    if (plan.effect.taskTemplate.cwd.trim() !== task.cwd.trim())
-      return undefined
     if (
-      resolveTaskResourceMode(plan.effect.taskTemplate.resourceMode) !==
-      resolveTaskResourceMode(task.resourceMode)
-    )
-      return undefined
-    if (
-      !structuredAnchoredPlan &&
-      !hasContinuationMatch(
-        buildTaskContinuationText(task),
-        buildPlanContinuationText(plan),
-      )
-    )
-      return undefined
-    if (
-      hasSupportedStopDecision({
-        decision: params.decision,
-        result,
-        ...(params.priorActionFeedback
-          ? { priorActionFeedback: params.priorActionFeedback }
-          : {}),
+      supportsSinglePlanRuntimeContinuation({
+        plan,
+        task,
       })
     )
       return undefined
-    return {
-      action: 'manager_followup',
-      error: 'action_execution_rejected',
-      hint: formatMissingResultFollowupActionHint(
-        '当前 active plan + 本轮 result task',
-      ),
-      code: 'missing_result_followup_action',
-    }
   }
   if (activePlans.length > 1) return undefined
   if (!resolveSingleNextStep(result)) return undefined

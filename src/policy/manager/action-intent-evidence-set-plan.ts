@@ -4,7 +4,7 @@ import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 import type { TaskPlan } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-const SET_PLAN_UPDATE_OVERLAP_THRESHOLD = 0.15
+const SET_PLAN_UPDATE_OVERLAP_THRESHOLD = 0.2
 
 type SetPlanItem = Extract<Parsed, { type: 'set_plan' }>
 

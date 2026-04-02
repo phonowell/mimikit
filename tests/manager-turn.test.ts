@@ -119,6 +119,27 @@ test('parseManagerTurn keeps structured remember_project_profile action as-is', 
   ])
 })
 
+test('parseManagerTurn allows remember_project_profile without source_quote', () => {
+  const parsed = parseManagerTurn({
+    reply: '收到。',
+    actions: [
+      {
+        type: 'remember_project_profile',
+        content: '本仓库默认走 wt 开发闭环。',
+        source_input_id: 'input-user',
+      },
+    ],
+  })
+
+  expect(parsed.actions).toEqual([
+    {
+      type: 'remember_project_profile',
+      content: '本仓库默认走 wt 开发闭环。',
+      source_input_id: 'input-user',
+    },
+  ])
+})
+
 test('parseManagerTurn rejects removed record_task_git action', () => {
   expect(() =>
     parseManagerTurn({

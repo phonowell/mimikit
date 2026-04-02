@@ -119,8 +119,8 @@ test('runManagerCorrectionRounds opens rejection circuit after repeated rejected
   })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('当前 task_control 动作无法继续执行')
-  expect(result.parsed.text).toContain('task already canceled')
+  expect(result.parsed.text).toContain('当前请求的任务操作现在不能执行')
+  expect(result.parsed.text).toContain('当前状态与请求不匹配')
   expect(runManagerRoundWithRecoveryMock).toHaveBeenCalledTimes(1)
   expect(appendLogMock).toHaveBeenCalledWith(
     expect.any(String),

@@ -1,5 +1,4 @@
 import {
-  normalizeSearchText,
   scoreTextOverlap,
   tokenizeSearchText,
 } from '../../foundation/shared/text-search.js'
@@ -17,6 +16,9 @@ import type { Parsed } from '../actions/model/spec.js'
 
 const toEvidenceLabel = (source: SupplementalEvidenceSource): string => source
 const MAX_RECENT_USER_INTENT_TEXTS = 24
+const SHORT_CANDIDATE_THRESHOLD = 0.8
+const MEDIUM_CANDIDATE_THRESHOLD = 0.6
+const DEFAULT_CANDIDATE_THRESHOLD = 0.45
 
 export const formatEvidenceSources = (
   sources: Set<SupplementalEvidenceSource> | undefined,
@@ -74,12 +76,12 @@ export const collectHistoricalUserIntentTexts = (
   return texts.slice(Math.max(0, texts.length - MAX_RECENT_USER_INTENT_TEXTS))
 }
 
-const hasDirectTextMatch = (candidate: string, haystack: string): boolean => {
-  const left = normalizeSearchText(candidate)
-  const right = normalizeSearchText(haystack)
-  if (!left || !right) return false
-  return right.includes(left)
-}
+const resolveCandidateThreshold = (tokenCount: number): number =>
+  tokenCount <= 2
+    ? SHORT_CANDIDATE_THRESHOLD
+    : tokenCount <= 4
+      ? MEDIUM_CANDIDATE_THRESHOLD
+      : DEFAULT_CANDIDATE_THRESHOLD
 
 export const isSupportedByInputs = (params: {
   candidates: string[]
@@ -92,11 +94,9 @@ export const isSupportedByInputs = (params: {
   for (const rawCandidate of params.candidates) {
     const candidate = normalizeInlineWhitespace(rawCandidate)
     if (!candidate) continue
-    if (params.inputs.some((input) => hasDirectTextMatch(candidate, input)))
-      return true
     const tokenCount = tokenizeSearchText(candidate).length
     if (tokenCount === 0) continue
-    const threshold = tokenCount <= 2 ? 0.8 : 0.45
+    const threshold = resolveCandidateThreshold(tokenCount)
     if (scoreTextOverlap(candidate, inputText) >= threshold) return true
   }
 

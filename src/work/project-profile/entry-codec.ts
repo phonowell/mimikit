@@ -54,7 +54,9 @@ const formatEntry = (entry: ProjectProfileEntry): string =>
     `## [project-profile-entry] (id:${entry.id})`,
     `updated_at: ${normalizeInline(entry.updatedAt)}`,
     `source_input_id: ${normalizeInline(entry.sourceInputId)}`,
-    `source_quote: ${normalizeInline(entry.sourceQuote)}`,
+    ...(entry.sourceQuote
+      ? [`source_quote: ${normalizeInline(entry.sourceQuote)}`]
+      : []),
     '',
     normalizeText(entry.content),
   ].join('\n')

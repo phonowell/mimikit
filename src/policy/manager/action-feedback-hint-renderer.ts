@@ -30,6 +30,7 @@ const actionFeedbackHintSchema = z
     set_plan_done_forbidden: z.string().trim().min(1),
     duplicate_action_generic: z.string().trim().min(1),
     remember_memory_not_stable: z.string().trim().min(1),
+    auxiliary_write_failed: z.string().trim().min(1),
     missing_result_followup_action: z.string().trim().min(1),
     stable_digest_issue_multiline: z.string().trim().min(1),
     stable_digest_issue_checklist: z.string().trim().min(1),
