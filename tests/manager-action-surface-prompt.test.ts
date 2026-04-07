@@ -10,7 +10,7 @@ test('prompt surface no longer varies by wake profile', () => {
     resolveManagerActionSurfacePromptConfig({
       actionFeedback: [
         {
-          action: 'query_context',
+          action: 'enqueue_task',
           error: 'action_execution_rejected',
           hint: 'blocked',
         },

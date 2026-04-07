@@ -12,4 +12,4 @@ usage: '{"input":980,"output":120,"total":1100}'
 取消已经取消的任务，并在被拒绝时收敛回复。
 
 === OUTPUT ===
-<M:mutate_task id="task-1" op="cancel" />
+<M:task_control task_id="task-1" action="cancel" />

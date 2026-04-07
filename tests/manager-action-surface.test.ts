@@ -12,15 +12,13 @@ test('manager action surface is unified across rounds', () => {
     'focus',
     'memory',
   ])
-  expect(surface.actionNames.has('query_context')).toBe(false)
-  expect(surface.actionNames.has('read_file')).toBe(false)
-  expect(surface.actionNames.has('enqueue_task')).toBe(true)
-  expect(surface.actionNames.has('task_control')).toBe(true)
-  expect(surface.actionNames.has('record_task_git')).toBe(false)
-  expect(surface.actionNames.has('set_plan')).toBe(true)
-  expect(surface.actionNames.has('mutate_task')).toBe(false)
-  expect(surface.actionNames.has('create_plan')).toBe(false)
-  expect(surface.actionNames.has('update_plan')).toBe(false)
-  expect(surface.actionNames.has('set_task_result_summary')).toBe(false)
-  expect(surface.actionNames.has('restart_runtime')).toBe(false)
+  expect(Array.from(surface.actionNames).sort()).toEqual([
+    'assign_focus',
+    'delete_plan',
+    'enqueue_task',
+    'remember_memory',
+    'remember_project_profile',
+    'set_plan',
+    'task_control',
+  ])
 })

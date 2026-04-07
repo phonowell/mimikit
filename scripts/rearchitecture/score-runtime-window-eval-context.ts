@@ -50,31 +50,12 @@ export const evaluateContextScore = (params: {
     (row) => row.event === 'manager_action_feedback',
   ).length
 
-  const queryContextRows = params.logs.filter(
-    (row) => row.event === 'manager_query_context',
-  )
-  const readFileRows = params.logs.filter(
-    (row) => row.event === 'manager_read_file',
-  )
-  const detailRecallTotal = queryContextRows.length + readFileRows.length
-  const detailRecallSuccess =
-    queryContextRows.filter(
-      (row) =>
-        typeof row.resultScopeCount === 'number' && row.resultScopeCount > 0,
-    ).length +
-    readFileRows.filter((row) => row.status === 'ok').length
-  const contextWasteCount =
-    queryContextRows.filter(
-      (row) =>
-        typeof row.resultScopeCount === 'number' && row.resultScopeCount === 0,
-    ).length + readFileRows.filter((row) => row.status !== 'ok').length
-
   return {
     managerRoundCount,
     managerFeedbackRoundCount,
-    detailRecallTotal,
-    detailRecallSuccess,
-    contextWasteCount,
+    detailRecallTotal: 0,
+    detailRecallSuccess: 0,
+    contextWasteCount: 0,
     budgetRows,
     driftRounds,
   }

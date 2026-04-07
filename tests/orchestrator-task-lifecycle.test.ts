@@ -57,6 +57,24 @@ test('enqueueTask returns existing active task by fingerprint', async () => {
   expect(result).toMatchObject({ created: false, task: { id: existing.id } })
 })
 
+test('createTask falls back to task id when title is omitted', async () => {
+  const task = await enqueueTask(
+    await createTmpDir(),
+    [],
+    'Prompt text should stay out of stable title',
+    undefined,
+    '/tmp/write-report',
+    'worker',
+    'codex',
+  )
+
+  expect(task.created).toBe(true)
+  expect(task.task.title).toBe(task.task.id)
+  expect(task.task.title).not.toBe(
+    'Prompt text should stay out of stable title',
+  )
+})
+
 test('enqueueTask does not dedupe when contract differs', async () => {
   const tasks: Task[] = [createTask()]
 

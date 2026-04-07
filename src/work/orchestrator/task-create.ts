@@ -25,8 +25,8 @@ import type {
 
 export type EnqueueTaskResult = { task: Task; created: boolean }
 
-const resolveTitle = (id: string, prompt: string, title?: string): string =>
-  titleFromCandidates(id, [title, prompt])
+const resolveTitle = (id: string, title?: string): string =>
+  titleFromCandidates(id, [title])
 
 const resolveFingerprintTitle = (prompt: string, title?: string): string => {
   const normalizedTitle = title?.trim()
@@ -51,7 +51,7 @@ export const createTask = (
   useWorktree?: boolean,
 ): Promise<Task> => {
   const id = `task-${newId()}`
-  const resolvedTitle = resolveTitle(id, prompt, title)
+  const resolvedTitle = resolveTitle(id, title)
   if (!cwd?.trim()) throw new Error('task cwd is required')
   const normalizedResourceMode = resolveTaskResourceMode(resourceMode)
   const git = buildTaskGitExecution(cwd, branch, repoKey, useWorktree)
