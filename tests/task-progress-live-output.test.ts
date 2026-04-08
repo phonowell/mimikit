@@ -5,7 +5,9 @@ import { dirname, join } from 'node:path'
 import { afterEach, expect, test } from 'vitest'
 
 import {
+  appendTaskProgress,
   readLatestTaskLiveOutput,
+  readTaskProgress,
   taskProgressPath,
 } from '../src/persistence/storage/task-progress.js'
 
@@ -60,4 +62,47 @@ test('readLatestTaskLiveOutput ignores persisted summaries from earlier runs', a
       since: '2026-03-31T00:00:06.000Z',
     }),
   ).resolves.toBeUndefined()
+})
+
+test('appendTaskProgress clips oversized text payloads so persisted jsonl stays bounded and parseable', async () => {
+  const stateDir = await createTmpDir()
+  const taskId = 'task-progress-clipped-text'
+  const hugeText = `${'x'.repeat(20000)}\n${'y'.repeat(20000)}`
+
+  await appendTaskProgress({
+    stateDir,
+    taskId,
+    type: 'worker_activity',
+    payload: { text: hugeText },
+  })
+
+  const entries = await readTaskProgress(stateDir, taskId)
+  expect(entries).toHaveLength(1)
+  expect(entries[0]?.payload.text).not.toBe(hugeText)
+  expect(typeof entries[0]?.payload.text).toBe('string')
+  expect((entries[0]?.payload.text as string).length).toBeLessThan(
+    hugeText.length,
+  )
+})
+
+test('appendTaskProgress keeps concurrent appends parseable for the same task log', async () => {
+  const stateDir = await createTmpDir()
+  const taskId = 'task-progress-concurrent-appends'
+
+  await Promise.all(
+    Array.from({ length: 24 }, (_, index) =>
+      appendTaskProgress({
+        stateDir,
+        taskId,
+        type: 'worker_activity',
+        payload: { text: `chunk-${index}` },
+      }),
+    ),
+  )
+
+  const entries = await readTaskProgress(stateDir, taskId)
+  expect(entries).toHaveLength(24)
+  expect(new Set(entries.map((entry) => String(entry.payload.text))).size).toBe(
+    24,
+  )
 })

@@ -2,11 +2,13 @@ import { join } from 'node:path'
 
 import { z } from 'zod'
 
+import { truncateText } from '../../foundation/shared/text.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { ensureDir, listFiles } from '../fs/paths.js'
 
 import { dateStamp } from './archive-format.js'
 import { appendJsonl, readJsonl } from './jsonl.js'
+import { runSerialized } from './serialized-lock.js'
 
 type JsonObject = Record<string, unknown>
 
@@ -23,8 +25,26 @@ const taskProgressEventSchema = z
 
 const TASK_PROGRESS_DIR = 'task-progress'
 export const TASK_PROGRESS_WORKER_LIVE_OUTPUT_TYPE = 'worker_live_output'
+const MAX_TASK_PROGRESS_TEXT_CHARS = 16_000
 
 export type TaskProgressEvent = z.infer<typeof taskProgressEventSchema>
+
+const sanitizeTaskProgressPayload = (
+  payload: JsonObject | undefined,
+): JsonObject => {
+  const next = { ...(payload ?? {}) }
+  const { text } = next
+  if (typeof text !== 'string') return next
+  const clipped = truncateText(text, MAX_TASK_PROGRESS_TEXT_CHARS, {
+    suffix: '…[truncated]',
+  })
+  if (clipped === text) return next
+  return {
+    ...next,
+    text: clipped,
+    truncated: true,
+  }
+}
 
 const taskProgressDateDir = (stateDir: string, timestamp: string): string =>
   join(stateDir, TASK_PROGRESS_DIR, dateStamp(timestamp))
@@ -48,9 +68,11 @@ export const appendTaskProgress = async (params: {
     taskId: params.taskId,
     type: params.type,
     createdAt,
-    payload: params.payload ?? {},
+    payload: sanitizeTaskProgressPayload(params.payload),
   })
-  await appendJsonl(path, [event])
+  await runSerialized(path, async () => {
+    await appendJsonl(path, [event])
+  })
   return path
 }
 

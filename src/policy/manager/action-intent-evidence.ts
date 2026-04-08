@@ -37,6 +37,11 @@ const INTENT_EVIDENCE_REQUIRED_ACTIONS = new Set([
 const requiresDirectUserEvidence = (actionName: Parsed['type']): boolean =>
   actionName === 'delete_plan'
 
+const supportsResultOnlyContinuation = (actionName: Parsed['type']): boolean =>
+  actionName === 'enqueue_task' ||
+  actionName === 'task_control' ||
+  actionName === 'set_plan'
+
 export const resolveIntentEvidenceRejectionHint = (
   item: Parsed,
   context: IntentEvidenceContext,
@@ -50,10 +55,18 @@ export const resolveIntentEvidenceRejectionHint = (
 
   const inputTexts = collectUserIntentTexts(context.inputs)
   if (inputTexts.length === 0) {
-    return buildMissingIntentEvidenceHint({
-      actionName: item.type,
-      evidenceSources: context.supplementalEvidenceSources,
-    })
+    if (
+      context.supplementalEvidenceSources?.size &&
+      supportsResultOnlyContinuation(item.type)
+    ) {
+      // Let action-specific continuation validators decide whether the
+      // available task_result/plan anchors are strong enough to continue.
+    } else {
+      return buildMissingIntentEvidenceHint({
+        actionName: item.type,
+        evidenceSources: context.supplementalEvidenceSources,
+      })
+    }
   }
 
   if (item.type === 'enqueue_task') {
