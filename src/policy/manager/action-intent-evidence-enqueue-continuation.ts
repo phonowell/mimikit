@@ -1,6 +1,7 @@
 import { compactTaskContractForMatching } from '../../foundation/shared/task-contract-compact.js'
 import { scoreTextOverlap } from '../../foundation/shared/text-search.js'
 import { isActiveTask } from '../../work/orchestrator/task-state.js'
+import { hasTaskClosedGitLifecycle } from '../../work/shared/task-git-closure-truth.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
 import { buildTaskContractFromDraft } from './task-contract.js'
@@ -80,6 +81,7 @@ export const resolvePausedTaskContinuationMatch = (params: {
   if (!taskText) return undefined
   const pausedMatches = [...params.taskById.values()].filter((task) => {
     if (task.status !== 'paused') return false
+    if (hasTaskClosedGitLifecycle(task)) return false
     if (task.focusId.trim() !== focusId) return false
     if (task.cwd.trim() !== params.item.task.cwd.trim()) return false
     if (!matchesDraftTaskMode({ task, item: params.item })) return false

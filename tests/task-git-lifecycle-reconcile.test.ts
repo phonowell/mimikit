@@ -1,10 +1,11 @@
 import { expect, test } from 'vitest'
 
+import { hasTaskClosedGitLifecycle } from '../src/work/shared/task-git-closure-truth.js'
 import { reconcileTaskGitState } from '../src/work/shared/task-git-lifecycle.js'
 
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 
-test('reconcileTaskGitState preserves richer handoff lifecycle evidence', () => {
+test('reconcileTaskGitState preserves review evidence while ignoring unverified handoff merged or cleaned truth', () => {
   const task = createTaskFixture({
     id: 'task-git-handoff-richer',
     repoKey: '/tmp/task-git-handoff-richer/.git',
@@ -55,8 +56,7 @@ test('reconcileTaskGitState preserves richer handoff lifecycle evidence', () => 
       at: '2026-02-06T00:01:00.000Z',
       sha: 'abc123',
     },
-    merged: true,
-    mergedAt: '2026-02-06T00:01:30.000Z',
+    merged: false,
     cleaned: true,
   })
   expect(reconciled.result?.handoff?.git?.lifecycle).toMatchObject({
@@ -65,8 +65,12 @@ test('reconcileTaskGitState preserves richer handoff lifecycle evidence', () => 
       at: '2026-02-06T00:01:00.000Z',
       sha: 'abc123',
     },
-    merged: true,
-    mergedAt: '2026-02-06T00:01:30.000Z',
+    merged: false,
     cleaned: true,
   })
+  expect(reconciled.git?.lifecycle).not.toHaveProperty('mergedAt')
+  expect(reconciled.result?.handoff?.git?.lifecycle).not.toHaveProperty(
+    'mergedAt',
+  )
+  expect(hasTaskClosedGitLifecycle(reconciled)).toBe(false)
 })

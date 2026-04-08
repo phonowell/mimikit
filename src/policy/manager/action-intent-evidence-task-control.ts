@@ -52,6 +52,18 @@ export const validateTaskControlIntentEvidence = (params: {
   if (cwdBase) candidates.push(cwdBase)
 
   if (
+    supportsUniquePausedResumeTarget({
+      item: params.item,
+      task,
+      ...(params.taskById ? { taskById: params.taskById } : {}),
+      ...(params.defaultFocusId
+        ? { defaultFocusId: params.defaultFocusId }
+        : {}),
+    })
+  )
+    return undefined
+
+  if (
     params.item.action === 'resume' &&
     instructions.length > 0 &&
     !isSupportedByInputs({
@@ -66,18 +78,6 @@ export const validateTaskControlIntentEvidence = (params: {
       taskRef: resolveTaskRef(task, params.item.task_id),
     })
   }
-
-  if (
-    supportsUniquePausedResumeTarget({
-      item: params.item,
-      task,
-      ...(params.taskById ? { taskById: params.taskById } : {}),
-      ...(params.defaultFocusId
-        ? { defaultFocusId: params.defaultFocusId }
-        : {}),
-    })
-  )
-    return undefined
 
   if (isSupportedByInputs({ candidates, inputs: params.inputTexts }))
     return undefined

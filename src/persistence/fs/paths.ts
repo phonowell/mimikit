@@ -17,6 +17,7 @@ export type StatePaths = {
   usageDir: string
   history: string
   log: string
+  logReadable: string
   inputsPackets: string
   resultsPackets: string
   tasksEvents: string
@@ -46,6 +47,7 @@ export const buildPaths = (stateDir: string): StatePaths => {
     usageDir,
     history: join(root, 'history'),
     log: join(root, 'log.jsonl'),
+    logReadable: join(root, 'log.jsonl.txt'),
     inputsPackets: join(inputsDir, 'packets.jsonl'),
     resultsPackets: join(resultsDir, 'packets.jsonl'),
     tasksEvents: join(tasksDir, 'tasks.jsonl'),

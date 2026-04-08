@@ -39,6 +39,37 @@ test('task_control resume stays allowed when the target is the only paused task 
   expect(feedback).toHaveLength(0)
 })
 
+test('task_control resume stays allowed for the only paused task in current focus even when resume instructions are not restated verbatim in user input', () => {
+  const task = createTask({
+    id: 'task-paused-auth-guard-instructions',
+    title: '继续收敛 auth guard 主链',
+    status: 'paused',
+    focusId: 'focus-inbox',
+    cwd: '/repo/auth-guard',
+    resourceMode: 'write',
+  })
+
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'task_control',
+        task_id: task.id,
+        action: 'resume',
+        instructions: ['继续沿着上一次 review 后的同一主链往下收敛。'],
+      },
+    ],
+    {
+      inputs: [createUserInput('继续把这一条线做完。')],
+      taskStatusById: new Map([[task.id, task.status]]),
+      taskById: new Map([[task.id, task]]),
+      supplementalEvidenceSources: new Set(['task_result']),
+      defaultFocusId: 'focus-inbox',
+    },
+  )
+
+  expect(feedback).toHaveLength(0)
+})
+
 test('task_control resume stays blocked on generic continuation text when current focus has multiple paused tasks', () => {
   const taskA = createTask({
     id: 'task-paused-auth-guard-a',

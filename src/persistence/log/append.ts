@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { once } from 'node:events'
-import { mkdir } from 'node:fs/promises'
+import { appendFile, mkdir, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname } from 'node:path'
 
 import pino, { type Logger } from 'pino'
@@ -9,6 +9,9 @@ import { createStream, type RotatingFileStream } from 'rotating-file-stream'
 const MAX_BYTES = 10 * 1024 * 1024
 const MAX_TOTAL_BYTES = 500 * 1024 * 1024
 const MAX_FILES = Math.max(1, Math.ceil(MAX_TOTAL_BYTES / MAX_BYTES))
+
+export const resolveReadableLogPath = (path: string): string =>
+  `${path.trim()}.txt`
 
 type LoggerBundle = {
   logger: Logger
@@ -110,6 +113,43 @@ const resolveLevel = (
   return 'info'
 }
 
+const appendReadableMirror = async (params: {
+  path: string
+  level: 'info' | 'warn' | 'error'
+  traceId: string
+  payload: Record<string, unknown>
+}): Promise<void> => {
+  const mirrorPath = resolveReadableLogPath(params.path)
+  const nextLine = `${JSON.stringify({
+    schema: 'mimikit.log.v2',
+    time: new Date().toISOString(),
+    level: params.level,
+    traceId: params.traceId,
+    ...params.payload,
+  })}\n`
+  const currentSize = await stat(mirrorPath)
+    .then((entry) => entry.size)
+    .catch(() => 0)
+  if (currentSize >= MAX_BYTES) {
+    await writeFile(mirrorPath, nextLine, 'utf8')
+    return
+  }
+  await appendFile(mirrorPath, nextLine, 'utf8')
+}
+
+const appendReadableMirrorBestEffort = async (params: {
+  path: string
+  level: 'info' | 'warn' | 'error'
+  traceId: string
+  payload: Record<string, unknown>
+}): Promise<void> => {
+  try {
+    await appendReadableMirror(params)
+  } catch (error) {
+    console.error('[log] readable mirror write failed', error)
+  }
+}
+
 export const appendLog = async (
   path: string,
   entry: Record<string, unknown>,
@@ -123,4 +163,10 @@ export const appendLog = async (
     ...payload,
   })
   await flushIfNeeded(stream)
+  await appendReadableMirrorBestEffort({
+    path,
+    level,
+    traceId,
+    payload,
+  })
 }

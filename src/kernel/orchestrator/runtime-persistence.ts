@@ -10,6 +10,7 @@ import {
   writeTaskResultArchiveAtPath,
 } from '../../persistence/storage/task-results.js'
 import { toPersistedMemoryRefreshState } from '../../policy/memory/refresh/state.js'
+import { applyClosureTaskGitTruth } from '../../work/shared/task-git-closure-truth.js'
 import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { reconcileRuntimeQueueState } from './runtime-queue-reconcile.js'
@@ -120,6 +121,10 @@ const syncReconciledTaskArchives = async (
   }
 }
 
+const reconcileClosureTaskGitTruth = (tasks: Task[]): void => {
+  for (const task of tasks) applyClosureTaskGitTruth(tasks, task)
+}
+
 export const hydrateRuntimeState = async (
   runtime: HydratableRuntimeState,
 ): Promise<void> => {
@@ -132,6 +137,7 @@ export const hydrateRuntimeState = async (
     ),
   })
   applyRuntimeSnapshotHydrateSlice(runtime, slice)
+  reconcileClosureTaskGitTruth(slice.domain.tasks)
   await syncReconciledTaskArchives(runtime.config.workDir, slice.domain.tasks)
   await reconcileRuntimeQueueState(runtime)
 
@@ -148,6 +154,7 @@ export const hydrateRuntimeState = async (
 export const persistRuntimeState = async (
   runtime: RuntimeSnapshotPersistSlice,
 ): Promise<void> => {
+  reconcileClosureTaskGitTruth(runtime.domain.tasks)
   const snapshot = buildRuntimeSnapshot(
     runtime,
     toPersistedMemoryRefreshState(runtime.process.manager.memoryRefresh),
