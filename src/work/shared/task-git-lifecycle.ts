@@ -2,11 +2,15 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import {
+  mergeTaskGitLifecycle,
+  preserveVerifiedTaskGitLifecycleTimestamps,
+} from './task-git-lifecycle-merge.js'
+
 import type {
   Task,
   TaskGitExecution,
   TaskGitLifecycle,
-  TaskGitReview,
 } from '../../foundation/types/index.js'
 const REVIEW_SENTINEL_RELATIVE_PATH = join(
   '.mimikit',
@@ -100,49 +104,6 @@ export const deriveTaskGitLifecycle = (params: {
     }) === true
   return { review, merged, cleaned }
 }
-export type TaskGitLifecyclePatch = {
-  review?: Partial<TaskGitReview> | undefined
-  merged?: boolean | undefined
-  mergedAt?: string | undefined
-  cleaned?: boolean | undefined
-  cleanedAt?: string | undefined
-}
-export const mergeTaskGitLifecycle = (params: {
-  current?: TaskGitLifecycle | undefined
-  patch?: TaskGitLifecyclePatch | undefined
-}): TaskGitLifecycle | undefined => {
-  const { current, patch } = params
-  if (!current && !patch) return undefined
-  return {
-    review: {
-      passed: Boolean(
-        (current?.review.passed ?? false) || (patch?.review?.passed ?? false),
-      ),
-      ...(patch?.review?.at
-        ? { at: patch.review.at }
-        : current?.review.at
-          ? { at: current.review.at }
-          : {}),
-      ...(patch?.review?.sha
-        ? { sha: patch.review.sha }
-        : current?.review.sha
-          ? { sha: current.review.sha }
-          : {}),
-    },
-    merged: Boolean((current?.merged ?? false) || (patch?.merged ?? false)),
-    ...(patch?.mergedAt
-      ? { mergedAt: patch.mergedAt }
-      : current?.mergedAt
-        ? { mergedAt: current.mergedAt }
-        : {}),
-    cleaned: Boolean((current?.cleaned ?? false) || (patch?.cleaned ?? false)),
-    ...(patch?.cleanedAt
-      ? { cleanedAt: patch.cleanedAt }
-      : current?.cleanedAt
-        ? { cleanedAt: current.cleanedAt }
-        : {}),
-  }
-}
 export const resolveTaskGitLifecycle = (
   task: Pick<Task, 'git' | 'repoKey'>,
 ): TaskGitLifecycle | undefined =>
@@ -163,22 +124,7 @@ export const resolveTaskGitLifecycleTruth = (
       ? { review: task.result.handoff.git.lifecycle.review }
       : undefined,
   })
-  if (!lifecycle) return undefined
-  const mergedAt = lifecycle.merged
-    ? (task.git?.lifecycle?.mergedAt ??
-      task.result?.handoff?.git?.lifecycle?.mergedAt)
-    : undefined
-  const cleanedAt = lifecycle.cleaned
-    ? (task.git?.lifecycle?.cleanedAt ??
-      task.result?.handoff?.git?.lifecycle?.cleanedAt)
-    : undefined
-  return mergeTaskGitLifecycle({
-    current: lifecycle,
-    patch: {
-      ...(mergedAt ? { mergedAt } : {}),
-      ...(cleanedAt ? { cleanedAt } : {}),
-    },
-  })
+  return preserveVerifiedTaskGitLifecycleTimestamps(task, lifecycle)
 }
 export const reconcileTaskGitState = (task: Task): Task => {
   if (!task.git) return task

@@ -1,15 +1,14 @@
 import {
-  deriveTaskGitLifecycle,
   mergeTaskGitLifecycle,
+  preserveVerifiedTaskGitLifecycleTimestamps,
+} from './task-git-lifecycle-merge.js'
+import {
+  deriveTaskGitLifecycle,
   resolveTaskGitLifecycle,
   resolveTaskGitLifecycleRuntimeTruth,
 } from './task-git-lifecycle.js'
 
-import type {
-  Task,
-  TaskGitExecution,
-  TaskGitLifecycle,
-} from '../../foundation/types/index.js'
+import type { Task, TaskGitExecution } from '../../foundation/types/index.js'
 
 type TaskGitReview = NonNullable<TaskGitExecution['lifecycle']>['review']
 
@@ -41,28 +40,6 @@ const mergeLifecycleReview = (
     patch: review ? { review } : undefined,
   })
 
-const preserveVerifiedLifecycleTimestamps = (
-  task: Pick<Task, 'git' | 'result'>,
-  lifecycle: TaskGitLifecycle | undefined,
-): TaskGitLifecycle | undefined => {
-  if (!lifecycle) return lifecycle
-  const mergedAt = lifecycle.merged
-    ? (task.git?.lifecycle?.mergedAt ??
-      task.result?.handoff?.git?.lifecycle?.mergedAt)
-    : undefined
-  const cleanedAt = lifecycle.cleaned
-    ? (task.git?.lifecycle?.cleanedAt ??
-      task.result?.handoff?.git?.lifecycle?.cleanedAt)
-    : undefined
-  return mergeTaskGitLifecycle({
-    current: lifecycle,
-    patch: {
-      ...(mergedAt ? { mergedAt } : {}),
-      ...(cleanedAt ? { cleanedAt } : {}),
-    },
-  })
-}
-
 const resolveSourceTaskClosureTruth = (
   task: Pick<Task, 'git' | 'repoKey' | 'result'>,
 ): TaskGitExecution['lifecycle'] | undefined => {
@@ -79,7 +56,7 @@ const resolveSourceTaskClosureTruth = (
     lifecycle,
     task.result?.handoff?.git?.lifecycle?.review,
   )
-  return preserveVerifiedLifecycleTimestamps(
+  return preserveVerifiedTaskGitLifecycleTimestamps(
     task,
     resolveTaskGitLifecycleRuntimeTruth({
       git: sourceGitIdentity,
@@ -113,7 +90,7 @@ export const applyClosureTaskGitTruth = (
     const sourceGitIdentity = sourceTask.git ?? sourceTask.result?.handoff?.git
     if (!sourceGitIdentity) continue
 
-    const nextLifecycle = preserveVerifiedLifecycleTimestamps(
+    const nextLifecycle = preserveVerifiedTaskGitLifecycleTimestamps(
       sourceTask,
       resolveTaskGitLifecycleRuntimeTruth({
         git: sourceGitIdentity,

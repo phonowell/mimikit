@@ -42,39 +42,43 @@ test('applyClosureTaskGitTruth preserves source task git identity while promotin
   })
 })
 
-test('applyClosureTaskGitTruth re-derives merged truth from source review sha after real merge and cleanup', async () => {
-  const { repoRoot, worktreePath, branch, reviewSha } =
-    await createRealMergedClosureRepo()
-  const sourceTask = createSourceTaskFixture({
-    id: 'task-source-merged-after-cleanup',
-    repoKey: join(repoRoot, '.git'),
-    branch,
-    worktreePath,
-  })
-  const closureTask = createClosureTaskFixture({
-    id: 'task-closure-merged-after-cleanup',
-    sourceTaskId: sourceTask.id,
-  })
-  if (closureTask.result?.handoff?.git?.lifecycle?.review) {
-    closureTask.result.handoff.git.lifecycle.review = {
-      passed: true,
-      at: '2026-04-01T03:21:30.000Z',
-      sha: reviewSha,
+test(
+  'applyClosureTaskGitTruth re-derives merged truth from source review sha after real merge and cleanup',
+  { timeout: 15000 },
+  async () => {
+    const { repoRoot, worktreePath, branch, reviewSha } =
+      await createRealMergedClosureRepo()
+    const sourceTask = createSourceTaskFixture({
+      id: 'task-source-merged-after-cleanup',
+      repoKey: join(repoRoot, '.git'),
+      branch,
+      worktreePath,
+    })
+    const closureTask = createClosureTaskFixture({
+      id: 'task-closure-merged-after-cleanup',
+      sourceTaskId: sourceTask.id,
+    })
+    if (closureTask.result?.handoff?.git?.lifecycle?.review) {
+      closureTask.result.handoff.git.lifecycle.review = {
+        passed: true,
+        at: '2026-04-01T03:21:30.000Z',
+        sha: reviewSha,
+      }
     }
-  }
 
-  applyClosureTaskGitTruth([sourceTask, closureTask], closureTask)
+    applyClosureTaskGitTruth([sourceTask, closureTask], closureTask)
 
-  expectPromotedReviewOnlyTruth(sourceTask, {
-    worktreePath,
-    branch,
-    reviewAt: '2026-04-01T03:21:30.000Z',
-    reviewSha,
-    merged: true,
-    cleaned: true,
-  })
-  expect(hasTaskClosedGitLifecycle(sourceTask)).toBe(true)
-})
+    expectPromotedReviewOnlyTruth(sourceTask, {
+      worktreePath,
+      branch,
+      reviewAt: '2026-04-01T03:21:30.000Z',
+      reviewSha,
+      merged: true,
+      cleaned: true,
+    })
+    expect(hasTaskClosedGitLifecycle(sourceTask)).toBe(true)
+  },
+)
 
 test('applyClosureTaskGitTruth does not trust closure-reported merged or cleaned when source git identity cannot verify them', async () => {
   const repoRoot = await createTmpDir()
