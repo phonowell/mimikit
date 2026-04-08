@@ -65,7 +65,7 @@ test('task_control cancel stays allowed for same-focus replacement batch', () =>
   expect(feedback).toHaveLength(0)
 })
 
-test('task_control cancel stays allowed when a same-focus same-cwd unique active task is replaced without explicit cancel wording', () => {
+test('task_control cancel stays blocked when a same-focus same-cwd unique active task is replaced without explicit cancel wording', () => {
   const task = createIntentEvidenceTask({
     title: '修复 WebUI restart 与 scroll-bottom',
     cwd: '/repo/mimikit',
@@ -103,7 +103,11 @@ test('task_control cancel stays allowed when a same-focus same-cwd unique active
     },
   )
 
-  expect(feedback).toHaveLength(0)
+  expectSingleRejectedFeedback(feedback, {
+    action: 'task_control',
+    error: 'action_execution_rejected',
+    hintIncludes: ['intent-evidence guard 未通过', task.id],
+  })
 })
 
 test('task_control cancel stays blocked when replacement differs only by state-relative context ref normalization', () => {

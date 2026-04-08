@@ -30,7 +30,7 @@
 - 结构：`{ type: "set_plan", plan_id, plan }`
 - `plan_id = null` 表示创建
 - `plan_id != null` 表示整体替换该计划
-- `continuation_of? = { type:"plan"|"task", id }` 仅在该计划明确承接当前单一续跑锚点时可选；用于让 guard 先按结构化锚点判定续跑合法性，而不是要求用户重复整份合同文本
+- `continuation_of? = { type:"plan"|"task", id }` 仅在该计划明确承接当前续跑对象时可选；它用于提供 provenance 与候选定位，不是绕过任务合同语义校验的放行证
 - `plan` 必须包含：
   - `title`
   - `trigger`

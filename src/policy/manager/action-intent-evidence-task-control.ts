@@ -13,27 +13,6 @@ import type { Parsed } from '../actions/model/spec.js'
 const resolveTaskRef = (task: Task | undefined, taskId: string): string =>
   task?.title.trim() ? `${taskId} / ${task.title.trim()}` : taskId
 
-const supportsUniquePausedResumeTarget = (params: {
-  item: Extract<Parsed, { type: 'task_control' }>
-  task: Task | undefined
-  taskById?: Map<string, Task>
-  defaultFocusId?: string
-}): boolean => {
-  if (params.item.action !== 'resume') return false
-  if (!params.task || !params.taskById) return false
-  if (params.task.status !== 'paused') return false
-  const focusId = params.defaultFocusId?.trim()
-  if (!focusId || params.task.focusId.trim() !== focusId) return false
-  const pausedTasksInFocus = [...params.taskById.values()].filter(
-    (candidate) =>
-      candidate.status === 'paused' && candidate.focusId.trim() === focusId,
-  )
-  return (
-    pausedTasksInFocus.length === 1 &&
-    pausedTasksInFocus[0]?.id === params.task.id
-  )
-}
-
 export const validateTaskControlIntentEvidence = (params: {
   item: Extract<Parsed, { type: 'task_control' }>
   inputTexts: string[]
@@ -52,20 +31,9 @@ export const validateTaskControlIntentEvidence = (params: {
   if (cwdBase) candidates.push(cwdBase)
 
   if (
-    supportsUniquePausedResumeTarget({
-      item: params.item,
-      task,
-      ...(params.taskById ? { taskById: params.taskById } : {}),
-      ...(params.defaultFocusId
-        ? { defaultFocusId: params.defaultFocusId }
-        : {}),
-    })
-  )
-    return undefined
-
-  if (
     params.item.action === 'resume' &&
     instructions.length > 0 &&
+    !isSupportedByInputs({ candidates, inputs: params.inputTexts }) &&
     !isSupportedByInputs({
       candidates: instructions,
       combinedCandidate: instructions.join('\n'),

@@ -132,12 +132,12 @@
 - `enqueue_task`、`task_control`、`set_plan`、`delete_plan`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
 - 没有新的用户输入时，`task_result` 仍可驱动同一目标内的低风险续跑、常规纠偏、补证据或停在 handoff；不能据此越过高风险门禁。
-- 当本轮是 `task_result`-only 且运行时能确认单一清晰续跑锚点（当前 active plan 与本轮 result task 在 `cwd/resource mode/useWorktree` 上一致，或本轮 result task 自身带有单条结构化 `handoff.nextSteps[]`）时，manager 若只返回 advisory text、未给任何具体推进 action，会被 follow-up guard 打回 correction；必须改成具体 action，或输出受当前结构化结果/反馈支撑的 `decision` 来明确停在 handoff / 上提。
-- 当 `enqueue_task` / `set_plan` 明确是在延续当前单一锚点时，应优先填写结构化 `continuation_of={ type:"plan"|"task", id }`；guard 先按该锚点判定是否允许续跑，再退回文本证据兜底。
-- 对 `enqueue_task`，若本轮存在新的用户输入，且当前 focus 中只有一个明确延续目标（单一 active plan 或单一 result task），guard 允许沿该目标继续派发下一步；当前判定只看结构化一致性：focus、cwd、resource mode 与 worktree 语义是否延续，不要求用户逐字重复整份任务合同，也不再把词面相似度当成主链准入条件。
-- 对 `set_plan` 更新，若用户已明确引用当前 plan，且更新仍保持同一执行 lane（`cwd/resource mode/useWorktree` 不变），guard 会按结构化变更放行：`title/trigger/priority/max_runs` 与 task contract 中 `goal/scope/acceptance/out_of_scope` 的真实差异都可直接支撑更新，不再要求模型碰巧复述对应词面。
-- `task_control(cancel)` 支持“同 focus / 同 cwd 的唯一活跃任务被替代”这一例外；只要 replacement `enqueue_task` 本身有当前输入支撑，就不要求再额外命中同题材词面或显式取消措辞
-- `task_control(resume)` 支持“当前 focus 下只有一个 paused task”这一结构化例外；只要目标 task 就是该唯一 paused task，就不要求用户额外点名 `task_id/title` 或复述旧合同。若当前 focus 下存在多个 paused task，则仍需显式指认或更强证据。
+- 当本轮是 `task_result`-only 且运行时存在可疑续跑对象时，follow-up guard 只把 `cwd/resource mode/useWorktree`、`lastTaskId`、`continuation_of`、单一 active plan/task 视为候选缩小信号；只有再叠加语义一致与对象归属一致，才允许 advisory-only 轮次直接视作已续跑，否则必须产出具体 action 或显式 `decision` 停在 handoff / 上提。
+- 当 `enqueue_task` / `set_plan` 明确是在延续当前对象时，应优先填写结构化 `continuation_of={ type:"plan"|"task", id }`；它提供 provenance 与候选定位，但不能替代任务合同语义校验。
+- 对 `enqueue_task`，单一 active plan / 单一 result task、同仓同模式、相同 worktree 语义都只能帮助缩小候选；最终仍需确认 draft 与候选 plan/task 属于同一目标。
+- 对 `set_plan` 更新，用户引用当前 plan 只能说明“改的是哪个 plan”，不能单独说明“可以改成什么”；更新内容仍需被当前输入在语义上直接支撑。
+- `task_control(cancel)` 不再因为“同 focus / 同 cwd 的唯一活跃任务被替代”而自动成立；replacement batch 还必须有输入明确表达停止旧任务。
+- `task_control(resume)` 不再因为“当前 focus 下只有一个 paused task”而自动成立；没有新输入时默认不放行 resume，存在新输入时也必须能指向该 task 本身或其任务语义。
 - 两个 remember action 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入；`source_quote` 仅作可选审计提示，不再作为硬门槛
 
 ## Action Surface

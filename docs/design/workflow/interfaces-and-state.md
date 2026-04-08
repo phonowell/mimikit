@@ -195,7 +195,7 @@ schema：`src/persistence/storage/runtime-snapshot-schema.ts`
 - `taskPlans[*]` 当前使用 `trigger + effect` 结构，不再持久化顶层 `prompt/profile/source` 旧字段。
 - `taskPlans[*].trigger.mode = "on_worker_slot_freed"` 是边沿触发而不是电平触发；启动时若已有空闲容量会记一次初始可用边沿，随后只有容量增加才再次触发。
 - `taskPlans[*].effect.taskTemplate.useWorktree?` 用于显式记录计划任务是否要求独立 worktree；默认缺省视为 `false`。
-- `taskPlans[*].runtime.stage? = { summary, risk?, needsDecision, sourceTaskId, updatedAt }`：当前计划的阶段结论 digest。它来自最近一次与 `runtime.lastTaskId` 对齐的结果收口，用于 manager/read-model/WebUI 展示当前推进态，不承载执行步骤。
+- `taskPlans[*].runtime.stage? = { summary, risk?, needsDecision, sourceTaskId, updatedAt }`：当前计划的阶段结论 digest。它来自最近一次与 `runtime.lastTaskId` 对齐且通过 plan ownership 判定的结果收口，用于 manager/read-model/WebUI 展示当前推进态，不承载执行步骤。
 - hydrate / persist 阶段会用文件系统现状对账 git closure：若 worktree 已缺失或 review sentinel / merge 关系可推断，则会把结果写回 `tasks[*].git.lifecycle`，并同步到已有的 `tasks[*].result.handoff.git.lifecycle`；git closure 不再只停留在 WebUI 读时派生。
 
 恢复一致性规则（启动阶段）：

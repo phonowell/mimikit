@@ -1,6 +1,13 @@
 import { isActiveTask } from '../../work/orchestrator/task-state.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
+import {
+  matchesPlanToEnqueueDraft,
+  matchesPlanToSetPlanDraft,
+  matchesTaskToEnqueueDraft,
+  matchesTaskToSetPlanDraft,
+} from './authorization-semantics.js'
+
 import type { FeedbackContext } from './action-validation-context.js'
 import type { TaskResourceMode } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
@@ -44,6 +51,7 @@ export const supportsExplicitEnqueueContinuationAnchor = (
       })
     )
       return false
+    if (!matchesPlanToEnqueueDraft(plan, item)) return false
     if (!context.resultTaskIds?.size) return true
     const lastTaskId = plan.runtime.lastTaskId?.trim()
     if (!lastTaskId) return false
@@ -63,6 +71,7 @@ export const supportsExplicitEnqueueContinuationAnchor = (
     })
   )
     return false
+  if (!matchesTaskToEnqueueDraft(task, item)) return false
   if (!context.resultTaskIds?.size) return true
   return context.resultTaskIds.has(task.id)
 }
@@ -91,6 +100,7 @@ export const supportsExplicitSetPlanContinuationAnchor = (
       })
     )
       return false
+    if (!matchesPlanToSetPlanDraft(plan, item)) return false
     if (!context.resultTaskIds?.size) return true
     const lastTaskId = plan.runtime.lastTaskId?.trim()
     if (!lastTaskId) return false
@@ -110,6 +120,7 @@ export const supportsExplicitSetPlanContinuationAnchor = (
     })
   )
     return false
+  if (!matchesTaskToSetPlanDraft(task, item)) return false
   if (!context.resultTaskIds?.size) return true
   return context.resultTaskIds.has(task.id)
 }

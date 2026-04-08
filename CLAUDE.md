@@ -143,6 +143,8 @@
 - Guard 设计原则：guard 的目标是约束越权与保留可追溯性，不是放大模型微小格式波动；高风险动作可以 fail-closed，低风险或附属动作默认应 fail-soft，不得因附属写入失败污染主回复。
 - 显式锚点约束：`continuation_of`、`source_quote`、各类显式 anchor 只应作为强证据或审计信息，不应成为唯一通行证；显式锚点不匹配时，优先回退到现有上下文、结构化状态或其他可验证证据，而不是直接把本可继续的主链判死。
 - Provenance 约束：需要来源可追溯时，优先记录 runtime 可验证来源（当前输入 ID、结果 ID、focus/task/plan 归属、持久化 ref）；避免要求模型生成“必须逐字命中”的引用值作为唯一 provenance 载体。
+- 弱信号约束：`cwd`、`resourceMode`、`useWorktree`、`lastTaskId`、`continuation_of`、单一 active object、plan/task 标题命中，都只允许用于缩小候选集或提供审计线索；除非再叠加语义一致与对象归属一致，否则不得直接放行动作。
+- 授权分层原则：证据与 guard 的职责是处理高风险越权和高歧义裁决，不是替代自然语义理解；低风险 continuation / follow-up / stage 写回默认依赖“语义一致 + 归属一致 + runtime provenance”判定，避免在主链前再套一层脆弱协议。
 - 失败降级原则：辅助动作、记忆写入、档案写入、摘要写回一类非主链动作失败时，优先 suppress、丢弃或停在内部反馈；只有会改变用户目标、验收标准、任务执行或高风险副作用的失败，才允许升级为用户可见阻塞。
 - Runtime 续跑原则：若 runtime 已基于 active plan、触发器或结构化状态拥有明确续跑路径，不要再额外要求模型显式复述同一 `enqueue_task`/`set_plan` 才能继续；manager 负责判断是否继续，不负责重复输出 runtime 已能决定的脚手架。
 - 用户可见回复约束：内部 action 名、schema 字段名、guard 名、修复回合提示默认不得直接泄漏到用户回复；面向用户只输出阶段结论、当前风险与还缺的最小输入。
@@ -159,6 +161,13 @@
 
 ## 当前系统环境注意事项（经验教训）
 
+- `2026-04-08` 证据系统/续跑判定惨痛教训：
+  - 为修补“协议过严、经常误拦”，曾引入大量 fallback、显式锚点、唯一对象捷径和 shape-based continuation；结果同时制造两类故障：该继续的主链被误拦，不该继续的无关主线被误放。
+  - 这不是单点实现疏漏，而是授权模型错位：对脆弱格式信号过严，对弱结构信号过宽；同类问题已在 continuation、follow-up、set_plan、resume、cancel、plan 绑定、plan 写回多处复现。
+  - 后续涉及 intent-evidence / continuation / follow-up / plan ownership 的设计，默认先问“这层 guard 是否真的必要”；若只是为低风险主链补协议，不如直接删掉。
+  - 严禁再把 `cwd`/`resourceMode`/`useWorktree`/`lastTaskId`/唯一 active object 当作直接授权条件；它们最多只能帮助定位候选对象。
+  - 需要可追溯时优先让 runtime 记录 provenance；不要再逼模型生产脆弱锚点来换取“可继续执行”的资格。
+  - 若一个证据机制长期造成误拦、误放、维护负担高于收益，应优先删除或收缩，而不是继续堆补丁修补它。
 - 读取阶段先做编码校验：优先按 UTF-8 解释内容，避免基于终端乱码做补丁匹配
 - 终端乱码不等于文件损坏：以文件内容/diff 为准，不以显示层为准
 - Markdown 修改优先最小差异：定位目标段落/行一次替换，避免试探式补丁

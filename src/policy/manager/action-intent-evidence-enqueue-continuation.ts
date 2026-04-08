@@ -1,67 +1,14 @@
-import { compactTaskContractForMatching } from '../../foundation/shared/task-contract-compact.js'
-import { scoreTextOverlap } from '../../foundation/shared/text-search.js'
 import { isActiveTask } from '../../work/orchestrator/task-state.js'
 import { hasTaskClosedGitLifecycle } from '../../work/shared/task-git-closure-truth.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
-import { buildTaskContractFromDraft } from './task-contract.js'
+import {
+  matchesPlanToEnqueueDraft,
+  matchesTaskToEnqueueDraft,
+} from './authorization-semantics.js'
 
 import type { Task, TaskPlan } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
-
-const PAUSED_TASK_CONTINUATION_OVERLAP_THRESHOLD = 0.35
-
-const buildEnqueueContractText = (params: {
-  title: string
-  goal: string
-  scope: string
-  acceptance: string[]
-  outOfScope?: string | undefined
-}): string =>
-  [
-    params.title,
-    params.goal,
-    params.scope,
-    ...params.acceptance,
-    ...(params.outOfScope ? [params.outOfScope] : []),
-  ]
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .join('\n')
-
-const buildTaskContinuationText = (task: Task): string =>
-  (() => {
-    const contract = compactTaskContractForMatching(task.contract)
-    return buildEnqueueContractText({
-      title: task.title,
-      goal: contract?.goal ?? task.title,
-      scope: contract?.scope ?? task.title,
-      acceptance: contract?.acceptance ?? [],
-      ...(contract?.outOfScope ? { outOfScope: contract.outOfScope } : {}),
-    })
-  })()
-
-const hasContinuationMatch = (
-  left: string,
-  right: string,
-  threshold: number,
-): boolean =>
-  Math.max(scoreTextOverlap(left, right), scoreTextOverlap(right, left)) >=
-  threshold
-
-const buildDraftContinuationText = (
-  item: Extract<Parsed, { type: 'enqueue_task' }>,
-): string | undefined => {
-  const contract = buildTaskContractFromDraft(item.task)
-  if (!contract) return undefined
-  return buildEnqueueContractText({
-    title: item.task.title,
-    goal: contract.goal,
-    scope: contract.scope,
-    acceptance: contract.acceptance,
-    ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
-  })
-}
 
 const matchesDraftTaskMode = (params: {
   task: Task
@@ -77,19 +24,13 @@ export const resolvePausedTaskContinuationMatch = (params: {
 }): Task | undefined => {
   const focusId = params.defaultFocusId?.trim()
   if (!focusId || !params.taskById) return undefined
-  const taskText = buildDraftContinuationText(params.item)
-  if (!taskText) return undefined
   const pausedMatches = [...params.taskById.values()].filter((task) => {
     if (task.status !== 'paused') return false
     if (hasTaskClosedGitLifecycle(task)) return false
     if (task.focusId.trim() !== focusId) return false
     if (task.cwd.trim() !== params.item.task.cwd.trim()) return false
     if (!matchesDraftTaskMode({ task, item: params.item })) return false
-    return hasContinuationMatch(
-      buildTaskContinuationText(task),
-      taskText,
-      PAUSED_TASK_CONTINUATION_OVERLAP_THRESHOLD,
-    )
+    return matchesTaskToEnqueueDraft(task, params.item)
   })
   return pausedMatches.length === 1 ? pausedMatches[0] : undefined
 }
@@ -116,10 +57,12 @@ const supportsPlanContinuation = (params: {
   )
     return false
 
-  return (
-    Boolean(plan.effect.taskTemplate.useWorktree) ===
+  if (
+    Boolean(plan.effect.taskTemplate.useWorktree) !==
     (params.item.task.use_worktree === true)
   )
+    return false
+  return matchesPlanToEnqueueDraft(plan, params.item)
 }
 
 const supportsResultTaskContinuation = (params: {
@@ -144,7 +87,7 @@ const supportsResultTaskContinuation = (params: {
   if (task.cwd.trim() !== params.item.task.cwd.trim()) return false
   if (!matchesDraftTaskMode({ task, item: params.item })) return false
 
-  return true
+  return matchesTaskToEnqueueDraft(task, params.item)
 }
 
 export const supportsEnqueueContinuationIntentEvidence = (params: {

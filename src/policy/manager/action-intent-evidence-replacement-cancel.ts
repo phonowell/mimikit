@@ -4,6 +4,7 @@ import {
 } from '../../work/orchestrator/task-state.js'
 
 import { isSupportedByInputs } from './action-intent-evidence-match.js'
+import { collectTaskIntentCandidates } from './authorization-semantics.js'
 import {
   buildTaskContractFromDraft,
   resolveWorkerPromptFromDraft,
@@ -92,6 +93,13 @@ export const supportsReplacementCancelIntentEvidence = (params: {
       enqueueAction,
       inputTexts: params.inputTexts,
       ...(params.stateDir ? { stateDir: params.stateDir } : {}),
+    })
+  )
+    return false
+  if (
+    !isSupportedByInputs({
+      candidates: collectTaskIntentCandidates(params.task),
+      inputs: params.inputTexts,
     })
   )
     return false

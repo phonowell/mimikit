@@ -1,8 +1,14 @@
 import { clipCompactText } from '../../foundation/shared/text.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
+import { GLOBAL_FOCUS_ID } from '../../work/focus/constants.js'
 import { updateRuntimePlan } from '../../work/orchestrator/runtime-domain-write.js'
 import { resolveTaskResultSummary } from '../../work/shared/task-state.js'
+
+import {
+  matchesPlanToResult,
+  matchesPlanToTaskTitle,
+} from './authorization-semantics.js'
 
 import type {
   Task,
@@ -15,15 +21,27 @@ const resolveTriggeredPlanMatch = (
   plans: TaskPlan[],
   task: Pick<Task, 'focusId' | 'title'>,
 ): TaskPlan | undefined => {
-  if (plans.length === 1) return plans[0]
+  if (plans.length === 1) {
+    const [plan] = plans
+    if (!plan) return undefined
+    if (plan.focusId !== task.focusId && plan.focusId !== GLOBAL_FOCUS_ID)
+      return undefined
+    return matchesPlanToTaskTitle(plan, task) ? plan : undefined
+  }
 
-  const focusMatches = plans.filter((plan) => plan.focusId === task.focusId)
-  if (focusMatches.length === 1) return focusMatches[0]
+  const focusMatches = plans.filter(
+    (plan) => plan.focusId === task.focusId || plan.focusId === GLOBAL_FOCUS_ID,
+  )
+  if (focusMatches.length === 1) {
+    const [plan] = focusMatches
+    if (!plan) return undefined
+    return matchesPlanToTaskTitle(plan, task) ? plan : undefined
+  }
 
   const normalizedTitle = task.title.trim()
   if (!normalizedTitle) return undefined
-  const titleMatches = focusMatches.filter(
-    (plan) => plan.title.trim() === normalizedTitle,
+  const titleMatches = focusMatches.filter((plan) =>
+    matchesPlanToTaskTitle(plan, task),
   )
   if (titleMatches.length === 1) return titleMatches[0]
   return undefined
@@ -99,12 +117,25 @@ export const applyPlanCompletionState = (
   }
 
   let changed = false
-  for (const plan of runtime.domain.taskPlans) {
-    const taskId = plan.runtime.lastTaskId?.trim()
-    if (!taskId) continue
-    const matched = latestByTaskId.get(taskId)
-    if (!matched) continue
-    if (plan.updatedAt === matched.completedAt) continue
+  for (const [taskId, matched] of latestByTaskId) {
+    const matchedPlans = runtime.domain.taskPlans.filter(
+      (plan) => plan.runtime.lastTaskId?.trim() === taskId,
+    )
+    if (matchedPlans.length === 0) continue
+    const hasSemanticSignal =
+      Boolean(matched.title?.trim()) ||
+      Boolean(matched.handoff?.summary?.trim()) ||
+      Boolean(
+        matched.handoff?.nextSteps?.some((step) => step.trim().length > 0),
+      )
+    const targetPlans = hasSemanticSignal
+      ? matchedPlans.filter((plan) => matchesPlanToResult(plan, matched))
+      : matchedPlans.length === 1
+        ? matchedPlans
+        : []
+    if (targetPlans.length !== 1) continue
+    const [plan] = targetPlans
+    if (!plan || plan.updatedAt === matched.completedAt) continue
     const stageSummary = resolvePlanStageSummary(matched)
     const stageRisk = resolvePlanStageRisk(matched)
     updateRuntimePlan({

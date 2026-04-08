@@ -1,6 +1,9 @@
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
+import { buildSetPlanUpdateSemanticText } from './authorization-plan-semantics.js'
+import { hasSemanticAlignment } from './authorization-semantics.js'
+
 import type { TaskPlan } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
@@ -59,45 +62,32 @@ const hasSameExecutionLane = (
 export const hasStructuredSetPlanReferenceUpdate = (params: {
   item: SetPlanItem
   currentPlan: TaskPlan | undefined
+  inputTexts: string[]
 }): boolean => {
   const { currentPlan, item } = params
   if (!currentPlan) return false
   if (!hasSameExecutionLane(item, currentPlan)) return false
-
-  if (
-    normalizeOptionalText(currentPlan.title) !==
-    normalizeOptionalText(item.plan.title)
-  )
-    return true
-  if (
-    normalizeOptionalText(currentPlan.effect.taskTemplate.title) !==
-    normalizeOptionalText(item.plan.task.title)
-  )
-    return true
-  if (
-    normalizeOptionalText(currentPlan.effect.taskContract?.goal) !==
-    normalizeOptionalText(item.plan.task.goal)
-  )
-    return true
-  if (
-    resolveCurrentScope(currentPlan) !==
-    normalizeOptionalText(item.plan.task.in_scope.join('；'))
-  )
-    return true
-  if (
-    !equalNormalizedLists(
+  const unchanged =
+    normalizeOptionalText(currentPlan.title) ===
+      normalizeOptionalText(item.plan.title) &&
+    normalizeOptionalText(currentPlan.effect.taskTemplate.title) ===
+      normalizeOptionalText(item.plan.task.title) &&
+    normalizeOptionalText(currentPlan.effect.taskContract?.goal) ===
+      normalizeOptionalText(item.plan.task.goal) &&
+    resolveCurrentScope(currentPlan) ===
+      normalizeOptionalText(item.plan.task.in_scope.join('；')) &&
+    equalNormalizedLists(
       resolveCurrentAcceptance(currentPlan),
       normalizeTextList(item.plan.task.done_when),
-    )
+    ) &&
+    resolveCurrentOutOfScope(currentPlan) ===
+      normalizeOptionalText(item.plan.task.out_of_scope.join('；')) &&
+    resolveCurrentTrigger(currentPlan) === resolveDraftTrigger(item) &&
+    currentPlan.priority === item.plan.priority &&
+    (currentPlan.maxRuns ?? null) === item.plan.max_runs
+  if (unchanged) return false
+  return hasSemanticAlignment(
+    buildSetPlanUpdateSemanticText(item, currentPlan),
+    params.inputTexts.join('\n'),
   )
-    return true
-  if (
-    resolveCurrentOutOfScope(currentPlan) !==
-    normalizeOptionalText(item.plan.task.out_of_scope.join('；'))
-  )
-    return true
-  if (resolveCurrentTrigger(currentPlan) !== resolveDraftTrigger(item))
-    return true
-  if (currentPlan.priority !== item.plan.priority) return true
-  return (currentPlan.maxRuns ?? null) !== item.plan.max_runs
 }

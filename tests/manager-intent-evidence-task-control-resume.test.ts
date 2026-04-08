@@ -8,7 +8,7 @@ import {
   expectSingleRejectedFeedback,
 } from './helpers/manager-intent-evidence.js'
 
-test('task_control resume stays allowed when the target is the only paused task in current focus even if user input is generic continuation text', () => {
+test('task_control resume stays blocked when the target is the only paused task in current focus but user input is only generic continuation text', () => {
   const task = createTask({
     id: 'task-paused-auth-guard-only',
     title: '继续收敛 auth guard 主链',
@@ -36,10 +36,14 @@ test('task_control resume stays allowed when the target is the only paused task 
     },
   )
 
-  expect(feedback).toHaveLength(0)
+  expectSingleRejectedFeedback(feedback, {
+    action: 'task_control',
+    error: 'action_execution_rejected',
+    hintIncludes: ['intent-evidence guard 未通过', task.id],
+  })
 })
 
-test('task_control resume stays allowed for the only paused task in current focus even when resume instructions are not restated verbatim in user input', () => {
+test('task_control resume stays allowed when user input semantically names the paused task even if instructions are not restated verbatim', () => {
   const task = createTask({
     id: 'task-paused-auth-guard-instructions',
     title: '继续收敛 auth guard 主链',
@@ -59,7 +63,9 @@ test('task_control resume stays allowed for the only paused task in current focu
       },
     ],
     {
-      inputs: [createUserInput('继续把这一条线做完。')],
+      inputs: [
+        createUserInput('继续收敛 auth guard 主链，把暂停的那项接着做完。'),
+      ],
       taskStatusById: new Map([[task.id, task.status]]),
       taskById: new Map([[task.id, task]]),
       supplementalEvidenceSources: new Set(['task_result']),
@@ -99,7 +105,11 @@ test('task_control resume stays allowed for the only paused task in current focu
     },
   )
 
-  expect(feedback).toHaveLength(0)
+  expectSingleRejectedFeedback(feedback, {
+    action: 'task_control',
+    error: 'action_execution_rejected',
+    hintIncludes: ['intent-evidence guard 未通过', task.id],
+  })
 })
 
 test('task_control resume stays blocked on generic continuation text when current focus has multiple paused tasks', () => {

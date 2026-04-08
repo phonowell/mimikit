@@ -72,6 +72,7 @@ export const validateSetPlanIntentEvidence = (params: {
         hasStructuredSetPlanReferenceUpdate({
           item: params.item,
           currentPlan,
+          inputTexts: params.inputTexts,
         })
       )
         return undefined

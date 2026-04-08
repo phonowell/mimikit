@@ -2,6 +2,7 @@ import { resolveDefaultFocusId } from '../../work/focus/index.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
 import { formatMissingResultFollowupActionHint } from './action-feedback-hints.js'
+import { matchesPlanToTask } from './authorization-semantics.js'
 import { resolveStructuredAnchoredPlan } from './task-result-followup-plan-anchor.js'
 import { hasSupportedStopDecision } from './task-result-stop-decision.js'
 
@@ -47,7 +48,7 @@ const supportsSinglePlanRuntimeContinuation = (params: {
     return false
   if (Boolean(plan.effect.taskTemplate.useWorktree) !== Boolean(task.git))
     return false
-  return true
+  return matchesPlanToTask(plan, task)
 }
 
 export const resolveResultFollowupFeedback = (params: {
@@ -93,8 +94,16 @@ export const resolveResultFollowupFeedback = (params: {
     task,
     result,
   })
-  if (structuredAnchoredPlan || activePlans.length === 1) {
-    const plan = structuredAnchoredPlan ?? activePlans[0]
+  if (structuredAnchoredPlan) {
+    if (
+      supportsSinglePlanRuntimeContinuation({
+        plan: structuredAnchoredPlan,
+        task,
+      })
+    )
+      return undefined
+  } else if (activePlans.length === 1) {
+    const [plan] = activePlans
     if (
       supportsSinglePlanRuntimeContinuation({
         plan,
@@ -103,7 +112,6 @@ export const resolveResultFollowupFeedback = (params: {
     )
       return undefined
   }
-  if (activePlans.length > 1) return undefined
   if (!resolveSingleNextStep(result)) return undefined
   if (
     hasSupportedStopDecision({

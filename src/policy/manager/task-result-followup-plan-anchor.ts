@@ -1,5 +1,7 @@
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
+import { matchesPlanToTask } from './authorization-semantics.js'
+
 import type {
   Task,
   TaskPlan,
@@ -15,10 +17,13 @@ export const hasStructuredPlanFollowupAnchor = (params: {
   if (!lastTaskId || lastTaskId !== params.result.taskId) return false
   if (params.plan.effect.taskTemplate.cwd.trim() !== params.task.cwd.trim())
     return false
-  return (
+  if (
     resolveTaskResourceMode(params.plan.effect.taskTemplate.resourceMode) ===
     resolveTaskResourceMode(params.task.resourceMode)
   )
+    return matchesPlanToTask(params.plan, params.task)
+
+  return false
 }
 
 export const resolveStructuredAnchoredPlan = (params: {
