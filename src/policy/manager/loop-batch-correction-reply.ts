@@ -4,8 +4,7 @@ const GENERIC_CORRECTION_REPLY =
   '继续执行前还缺 3 个最小信息，每项一句即可：1) 目标：最终要我产出什么；2) 范围与不做项：这次只处理哪里、哪些不要动；3) 验收标准：怎样算完成，至少一条。若一时说不全，请先缩成一个最小可交付结果。'
 
 const isRetryableActionFeedback = (item: ManagerActionFeedback): boolean =>
-  item.error === 'invalid_action_args' ||
-  item.code === 'missing_result_followup_action'
+  item.error === 'invalid_action_args'
 
 export const shouldRetrySelfRepairRound = (
   round: number,
@@ -22,9 +21,6 @@ export const buildCorrectionFallbackReply = (
   if (!first) return GENERIC_CORRECTION_REPLY
   if (feedback.every((item) => item.code === 'intent_evidence_missing'))
     return '当前没有足够的直接授权来继续这一步，我先停在这里。若要继续，请直接说明要执行什么、范围是什么、怎样算完成；如果是在操作现有任务或计划，请明确指出它。'
-
-  if (feedback.every((item) => item.code === 'missing_result_followup_action'))
-    return '当前结果还没有形成可直接执行的下一步，我先停在这里。若要继续，请直接说明下一步，或明确这一步应该停下还是上提。'
 
   if (feedback.every((item) => item.code === 'task_contract_missing'))
     return '继续执行前还缺最小执行边界：goal、in_scope、done_when，以及 cwd/mode。请把这几项直接说清楚后再继续。'

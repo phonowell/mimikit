@@ -18,6 +18,7 @@ import { markCreateAttempt } from './action-apply-guards.js'
 import { resolveActionFocusId } from './action-focus-id.js'
 import { linkTriggeredPlanToTask } from './plan-progress.js'
 import { handleActiveSemanticTask } from './run-task-existing.js'
+import { resumePausedFingerprintTask } from './run-task-resume-paused.js'
 import { resolveRunTaskTarget } from './run-task-target.js'
 import {
   buildTaskContractFromDraft,
@@ -101,6 +102,14 @@ export const applyRunTask = async (
   if (seen.has(dedupeKeyWithContract)) return 'continue'
   seen.add(dedupeKeyWithContract)
 
+  if (
+    await resumePausedFingerprintTask({
+      runtime,
+      fingerprint,
+      triggeredPlanIds: options?.triggeredPlanIds,
+    })
+  )
+    return 'continue'
   const activeSemanticTask = findActiveTaskBySemanticKey(
     runtime.domain.tasks,
     semanticKey,

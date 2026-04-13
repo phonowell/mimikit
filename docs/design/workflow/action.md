@@ -9,12 +9,9 @@
 
 ## Turn 协议
 
-- manager 对外只接受单个结构化对象：`{ reply, actions, decision }`
+- manager 对外只接受单个结构化对象：`{ reply, actions }`
 - `reply`：用户可见文本
 - `actions`：结构化 action 数组
-- `decision`：本轮编排判断；仅用于显式声明 `continue | handoff | escalate`
-- 当 `decision.mode = handoff | escalate` 时，必须附结构化 `reason`
-- `decision` 不是自由文本捷径；运行时只会在当前批次已有匹配的结构化结果/反馈证据时承认该停下决定
 - 不存在 `version`
 - 不存在 `reply_text`
 - 不存在 XML 尾巴、`Parsed.attrs` 或外部/内部双语法
@@ -60,6 +57,7 @@
 - 规范化会优先压缩单条字段中的 `；` 分句，并裁剪列表数量；当前覆盖 `goal/in_scope/out_of_scope/done_when/context_refs/instructions`。
 - `cwd` 必须指向现有目录。
 - `use_worktree` 必填；不需要独立 worktree 时显式传 `false`。
+- 不存在 `continuation_of` 一类延续锚点；是否属于同一条续跑链，只由 runtime state、对象归属与风险门禁决定。
 - 仅当 `task.use_worktree=true` 且 `mode="write"` 时，运行时才会为仓库任务 materialize git worktree；否则直接在给定 `cwd` 执行。
 - 对 `use_worktree=true` 的仓库写任务，`cwd` 只表示仓库内真实执行起点；worktree 路径由运行时 materialize，manager 不得直接填写未来 worktree 路径。
 - 若 `cwd` 是 repo 内子路径，运行时会把该子路径映射到目标 worktree；若映射后的目录不存在、不是目录或不可访问，`enqueue_task` 会直接拒绝，不会创建 task。
@@ -71,6 +69,7 @@
 - `action = pause | resume | cancel`
 - `instructions[]` 仅在 `action="resume"` 时作为下一轮恢复补充说明，其余情况必须为空数组。
 - 对 `resume`，若当前 focus 下只有一个 paused task，guard 允许把泛化续跑输入直接落到该 task；不再要求用户重复 `task_id/title` 或旧合同词面。
+- 对高风险 `pause/cancel`，当前用户输入必须直接引用 `task_id/title`；`branch`、`cwd basename` 一类弱信号不能单独构成授权。
 
 ### `set_plan`
 
@@ -83,6 +82,7 @@
   - `priority`
   - `max_runs`
 - `plan.task` 与 `enqueue_task.task` 使用同一合同
+- 不存在 `continuation_of`、diff-authorization 或结果旁证入口；高风险 `set_plan(write)` 只看当前用户输入是否直接授权。
 
 ### `delete_plan`
 
@@ -129,15 +129,29 @@
 - 证据充分时默认推进；不要因“更稳妥”把已可执行事项退回成多余追问。
 - manager 默认工作模式是“继续推进并做常规判断”；不要把 worker 的“建议下一步”原样退回给用户。
 - `intent-evidence` 是风险分级门禁，不是所有 action 一刀切的字面重叠比较器。
-- `enqueue_task`、`task_control`、`set_plan`、`delete_plan`、`remember_memory`、`remember_project_profile` 都受 intent-evidence guard 约束
+- action 授权的最小模型只有三层：schema/shape、runtime legality、risk gate；不再额外维护 continuation anchor、replacement batch、resume-existing 这类平行判定层。
+- 高风险 intent-evidence guard 只拦：
+  - `enqueue_task` with `task.mode="write"`
+  - `set_plan` with `plan.task.mode="write"`
+  - `task_control` with `action="pause"|"cancel"`
+  - `delete_plan`
+  - `remember_memory`
+  - `remember_project_profile`
+- 低风险 continuation 默认不走字面重叠硬拦截；`enqueue_task(read)`、`set_plan(read)`、`task_control(resume)` 主要依赖 runtime state、对象归属和现有 provenance。
 - 没有当前用户输入直接支撑时，`task_result` / `history` / `trigger` 只能作为补充证据，不能单独驱动高风险 action
 - 没有新的用户输入时，`task_result` 仍可驱动同一目标内的低风险续跑、常规纠偏、补证据或停在 handoff；不能据此越过高风险门禁。
-- 当本轮是 `task_result`-only 且运行时存在可疑续跑对象时，follow-up guard 只把 `cwd/resource mode/useWorktree`、`lastTaskId`、`continuation_of`、单一 active plan/task 视为候选缩小信号；只有再叠加语义一致与对象归属一致，才允许 advisory-only 轮次直接视作已续跑，否则必须产出具体 action 或显式 `decision` 停在 handoff / 上提。
-- 当 `enqueue_task` / `set_plan` 明确是在延续当前对象时，应优先填写结构化 `continuation_of={ type:"plan"|"task", id }`；它提供 provenance 与候选定位，但不能替代任务合同语义校验。
-- 对 `enqueue_task`，单一 active plan / 单一 result task、同仓同模式、相同 worktree 语义都只能帮助缩小候选；最终仍需确认 draft 与候选 plan/task 属于同一目标。
-- 对 `set_plan` 更新，用户引用当前 plan 只能说明“改的是哪个 plan”，不能单独说明“可以改成什么”；更新内容仍需被当前输入在语义上直接支撑。
-- `task_control(cancel)` 不再因为“同 focus / 同 cwd 的唯一活跃任务被替代”而自动成立；replacement batch 还必须有输入明确表达停止旧任务。
-- `task_control(resume)` 不再因为“当前 focus 下只有一个 paused task”而自动成立；没有新输入时默认不放行 resume，存在新输入时也必须能指向该 task 本身或其任务语义。
+- result-only follow-up 不再因为“reply-only”而进入协议修复回合；是否继续由 manager policy 与 runtime state 负责，不再额外要求 stop `decision` 或 follow-up 专用 action。
+- 高风险动作的授权只看当前用户输入，不再依赖 continuation anchor、result-only 旁证、replacement batch 或“当前只有一个候选对象”一类弱信号。
+- `enqueue_task(write)` / `set_plan(write)` 需要当前用户输入直接授权；对象归属与 runtime state 只负责确认合法性，不负责替用户补授权。
+- 若高风险写动作本质上是在延续或更新现有对象，优先要求当前用户直接点名该 `plan/task`；一旦对象级授权成立，就不要再拿新合同全文重复做第二层授权。
+- 但写任务的执行 lane 也属于高风险边界：`cwd`、`mode/resourceMode`、`use_worktree/useWorktree` 共同定义“在哪儿、以什么写权限、是否进入独立 worktree 闭环”。
+- 因此，对现有 write `plan/task` 的 continuation / update，只在“同一 execution lane”内允许对象级授权直接放行；若新 draft 改了 lane，当前用户输入必须显式支撑新的 `cwd` / 模式 / worktree 语义，不能只靠点名对象或 goal overlap 顺带越权。
+- 若当前 `focus` 下同时存在多个语义相近的 write continuation 候选，guard 必须按更严格而不是更宽松的方式工作：只要这些候选对新 draft 的 lane 没有形成单一一致支持，就必须从当前用户输入中看到对新 lane 的明确说明。
+- 但对象级授权不是“点名对象即可任意改写”。若 `set_plan(update)` 已改成无关目标，仍必须从当前用户输入中看到明确的变更方向；只说“更新这个计划”不够。
+- `enqueue_task` 若命中完全同义的 paused task，由 apply/runtime 直接恢复；不再在 validation 阶段要求模型先改写成 `task_control(resume)`。
+- `task_control(cancel)` 回到纯高风险停止动作；必须由当前用户输入直接指向目标 task，不再允许同批次 replacement action 旁证放行。
+- `task_control(resume)` 属于低风险 continuation；只要当前 action 已指向明确 paused task，就不再额外要求当前输入字面命中该 task。
+- 若 runtime 已能凭 fingerprint、状态机或对象归属决定“复用 / 恢复 / 继续”，validation 不得再复制一份前置状态决策。
 - 两个 remember action 必须命中当前轮 provenance：`source_input_id` 指向当前用户输入；`source_quote` 仅作可选审计提示，不再作为硬门槛
 
 ## Action Surface

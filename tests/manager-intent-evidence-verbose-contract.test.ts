@@ -7,7 +7,7 @@ import {
   createIntentEvidenceUserInput as createUserInput,
 } from './helpers/manager-intent-evidence.js'
 
-test('enqueue_task continuation stays allowed when historical contract is verbose but next draft is compacted', () => {
+test('enqueue_task(read) continuation stays allowed when historical contract is verbose but next draft is compacted', () => {
   const finishedTask = createIntentEvidenceTask({
     id: 'task-finished-output-budget',
     title: '收敛 output tokens 主链',
@@ -37,7 +37,8 @@ test('enqueue_task continuation stays allowed when historical contract is verbos
         task: {
           title: '继续收敛 output tokens 主链',
           cwd: '/repo/mimikit',
-          mode: 'write',
+          mode: 'read',
+          use_worktree: false,
           goal: '继续收敛 output tokens 主链并落地最小实现',
           in_scope: [
             '只处理 manager 侧结构化 action 输出',

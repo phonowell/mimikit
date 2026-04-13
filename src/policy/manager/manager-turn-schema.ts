@@ -14,39 +14,6 @@ import {
 
 const s = z.string().trim().min(1)
 const optionalInlineString = z.string().trim().optional()
-const managerContinuationAnchorSchema = z.discriminatedUnion('type', [
-  z.strictObject({
-    type: z.literal('task'),
-    id: taskIdSchema,
-  }),
-  z.strictObject({
-    type: z.literal('plan'),
-    id: planIdSchema,
-  }),
-])
-const managerDecisionReasonSchema = z.enum([
-  'high_risk',
-  'goal_change',
-  'acceptance_change',
-  'evidence_conflict',
-  'evidence_insufficient',
-  'repair_budget_exceeded',
-])
-
-export const managerDecisionSchema = z
-  .strictObject({
-    mode: z.enum(['continue', 'handoff', 'escalate']),
-    reason: managerDecisionReasonSchema.optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.mode === 'continue') return
-    if (value.reason) return
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['reason'],
-      message: `decision.mode="${value.mode}" 时必须给出结构化 reason`,
-    })
-  })
 
 export const managerPlanTriggerSchema = z.discriminatedUnion('type', [
   z.strictObject({
@@ -81,13 +48,11 @@ export const managerPlanDraftParseSchema = z.strictObject({
 
 export const enqueueTaskActionSchema = z.strictObject({
   type: z.literal('enqueue_task'),
-  continuation_of: managerContinuationAnchorSchema.optional(),
   task: managerTaskDraftSchema,
 })
 
 export const enqueueTaskActionParseSchema = z.strictObject({
   type: z.literal('enqueue_task'),
-  continuation_of: managerContinuationAnchorSchema.optional(),
   task: managerTaskDraftParseSchema,
 })
 
@@ -111,14 +76,12 @@ export const taskControlActionSchema = z
 export const setPlanActionSchema = z.strictObject({
   type: z.literal('set_plan'),
   plan_id: planIdSchema.nullable(),
-  continuation_of: managerContinuationAnchorSchema.optional(),
   plan: managerPlanDraftSchema,
 })
 
 export const setPlanActionParseSchema = z.strictObject({
   type: z.literal('set_plan'),
   plan_id: planIdSchema.nullable(),
-  continuation_of: managerContinuationAnchorSchema.optional(),
   plan: managerPlanDraftParseSchema,
 })
 
@@ -161,7 +124,6 @@ export const managerActionSchema = z.discriminatedUnion('type', [
 export const managerTurnSchema = z.strictObject({
   reply: z.string(),
   actions: z.array(managerActionSchema),
-  decision: managerDecisionSchema.optional(),
 })
 
 export const managerActionParseSchema = z.discriminatedUnion('type', [
@@ -177,10 +139,8 @@ export const managerActionParseSchema = z.discriminatedUnion('type', [
 export const managerTurnParseSchema = z.strictObject({
   reply: z.string(),
   actions: z.array(managerActionParseSchema),
-  decision: managerDecisionSchema.optional(),
 })
 
 export type ManagerTurnAction = z.infer<typeof managerActionSchema>
-export type ManagerTurnDecision = z.infer<typeof managerDecisionSchema>
 export type ManagerTaskDraft = z.infer<typeof managerTaskDraftSchema>
 export type ManagerPlanDraft = z.infer<typeof managerPlanDraftSchema>

@@ -2,75 +2,57 @@ import {
   validateRememberMemoryIntentEvidence,
   validateRememberProjectProfileIntentEvidence,
 } from './action-intent-evidence-dialog-memory.js'
-import { validateEnqueueTaskIntentEvidence } from './action-intent-evidence-enqueue.js'
 import {
   buildMissingIntentEvidenceHint,
   collectUserIntentTexts,
 } from './action-intent-evidence-match.js'
-import { validateSetPlanIntentEvidence } from './action-intent-evidence-set-plan-validation.js'
-import { validateTaskControlIntentEvidence } from './action-intent-evidence-task-control.js'
+import {
+  resolveDeletePlanIntentEvidenceHint,
+  resolveTaskControlIntentEvidenceHint,
+} from './action-intent-evidence-object-control.js'
+import {
+  resolveEnqueueTaskIntentEvidenceHint,
+  resolveSetPlanIntentEvidenceHint,
+} from './action-intent-evidence-write-actions.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
-import type { Task, TaskPlan, UserInput } from '../../foundation/types/index.js'
+import type { FeedbackContext } from './action-validation-context.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-type IntentEvidenceContext = {
-  stateDir?: string
-  inputs?: UserInput[]
-  taskById?: Map<string, Task>
-  planById?: Map<string, TaskPlan>
-  resultTaskIds?: Set<string>
-  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
-  currentActions?: Parsed[]
-  defaultFocusId?: string
+const requiresIntentEvidence = (item: Parsed): boolean => {
+  if (item.type === 'delete_plan') return true
+  if (item.type === 'remember_memory') return true
+  if (item.type === 'remember_project_profile') return true
+  if (item.type === 'enqueue_task') return item.task.mode === 'write'
+  if (item.type === 'set_plan') return item.plan.task.mode === 'write'
+  if (item.type === 'task_control')
+    return item.action === 'pause' || item.action === 'cancel'
+  return false
 }
-
-const INTENT_EVIDENCE_REQUIRED_ACTIONS = new Set([
-  'enqueue_task',
-  'task_control',
-  'set_plan',
-  'delete_plan',
-  'remember_memory',
-  'remember_project_profile',
-])
-
-const requiresDirectUserEvidence = (actionName: Parsed['type']): boolean =>
-  actionName === 'delete_plan'
-
-const supportsResultOnlyContinuation = (actionName: Parsed['type']): boolean =>
-  actionName === 'enqueue_task' ||
-  actionName === 'task_control' ||
-  actionName === 'set_plan'
 
 export const resolveIntentEvidenceRejectionHint = (
   item: Parsed,
-  context: IntentEvidenceContext,
+  context: Pick<
+    FeedbackContext,
+    | 'inputs'
+    | 'taskById'
+    | 'planById'
+    | 'resultTaskIds'
+    | 'defaultFocusId'
+    | 'supplementalEvidenceSources'
+  >,
 ): string | undefined => {
-  if (!INTENT_EVIDENCE_REQUIRED_ACTIONS.has(item.type)) return undefined
-  if (
-    !requiresDirectUserEvidence(item.type) &&
-    !context.supplementalEvidenceSources?.size
-  )
-    return undefined
+  if (!requiresIntentEvidence(item)) return undefined
 
   const inputTexts = collectUserIntentTexts(context.inputs)
   if (inputTexts.length === 0) {
-    if (
-      context.supplementalEvidenceSources?.size &&
-      supportsResultOnlyContinuation(item.type)
-    ) {
-      // Let action-specific continuation validators decide whether the
-      // available task_result/plan anchors are strong enough to continue.
-    } else {
-      return buildMissingIntentEvidenceHint({
-        actionName: item.type,
-        evidenceSources: context.supplementalEvidenceSources,
-      })
-    }
+    return buildMissingIntentEvidenceHint({
+      actionName: item.type,
+      evidenceSources: context.supplementalEvidenceSources,
+    })
   }
 
   if (item.type === 'enqueue_task') {
-    return validateEnqueueTaskIntentEvidence({
+    return resolveEnqueueTaskIntentEvidenceHint({
       item,
       inputTexts,
       ...(context.taskById ? { taskById: context.taskById } : {}),
@@ -87,34 +69,30 @@ export const resolveIntentEvidenceRejectionHint = (
     })
   }
   if (item.type === 'task_control') {
-    return validateTaskControlIntentEvidence({
+    return resolveTaskControlIntentEvidenceHint({
       item,
       inputTexts,
-      ...(context.stateDir ? { stateDir: context.stateDir } : {}),
       ...(context.taskById ? { taskById: context.taskById } : {}),
-      ...(context.currentActions
-        ? { currentActions: context.currentActions }
-        : {}),
-      ...(context.defaultFocusId
-        ? { defaultFocusId: context.defaultFocusId }
-        : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),
     })
   }
   if (item.type === 'set_plan') {
-    return validateSetPlanIntentEvidence({
+    return resolveSetPlanIntentEvidenceHint({
       item,
       inputTexts,
-      ...(context.taskById ? { taskById: context.taskById } : {}),
       ...(context.planById ? { planById: context.planById } : {}),
-      ...(context.resultTaskIds
-        ? { resultTaskIds: context.resultTaskIds }
+      ...(context.supplementalEvidenceSources
+        ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),
-      ...(context.defaultFocusId
-        ? { defaultFocusId: context.defaultFocusId }
-        : {}),
+    })
+  }
+  if (item.type === 'delete_plan') {
+    return resolveDeletePlanIntentEvidenceHint({
+      item,
+      inputTexts,
+      ...(context.planById ? { planById: context.planById } : {}),
       ...(context.supplementalEvidenceSources
         ? { supplementalEvidenceSources: context.supplementalEvidenceSources }
         : {}),

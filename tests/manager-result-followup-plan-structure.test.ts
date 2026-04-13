@@ -5,7 +5,7 @@ import { resolveRoundFollowup } from '../src/policy/manager/loop-batch-round-fol
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-test('resolveRoundFollowup rejects advisory-only result follow-up when the only active plan changes worktree semantics', async () => {
+test('resolveRoundFollowup allows advisory-only result follow-up when the only active plan changes worktree semantics', async () => {
   const runtime = await createTestRuntimeState({
     workDir: '/tmp/mimikit-followup-plan-structure-test',
     withGlobalFocus: false,
@@ -86,11 +86,5 @@ test('resolveRoundFollowup rejects advisory-only result follow-up when the only 
     wakeProfile: 'task_result',
   })
 
-  expect(followup.done).toBe(false)
-  if (followup.done) return
-  expect(followup.extra.actionFeedback?.[0]).toMatchObject({
-    action: 'manager_followup',
-    error: 'action_execution_rejected',
-    code: 'missing_result_followup_action',
-  })
+  expect(followup.done).toBe(true)
 })

@@ -76,10 +76,6 @@ const collectResultOnlySetPlanFeedback = (params: {
       {
         type: 'set_plan',
         plan_id: currentPlan.id,
-        continuation_of: {
-          type: 'task',
-          id: finishedTask.id,
-        },
         plan: {
           title: RESULT_ONLY_PLAN_TITLE,
           trigger: {
@@ -115,17 +111,19 @@ const collectResultOnlySetPlanFeedback = (params: {
   )
 }
 
-test('set_plan stays allowed when it explicitly continues the single current result task with no fresh user input', () => {
+test('set_plan stays blocked with no fresh user input even when runtime already points at the same result task', () => {
   const feedback = collectResultOnlySetPlanFeedback({
     planId: 'plan-auth-guard-result-only',
     taskId: 'task-finished-auth-guard-set-plan-result-only',
     useWorktree: true,
   })
 
-  expect(feedback).toHaveLength(0)
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('set_plan')
+  expect(feedback[0]?.code).toBe('intent_evidence_missing')
 })
 
-test('set_plan stays blocked when result-only continuation_of changes worktree semantics with no fresh user input', () => {
+test('set_plan stays blocked when result-only update changes worktree semantics with no fresh user input', () => {
   const feedback = collectResultOnlySetPlanFeedback({
     planId: 'plan-auth-guard-result-only-mismatch',
     taskId: 'task-finished-auth-guard-set-plan-result-only-mismatch',

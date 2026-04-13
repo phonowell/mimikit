@@ -7,7 +7,7 @@ import {
   createIntentEvidenceUserInput as createUserInput,
 } from './helpers/manager-intent-evidence.js'
 
-test('enqueue_task is rejected in favor of task_control resume when a single paused task already matches the same continuation', () => {
+test('enqueue_task stays blocked when a paused task already matches the same continuation but current user input only gives generic continuation text', () => {
   const pausedTask = createIntentEvidenceTask({
     id: 'task-paused-auth-guard',
     title: '继续收敛 auth guard 主链',
@@ -51,13 +51,10 @@ test('enqueue_task is rejected in favor of task_control resume when a single pau
 
   expect(feedback).toHaveLength(1)
   expect(feedback[0]?.action).toBe('enqueue_task')
-  expect(feedback[0]?.error).toBe('action_execution_rejected')
-  expect(feedback[0]?.hint).toContain('task_control')
-  expect(feedback[0]?.hint).toContain('resume')
-  expect(feedback[0]?.hint).toContain(pausedTask.id)
+  expect(feedback[0]?.code).toBe('intent_evidence_missing')
 })
 
-test('enqueue_task stays allowed when the only paused task shares the same lane but not the same continuation', () => {
+test('enqueue_task stays allowed when the only paused task shares the same lane but current user input directly authorizes a different write task', () => {
   const pausedTask = createIntentEvidenceTask({
     id: 'task-paused-auth-guard-unrelated',
     title: '继续收敛 auth guard 主链',
@@ -90,7 +87,11 @@ test('enqueue_task stays allowed when the only paused task shares the same lane 
       },
     ],
     {
-      inputs: [createUserInput('新开一条线做 release pipeline 验证。')],
+      inputs: [
+        createUserInput(
+          '新开一个 write 任务做 release pipeline 首轮验证，只处理 release pipeline 首轮验证，并让首轮验证脚本可运行。',
+        ),
+      ],
       taskById: new Map([[pausedTask.id, pausedTask]]),
       taskStatusById: new Map([[pausedTask.id, pausedTask.status]]),
       planById: new Map(),
@@ -102,7 +103,7 @@ test('enqueue_task stays allowed when the only paused task shares the same lane 
   expect(feedback).toHaveLength(0)
 })
 
-test('enqueue_task stays allowed when the only paused continuation match is already git-closed', () => {
+test('enqueue_task stays blocked when the only paused continuation match is already git-closed but current user input only gives generic continuation text', () => {
   const pausedTask = createIntentEvidenceTask({
     id: 'task-paused-auth-guard-closed',
     title: '继续收敛 auth guard 主链',
@@ -158,5 +159,7 @@ test('enqueue_task stays allowed when the only paused continuation match is alre
     },
   )
 
-  expect(feedback).toHaveLength(0)
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.action).toBe('enqueue_task')
+  expect(feedback[0]?.code).toBe('intent_evidence_missing')
 })

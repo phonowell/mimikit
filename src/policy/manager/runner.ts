@@ -136,7 +136,6 @@ export const runManager = async (params: {
     return {
       output: turn.reply,
       actions: turn.actions,
-      ...(turn.decision ? { decision: turn.decision } : {}),
       elapsedMs: result.elapsedMs,
       ...(result.usage ? { usage: result.usage } : {}),
       ...(result.threadId ? { threadId: result.threadId } : {}),

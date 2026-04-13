@@ -1,6 +1,7 @@
 surface_intro: |
   - 默认仅注入简版 action 卡；未列出的 action 视为本轮不可用。
   - 所有 action 都通过 `actions[]` 输出；每个对象必须包含 `type`，且字段名严格匹配下列契约。
+  - action 授权只看三件事：契约形状合法、runtime 状态允许、风险门禁通过；不要自造 continuation/provenance 协议位来重复证明同一状态。
 domain_heading: |
   ### {{ title }}
 domain_boundary: |
@@ -37,9 +38,7 @@ actions:
     brief_constraints:
       - 必填 `task`
       - 必填 `task.use_worktree`
-      - '`continuation_of` 仅在明确延续当前单一锚点时可选'
     detail_constraints:
-      - '`continuation_of` 可选；仅在明确延续当前单一 active plan 或当前 result task 时使用，结构为 `{ type:"plan"|"task", id }`'
       - '`task` 必须包含 `title,cwd,mode,use_worktree,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`'
       - '`goal/in_scope/out_of_scope/done_when/instructions` 默认 1-3 条高密度短句，避免同义重复、客套和多段解释'
       - '若单条 `goal/in_scope/out_of_scope/done_when/context_refs/instructions` 因 `；` 分句过长，优先删减末尾次要 clause，不要拆出兼容别名或额外字段'
@@ -47,10 +46,11 @@ actions:
       - '不要镜像历史 task/plan 的完整 verbose contract；只保留当前任务最小可执行合同'
       - '系统只接受当前结构化合同；旧别名、隐藏默认值和兼容字段都无效'
       - '`instructions[]` 仅用于短补充，不替代任务合同'
-      - '能沿用同一 paused task 时，优先改用 `task_control` 的 `resume`，不要重复输出整份新合同'
+      - '若 runtime 已存在完全同义的 paused task，系统会在 apply 阶段直接恢复；不要为此额外补一层授权协议'
       - '同目标低风险延续优先由 manager 自行消化；不要把 worker 的“建议下一步”原样甩回给用户'
-      - '若当前是 `task_result`-only 回合且已有单一清晰续跑锚点，不要停在建议文本；必须给出具体 action，或输出带结构化 `decision` 的 handoff / 上提判断'
+      - '若当前是 `task_result`-only 回合且已有单一清晰续跑锚点，优先按 runtime state 判断是否继续；低风险场景可只在 `reply` 中停下，不要为补协议硬造 action'
       - '`use_worktree=false` 表示直接在给定 `cwd` 执行；`true` 仅用于需要独立 git worktree/review/merge/cleanup 闭环的 `mode="write"` 仓库任务'
+      - '对延续现有 write 主线的 `enqueue_task`，`cwd + mode + use_worktree` 共同构成 execution lane；若你改了其中任一项，当前用户输入里也必须直接出现对新 lane 的授权，不要只靠“继续这条线”放行'
       - '同一轮默认只派发一个粗粒度 `enqueue_task`；只有在目录边界独立且互不冲突时才拆成多个任务'
   task_control:
     summary: 暂停、恢复或取消已有任务。
@@ -65,17 +65,18 @@ actions:
     brief_constraints:
       - 必填 `plan_id,plan`
       - '`plan_id=null` 表示创建；非空表示按该 ID 整体替换'
-      - '`continuation_of` 仅在明确延续当前单一锚点时可选'
     detail_constraints:
-      - '`continuation_of` 可选；仅在当前 plan 只是承接同一续跑锚点时使用，结构为 `{ type:"plan"|"task", id }`'
       - '`plan` 必须包含 `title,trigger,task,priority,max_runs`'
       - '`plan.task` 与 `enqueue_task.task` 使用同一合同'
-      - '若用户已明确引用当前 plan，且更新仍保持同一 `cwd/mode/use_worktree`，则 `trigger/priority/max_runs` 与 task contract 的结构化差异本身即可支撑更新；不要要求用户复述字段字面量'
+      - '高风险 `set_plan(write)` 只接受当前用户输入的直接授权；不要再依赖 continuation anchor、差异解释器或结果旁证来放行'
+      - '若更新已有 write plan 时改了 `cwd/mode/use_worktree`，这属于 execution lane 变化；当前用户输入必须直接支撑新 lane，不能只靠点名原 plan 放行'
       - '当后续推进只是在同一目标上等待容量或定时续跑时，优先用 `set_plan` 承接，而不是把续跑责任退回给用户'
   delete_plan:
     summary: 关闭一个已有计划，并保留审计记录。
     brief_constraints:
       - 必填 `plan_id`
+    detail_constraints:
+      - '这是高风险动作；当前用户输入必须直接引用目标 `plan_id/title` 并明确表达“关闭/删除/停用该计划”'
   assign_focus:
     summary: 给 task、plan 或 history 绑定 focus。
     brief_constraints:

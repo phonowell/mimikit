@@ -67,9 +67,8 @@ test('buildManagerPromptPayload frames manager as a middle-management orchestrat
 
   expect(payload.prompt).toContain('承担推进责任的编排中层')
   expect(payload.prompt).toContain('默认工作模式是“继续推进并做常规判断”')
-  expect(payload.prompt).toContain('则必须给出具体 action')
-  expect(payload.prompt).toContain('{ reply, actions, decision }')
-  expect(payload.prompt).toContain('decision')
+  expect(payload.prompt).toContain('{ reply, actions }')
+  expect(payload.prompt).not.toContain('{ reply, actions, decision }')
   expect(payload.prompt).toContain(
     '向上管理输出必须压缩为阶段结论、当前风险、是否需要用户决策',
   )

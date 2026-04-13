@@ -43,12 +43,9 @@ test('expanded prompt keeps full detail section without wake profile banner', ()
   expect(prompt).toContain('type="enqueue_task"')
   expect(prompt).toContain('`use_worktree=false`')
   expect(prompt).toContain('`true` 仅用于需要独立 git worktree')
-  expect(prompt).toContain('`continuation_of`')
-  expect(prompt).toContain('{ type:"plan"|"task", id }')
   expect(prompt).toContain('默认 1-3 条高密度短句')
-  expect(prompt).toContain(
-    '能沿用同一 paused task 时，优先改用 `task_control` 的 `resume`',
-  )
+  expect(prompt).not.toContain('`continuation_of`')
+  expect(prompt).not.toContain('{ type:"plan"|"task", id }')
   expect(prompt).toContain('同目标低风险延续优先由 manager 自行消化')
   expect(prompt).toContain(
     '若当前是 `task_result`-only 回合且已有单一清晰续跑锚点',
@@ -58,6 +55,7 @@ test('expanded prompt keeps full detail section without wake profile banner', ()
   expect(prompt).toContain('type="remember_project_profile"')
   expect(prompt).toContain('必填 `task_id,action`')
   expect(prompt).toContain('`instructions[]` 仅在 `action="resume"` 时可选附带')
+  expect(prompt).not.toContain('优先改用 `task_control` 的 `resume`')
   expect(prompt).not.toContain('必填 `task_id,action,instructions[]`')
   expect(prompt).not.toContain('type="restart_runtime"')
 })

@@ -9,7 +9,7 @@ export const logRunTaskDispatch = async (
   runtime: ManagerRuntime,
   params: {
     taskId: string
-    mode: 'reuse_pending' | 'created'
+    mode: 'reuse_pending' | 'resume_paused' | 'created'
   },
 ): Promise<void> => {
   const slots = resolveSlotStatus(runtime)

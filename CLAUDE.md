@@ -141,9 +141,11 @@
 - 禁止词表驱动功能实现：任何核心能力不得依赖关键词列表硬编码判定；必须使用可泛化、可验证的机制（结构化信号/模型判别/规则引擎）
 - 协议设计禁忌：不要把 LLM 当成精确协议填表器；凡是要求模型稳定回填精确子串、字面锚点、隐藏派生字段或严格逐字 provenance 的协议，默认视为脆弱设计，除非 runtime 可代填、可校正或可安全降级。
 - Guard 设计原则：guard 的目标是约束越权与保留可追溯性，不是放大模型微小格式波动；高风险动作可以 fail-closed，低风险或附属动作默认应 fail-soft，不得因附属写入失败污染主回复。
-- 显式锚点约束：`continuation_of`、`source_quote`、各类显式 anchor 只应作为强证据或审计信息，不应成为唯一通行证；显式锚点不匹配时，优先回退到现有上下文、结构化状态或其他可验证证据，而不是直接把本可继续的主链判死。
+- Action 设计原则：优先 `state-first`，禁止 `protocol-first`；不要把同一个编排判断同时塞进 prompt、schema、guard、follow-up repair 和额外 stop 字段。若 runtime state 已足够判定低风险 continuation / handoff，就不要再新增平行协议位让模型重复声明。
+- Write lane 原则：`cwd`、`resourceMode`、`useWorktree` 共同构成写任务的执行 lane；延续/更新现有 write 对象时，同 lane 改写可按对象授权处理，改 lane 则必须从当前用户输入中看到对新 lane 的显式授权，不能靠对象点名或合同 overlap 顺带放行。
+- 显式锚点约束：`source_quote` 与其他显式 anchor 只应作为审计信息，不应成为唯一通行证；显式锚点不匹配时，优先回退到现有上下文、结构化状态或其他可验证证据，而不是直接把本可继续的主链判死。
 - Provenance 约束：需要来源可追溯时，优先记录 runtime 可验证来源（当前输入 ID、结果 ID、focus/task/plan 归属、持久化 ref）；避免要求模型生成“必须逐字命中”的引用值作为唯一 provenance 载体。
-- 弱信号约束：`cwd`、`resourceMode`、`useWorktree`、`lastTaskId`、`continuation_of`、单一 active object、plan/task 标题命中，都只允许用于缩小候选集或提供审计线索；除非再叠加语义一致与对象归属一致，否则不得直接放行动作。
+- 弱信号约束：`cwd`、`resourceMode`、`useWorktree`、`lastTaskId`、单一 active object、plan/task 标题命中，都只允许用于缩小候选集或提供审计线索；除非再叠加语义一致与对象归属一致，否则不得直接放行动作。
 - 授权分层原则：证据与 guard 的职责是处理高风险越权和高歧义裁决，不是替代自然语义理解；低风险 continuation / follow-up / stage 写回默认依赖“语义一致 + 归属一致 + runtime provenance”判定，避免在主链前再套一层脆弱协议。
 - 失败降级原则：辅助动作、记忆写入、档案写入、摘要写回一类非主链动作失败时，优先 suppress、丢弃或停在内部反馈；只有会改变用户目标、验收标准、任务执行或高风险副作用的失败，才允许升级为用户可见阻塞。
 - Runtime 续跑原则：若 runtime 已基于 active plan、触发器或结构化状态拥有明确续跑路径，不要再额外要求模型显式复述同一 `enqueue_task`/`set_plan` 才能继续；manager 负责判断是否继续，不负责重复输出 runtime 已能决定的脚手架。
@@ -168,6 +170,18 @@
   - 严禁再把 `cwd`/`resourceMode`/`useWorktree`/`lastTaskId`/唯一 active object 当作直接授权条件；它们最多只能帮助定位候选对象。
   - 需要可追溯时优先让 runtime 记录 provenance；不要再逼模型生产脆弱锚点来换取“可继续执行”的资格。
   - 若一个证据机制长期造成误拦、误放、维护负担高于收益，应优先删除或收缩，而不是继续堆补丁修补它。
+- `2026-04-13` action 设计继续偏移的教训：
+  - action 授权的最小模型只能是：结构合法、runtime 状态合法、风险门禁通过；不要再叠第四层“模型自证自己在延续同一条线”。
+  - 不要为“可审计”“可区分 handoff”再补顶层 `decision` 一类平行协议位；`reply + actions + runtime state` 已能表达的编排判断，不得再复制一份给模型填写。
+  - 不要把 result-only follow-up 做成专门的修复陷阱；reply-only 停下本身不是错误，高风险越权才是错误。
+  - intent-evidence 只该拦高风险动作；read continuation、resume、低风险 plan/task 延续不应再做词面重叠授权。
+  - 若某条规则的主要作用是逼模型“补协议形状”而不是降低真实风险，应直接删除。
+  - `continuation_of` 一类 continuation 锚点若不进入 runtime 真状态，就不该存在于 action 合同里；纯靠模型回填的“我是在延续这条线”不是可靠状态。
+  - “replacement-cancel”“resume-existing”这类 validation 预判，本质是在替 runtime 重复做状态决策；若 apply/runtime 已能基于 fingerprint 和状态机处理，应删除 validation 旁路。
+  - 若 runtime 已能依据 fingerprint、对象归属或状态机做 `reuse/resume/continue`，validation 只能校验合法性，不能再加一层“先改成另一种 action 才能通过”的前置编排。
+  - 高风险写 continuation / update 的授权应优先看“用户是否直接点名现有对象”，而不是继续要求整份新合同全文 overlap；但对象级授权也不能放宽成“点名对象即可随意改成无关目标”。
+  - 写 continuation / update 里，`cwd/resourceMode/useWorktree` 不是普通合同噪声，而是执行 lane；若 lane 变化，就算用户已点名现有 `plan/task`、goal 也仍然相近，也必须补到对新 lane 的显式授权，否则宁可拦住。
+  - 不要把“唯一候选时严格、多个候选时放松”当成降级策略；若多个语义候选在 write lane 上存在分歧，风险只会更高，不会更低，guard 必须要求用户把新 lane 说清楚，而不是退回 title/goal overlap 放行。
 - 读取阶段先做编码校验：优先按 UTF-8 解释内容，避免基于终端乱码做补丁匹配
 - 终端乱码不等于文件损坏：以文件内容/diff 为准，不以显示层为准
 - Markdown 修改优先最小差异：定位目标段落/行一次替换，避免试探式补丁

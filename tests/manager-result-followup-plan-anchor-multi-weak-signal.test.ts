@@ -5,7 +5,7 @@ import { resolveRoundFollowup } from '../src/policy/manager/loop-batch-round-fol
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-test('resolveRoundFollowup keeps asking for an explicit follow-up when the only structurally anchored plan is semantically unrelated', async () => {
+test('resolveRoundFollowup allows reply-only result follow-up even when the only structurally anchored plan is semantically unrelated', async () => {
   const runtime = await createTestRuntimeState({
     workDir: '/tmp/mimikit-followup-plan-anchor-multi-unrelated-test',
     withGlobalFocus: false,
@@ -113,14 +113,6 @@ test('resolveRoundFollowup keeps asking for an explicit follow-up when the only 
   })
 
   expect(followup).toMatchObject({
-    done: false,
-    extra: {
-      actionFeedback: [
-        expect.objectContaining({
-          action: 'manager_followup',
-          code: 'missing_result_followup_action',
-        }),
-      ],
-    },
+    done: true,
   })
 })

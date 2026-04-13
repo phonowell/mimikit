@@ -5,7 +5,6 @@ import { expect, test } from 'vitest'
 import { readHistory } from '../../src/persistence/history/store.js'
 import { applyTaskActions } from '../../src/policy/manager/action-apply.js'
 import { resolveWorkerPromptFromDraft } from '../../src/policy/manager/task-contract.js'
-import { INBOX_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { readTaskExecutionSpec } from '../../src/work/spec/store.js'
 import { materializeTaskFixture } from '../helpers/execution-spec.js'
 
@@ -32,7 +31,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
           scope: draft.in_scope.join('；'),
           acceptance: draft.done_when,
         },
-        focusId: INBOX_FOCUS_ID,
+        focusId: 'focus-inbox',
         profile: 'worker',
         provider: 'codex',
         status: 'pending',
@@ -50,7 +49,7 @@ test('enqueue_task re-enqueues pending task when fingerprint matches exactly', a
 
   expect(runtime.domain.tasks).toHaveLength(1)
   expect(runtime.domain.tasks[0]?.id).toBe('task-pending')
-  expect(runtime.domain.tasks[0]?.focusId).toBe(INBOX_FOCUS_ID)
+  expect(runtime.domain.tasks[0]?.focusId).toBe('focus-inbox')
   expect(runtime.process.worker.queue.size).toBe(1)
 })
 
@@ -91,7 +90,7 @@ test('enqueue_task dedupe does not block task creation when fingerprint differs'
         title: 'old title',
         cwd: TASK_CWD,
         resourceMode: 'write',
-        focusId: INBOX_FOCUS_ID,
+        focusId: 'focus-inbox',
         profile: 'worker',
         provider: 'codex',
         status: 'pending',
@@ -132,7 +131,7 @@ test('enqueue_task contract change does not reuse pending task', async () => {
           scope: 'Old scope',
           acceptance: ['Old acceptance'],
         },
-        focusId: INBOX_FOCUS_ID,
+        focusId: 'focus-inbox',
         profile: 'worker',
         provider: 'codex',
         status: 'pending',

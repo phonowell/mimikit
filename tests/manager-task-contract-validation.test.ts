@@ -9,7 +9,8 @@ import { resolveWorkerPromptFromDraft } from '../src/policy/manager/task-contrac
 const validTask = {
   title: 'Task with generated prompt',
   cwd: '/tmp/task-with-contract',
-  mode: 'write' as const,
+  mode: 'read' as const,
+  use_worktree: false,
   goal: 'Finish task',
   in_scope: ['Single deliverable'],
   out_of_scope: ['Do not change unrelated modules'],
@@ -104,7 +105,9 @@ test('enqueue_task accepts complete task draft', () => {
         task: validTask,
       },
     ],
-    {},
+    {
+      inputs: [],
+    },
   )
 
   expect(feedback).toHaveLength(0)

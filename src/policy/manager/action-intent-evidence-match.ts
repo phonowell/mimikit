@@ -5,17 +5,17 @@ import {
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 
 import {
+  formatDeletePlanIntentEvidenceHint,
   formatEnqueueTaskIntentEvidenceHint,
   formatSetPlanIntentEvidenceHint,
   formatTaskControlIntentEvidenceHint,
 } from './action-evidence-hints.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
-import type { HistoryMessage, UserInput } from '../../foundation/types/index.js'
+import type { UserInput } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
 const toEvidenceLabel = (source: SupplementalEvidenceSource): string => source
-const MAX_RECENT_USER_INTENT_TEXTS = 24
 const SHORT_CANDIDATE_THRESHOLD = 0.8
 const MEDIUM_CANDIDATE_THRESHOLD = 0.6
 const DEFAULT_CANDIDATE_THRESHOLD = 0.45
@@ -39,7 +39,9 @@ export const buildMissingIntentEvidenceHint = (params: {
       taskRef: params.taskRef ?? '当前目标 task',
     })
   }
-  if (params.actionName === 'set_plan' || params.actionName === 'delete_plan')
+  if (params.actionName === 'delete_plan')
+    return formatDeletePlanIntentEvidenceHint(evidenceSources)
+  if (params.actionName === 'set_plan')
     return formatSetPlanIntentEvidenceHint(evidenceSources)
   return formatEnqueueTaskIntentEvidenceHint(evidenceSources)
 }
@@ -58,22 +60,6 @@ export const collectUserIntentTexts = (
     }
   }
   return texts
-}
-
-export const collectHistoricalUserIntentTexts = (
-  history: HistoryMessage[] | undefined,
-): string[] => {
-  if (!history || history.length === 0) return []
-  const texts: string[] = []
-  for (const item of history) {
-    const text = normalizeInlineWhitespace(item.text)
-    if (!text) continue
-    if (item.role === 'user') {
-      texts.push(text)
-      continue
-    }
-  }
-  return texts.slice(Math.max(0, texts.length - MAX_RECENT_USER_INTENT_TEXTS))
 }
 
 const resolveCandidateThreshold = (tokenCount: number): number =>

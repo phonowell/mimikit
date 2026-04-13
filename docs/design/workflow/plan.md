@@ -30,7 +30,6 @@
 - 结构：`{ type: "set_plan", plan_id, plan }`
 - `plan_id = null` 表示创建
 - `plan_id != null` 表示整体替换该计划
-- `continuation_of? = { type:"plan"|"task", id }` 仅在该计划明确承接当前续跑对象时可选；它用于提供 provenance 与候选定位，不是绕过任务合同语义校验的放行证
 - `plan` 必须包含：
   - `title`
   - `trigger`
@@ -39,6 +38,8 @@
   - `max_runs`
 - `plan.task` 与 `enqueue_task.task` 使用同一份任务合同
 - 运行时会把这份任务合同的稳定摘要固化到 `plan.effect.taskContract`，供 manager 在 `state_packet.plans` 中做触发前判断；`taskTemplate` 只保留 enqueue 所需运行字段
+- `set_plan(write)` 属于高风险动作，必须由当前用户输入直接授权；runtime 中已有的 active plan / lastTaskId / lane 一致性只用于确认更新是否合法，不用于替代授权。
+- 对已有 write plan 的 update，`cwd` / `resourceMode` / `useWorktree` 共同构成 execution lane；只有同 lane 更新才可按对象级授权直接续用，改 lane 时必须从当前用户输入里看到对新 lane 的显式授权。
 
 ## `delete_plan` 合同
 
@@ -85,6 +86,7 @@
 - `scheduled_at` 必须晚于当前时间
 - `done` plan 不允许通过 `set_plan` 再次整体替换
 - `plan.task` 必须能构出完整任务合同，否则 `set_plan` 直接拒绝
+- 低风险 `set_plan(read)` 延续主要依赖 runtime legality；不再接受 continuation anchor、差异解释器或结果旁证作为单独授权层。
 
 ## 示例
 

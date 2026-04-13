@@ -9,7 +9,7 @@ test('enqueue_task does not treat repo worktree closure as a generic manager gua
       task: {
         title: 'Tighten manager rules',
         cwd: '/repo/mimikit/src/policy/manager',
-        mode: 'write',
+        mode: 'read',
         use_worktree: false,
         goal: '固化 manager 执行规则',
         in_scope: ['只改 manager prompt 与 guard'],

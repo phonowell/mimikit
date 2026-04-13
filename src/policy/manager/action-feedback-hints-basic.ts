@@ -108,13 +108,6 @@ export const formatEnqueueTaskBatchConflictHint = (
     conflict_paths: conflictPaths,
   })
 
-export const formatEnqueueTaskResumeExistingHint = (
-  target?: TaskControlTarget,
-): string =>
-  renderActionFeedbackHint('enqueue_task_resume_existing', {
-    task_ref_suffix: formatTaskControlTargetSuffix(target),
-  })
-
 export const formatPlanNotFoundHint = (
   action: 'set_plan' | 'delete_plan',
 ): string => renderActionFeedbackHint('plan_not_found', { action })
@@ -139,11 +132,4 @@ export const formatAuxiliaryWriteFailedHint = (
   renderActionFeedbackHint('auxiliary_write_failed', {
     action,
     reason,
-  })
-
-export const formatMissingResultFollowupActionHint = (
-  continuationAnchor: string,
-): string =>
-  renderActionFeedbackHint('missing_result_followup_action', {
-    continuation_anchor: continuationAnchor,
   })

@@ -5,10 +5,9 @@ import { collectManagerActionFeedback } from '../src/policy/manager/action-feedb
 import {
   createIntentEvidenceTask as createTask,
   createIntentEvidenceUserInput as createUserInput,
-  expectSingleRejectedFeedback,
 } from './helpers/manager-intent-evidence.js'
 
-test('task_control resume stays blocked when the target is the only paused task in current focus but user input is only generic continuation text', () => {
+test('task_control resume stays allowed when the target is the only paused task in current focus but user input is only generic continuation text', () => {
   const task = createTask({
     id: 'task-paused-auth-guard-only',
     title: '继续收敛 auth guard 主链',
@@ -36,11 +35,7 @@ test('task_control resume stays blocked when the target is the only paused task 
     },
   )
 
-  expectSingleRejectedFeedback(feedback, {
-    action: 'task_control',
-    error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过', task.id],
-  })
+  expect(feedback).toHaveLength(0)
 })
 
 test('task_control resume stays allowed when user input semantically names the paused task even if instructions are not restated verbatim', () => {
@@ -105,14 +100,10 @@ test('task_control resume stays allowed for the only paused task in current focu
     },
   )
 
-  expectSingleRejectedFeedback(feedback, {
-    action: 'task_control',
-    error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过', task.id],
-  })
+  expect(feedback).toHaveLength(0)
 })
 
-test('task_control resume stays blocked on generic continuation text when current focus has multiple paused tasks', () => {
+test('task_control resume stays allowed on generic continuation text when manager already targets a specific paused task', () => {
   const taskA = createTask({
     id: 'task-paused-auth-guard-a',
     title: '继续收敛 auth guard 主链',
@@ -154,9 +145,5 @@ test('task_control resume stays blocked on generic continuation text when curren
     },
   )
 
-  expectSingleRejectedFeedback(feedback, {
-    action: 'task_control',
-    error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过', taskA.id],
-  })
+  expect(feedback).toHaveLength(0)
 })

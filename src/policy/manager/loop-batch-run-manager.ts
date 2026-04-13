@@ -9,7 +9,6 @@ import { resolveBatchWorkingFocusIds } from './loop-batch-primary-focus.js'
 import { logManagerBatchStart } from './loop-batch-run-helpers.js'
 import { runManagerCorrectionRounds } from './loop-batch-run-rounds.js'
 
-import type { ManagerTurnDecision } from './manager-turn-schema.js'
 import type {
   TaskResult,
   TokenUsage,
@@ -21,7 +20,6 @@ import type { Parsed } from '../actions/model/spec.js'
 type ManagerParsedTurn = {
   text: string
   actions: Parsed[]
-  decision?: ManagerTurnDecision
 }
 
 const runRounds = (params: {

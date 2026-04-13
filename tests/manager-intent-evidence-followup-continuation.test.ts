@@ -9,7 +9,7 @@ import {
 } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
-test('resolveRoundFollowup keeps enqueue_task continuation when a single current plan anchors the next step', async () => {
+test('resolveRoundFollowup keeps low-risk enqueue_task continuation when a single current plan anchors the next step', async () => {
   const runtime = await createTestRuntimeState({
     workDir: '/tmp/mimikit-followup-continuation-test',
     withGlobalFocus: false,
@@ -32,7 +32,7 @@ test('resolveRoundFollowup keeps enqueue_task continuation when a single current
               title: '按整体方案粗粒度推进下一批未完成整改',
               executionSpecId: 'spec-followup-continuation',
               cwd: '/repo/mimikit',
-              resourceMode: 'write',
+              resourceMode: 'read',
             },
           },
         }),
@@ -49,7 +49,8 @@ test('resolveRoundFollowup keeps enqueue_task continuation when a single current
         task: {
           title: '按整体方案粗粒度推进下一批未完成整改',
           cwd: '/repo/mimikit',
-          mode: 'write',
+          mode: 'read',
+          use_worktree: false,
           goal: '以粗粒度方式推进下一批未完成整改',
           in_scope: ['优先按阶段推进更大闭环'],
           out_of_scope: [],

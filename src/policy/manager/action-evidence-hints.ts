@@ -12,6 +12,7 @@ const actionEvidenceHintSchema = z
     enqueue_task_intent_evidence_missing: z.string().trim().min(1),
     task_control_intent_evidence_missing: z.string().trim().min(1),
     set_plan_intent_evidence_missing: z.string().trim().min(1),
+    delete_plan_intent_evidence_missing: z.string().trim().min(1),
     dialog_action_source_input_missing: z.string().trim().min(1),
   })
   .strict()
@@ -55,6 +56,13 @@ export const formatSetPlanIntentEvidenceHint = (
   evidenceSources: string,
 ): string =>
   renderHint('set_plan_intent_evidence_missing', {
+    evidence_sources: evidenceSources,
+  })
+
+export const formatDeletePlanIntentEvidenceHint = (
+  evidenceSources: string,
+): string =>
+  renderHint('delete_plan_intent_evidence_missing', {
     evidence_sources: evidenceSources,
   })
 
