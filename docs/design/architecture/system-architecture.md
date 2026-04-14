@@ -24,7 +24,7 @@
 
 ## 组件职责
 
-+ `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，记录每轮 context packet 与 usage ledger，并在批次收尾后触发 memory refresh。其第一职责是持续推进项目组合，只在高风险越权或证据不足时才要求更多协议确认，而不是以完备性为主要目标。
+- `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，记录每轮 context packet 与 usage ledger，并在批次收尾后触发 memory refresh。其第一职责是持续推进项目组合，只有在高风险、证据不足、目标冲突或连续纠偏失败超预算等例外场景才上提更多协议确认，并持续压缩项目组合态势，而不是以完备性为主要目标。
 - `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态，同时在结果收尾时写 usage ledger。
 - `runtime domain write surface`：负责 task/plan/focus 真相变更的最小写入口；worker/manager 只提交结构化状态变化，不再在业务模块中散写 collection。
 - `managerLoop`：统一处理计划触发、worker 槽位释放与批次收尾，不再保留独立 trigger loop。

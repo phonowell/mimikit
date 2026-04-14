@@ -5,7 +5,7 @@
 ## 文档定位
 
 - Focus 是编排域里用来隔离工作线（workline）归属的单元，它保证多条线之间的运行与状态隔离。
-- Focus 不是任务板，也不承载执行步骤、验收标准或恢复指令；任务计划等要素只能通过 `assign_focus` 归属。
+- Focus 不是任务板，也不承载执行步骤、验收标准或恢复指令；初次创建的 task/plan/history 会根据当前活跃 focus 候选自动归属，显式变更归属只能通过 `assign_focus`。
 - 对应实现主源：`src/work/focus/*`、`src/policy/manager/action-apply-focus.ts`
 
 ## 核心原则
@@ -28,9 +28,13 @@
 
 ## 默认归属
 
-- 最近活跃的业务 focus
-- 否则复用最近可用 idle focus
-- 否则回退 `focus-inbox`
+- 新任务、计划与历史条目会优先归属到最近活跃的业务 focus。
+- 若无活跃 focus，则复用最近可用的 idle focus，仍无则退回 `focus-inbox`。
+
+## 归属变更
+
+- `assign_focus` 是改变已存在 task/plan/history focusId 的唯一 action；它只在默认归属不能满足隔离需求时触发。
+- manager 不再提供 `upsert_focus` 等直接编辑 focus 内容的 action，focus 的状态由持久化真相源主导，assign_focus 只负责归属迁移。
 
 ## 容量治理
 
