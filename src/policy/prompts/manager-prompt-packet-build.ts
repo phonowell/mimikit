@@ -61,6 +61,7 @@ export const buildManagerPromptPackets = (params: {
     plans: params.plans ?? [],
     workingFocusIds: params.workingFocusIds ?? [],
   })
+  const workingFocusIds = contextPacket.workingFocusIds ?? []
   const sectionText = (value: string, maxBytes: number): string =>
     encodePromptTextSection(value, maxBytes)
   const statePacketPayload = buildStatePacketPayload({
@@ -69,7 +70,7 @@ export const buildManagerPromptPackets = (params: {
     tasks: params.tasks,
     workDir: params.workDir,
     plans: params.plans,
-    workingFocusIds: params.workingFocusIds ?? [],
+    workingFocusIds,
     ...(contextPacket.latestResult?.taskId
       ? { latestResultTaskId: contextPacket.latestResult.taskId }
       : {}),

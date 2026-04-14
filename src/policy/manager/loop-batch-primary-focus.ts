@@ -75,9 +75,23 @@ const resolveLatestTriggerFocusId = (
   return undefined
 }
 
-const resolveLatestOpenTaskFocusId = (
+const dedupeFocusIds = (
+  focusIds: Array<FocusId | undefined>,
+): FocusId[] => {
+  const ordered: FocusId[] = []
+  const seen = new Set<FocusId>()
+  for (const focusId of focusIds) {
+    const normalized = focusId?.trim()
+    if (!normalized || seen.has(normalized)) continue
+    seen.add(normalized)
+    ordered.push(normalized)
+  }
+  return ordered
+}
+
+const resolveLatestOpenTaskFocusIds = (
   runtime: ManagerRuntime,
-): FocusId | undefined => {
+): FocusId[] => {
   const openTasks = runtime.domain.tasks
     .filter(
       (task) =>
@@ -90,33 +104,28 @@ const resolveLatestOpenTaskFocusId = (
       if (diff !== 0) return diff
       return b.id.localeCompare(a.id)
     })
-  for (const task of openTasks) {
-    const focusId = resolveKnownFocusId(runtime, task.focusId)
-    if (focusId) return focusId
-  }
-  return undefined
+  return dedupeFocusIds(
+    openTasks.map((task) => resolveKnownFocusId(runtime, task.focusId)),
+  )
 }
 
-const resolveRecentActiveFocusId = (
+const resolveRecentActiveFocusIds = (
   runtime: ManagerRuntime,
-): FocusId | undefined => {
-  const activeFocus = runtime.domain.focuses
+): FocusId[] =>
+  runtime.domain.focuses
     .filter((focus) => focus.status === 'active')
     .sort((a, b) => {
       const diff = compareIsoDesc(a.lastActivityAt, b.lastActivityAt)
       if (diff !== 0) return diff
       return a.id.localeCompare(b.id)
     })
-    .at(0)
-  if (!activeFocus) return undefined
-  return activeFocus.id
-}
+    .map((focus) => focus.id)
 
-const resolveBatchPrimaryFocusId = (params: {
+export const resolveBatchWorkingFocusIds = (params: {
   runtime: ManagerRuntime
   inputs: UserInput[]
   results: TaskResult[]
-}): FocusId => {
+}): FocusId[] => {
   const inputsNewestFirst = [...params.inputs].sort((a, b) => {
     const diff =
       parseIsoToMsOrZero(b.createdAt) - parseIsoToMsOrZero(a.createdAt)
@@ -141,20 +150,12 @@ const resolveBatchPrimaryFocusId = (params: {
     params.runtime,
     inputsNewestFirst,
   )
-  const latestOpenTaskFocusId = resolveLatestOpenTaskFocusId(params.runtime)
-  const recentActiveFocusId = resolveRecentActiveFocusId(params.runtime)
-  return (
-    latestUserFocusId ??
-    latestResultFocusId ??
-    latestTriggerFocusId ??
-    latestOpenTaskFocusId ??
-    recentActiveFocusId ??
-    resolveDefaultFocusId(params.runtime)
-  )
+  return dedupeFocusIds([
+    latestUserFocusId,
+    latestResultFocusId,
+    latestTriggerFocusId,
+    ...resolveLatestOpenTaskFocusIds(params.runtime),
+    ...resolveRecentActiveFocusIds(params.runtime),
+    resolveDefaultFocusId(params.runtime),
+  ])
 }
-
-export const resolveBatchWorkingFocusIds = (params: {
-  runtime: ManagerRuntime
-  inputs: UserInput[]
-  results: TaskResult[]
-}): FocusId[] => [resolveBatchPrimaryFocusId(params)]

@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 
 import { buildBatchResultsDigest } from '../src/policy/prompts/context-digests.js'
 import { buildManagerContextPacket } from '../src/policy/prompts/manager-context-packet.js'
+import { buildStatePacketPayload } from '../src/policy/prompts/manager-prompt-packet-content.js'
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 
 import type { TaskResult } from '../src/foundation/types/index.js'
@@ -66,5 +67,52 @@ test('buildManagerContextPacket latestResult falls back to status summary instea
     taskId: task.id,
     status: 'failed',
     summary: 'Task "Ship release" failed.',
+  })
+})
+
+test('buildManagerContextPacket preserves the ordered working focus set', () => {
+  const packet = buildManagerContextPacket({
+    wakeProfile: 'mixed',
+    mode: 'standard',
+    inputs: [],
+    results: [],
+    tasks: [],
+    plans: [],
+    workingFocusIds: ['focus-b', 'focus-a', 'focus-b', 'focus-c'],
+  })
+
+  expect(packet.counts.workingFocuses).toBe(3)
+  expect(packet.workingFocusIds).toEqual(['focus-b', 'focus-a', 'focus-c'])
+})
+
+test('buildStatePacketPayload includes ordered working focus ids alongside focus details', () => {
+  const payload = buildStatePacketPayload({
+    selectedSections: {
+      environment: '',
+      focus_list: '{}',
+      working_focuses: '',
+      project_profile: '',
+      remembered_memory: '',
+      memory: '',
+      tasks: '',
+      plans: '',
+      inputs: '',
+      batch_results: '',
+      recent_history: '',
+      action_feedback: '',
+    },
+    focusPayload: {
+      focusList: [],
+      workingFocuses: [],
+      recentHistory: [],
+    },
+    tasks: [],
+    workDir: '/repo',
+    plans: [],
+    workingFocusIds: ['focus-b', 'focus-a'],
+  })
+
+  expect(JSON.parse(payload.payload)).toMatchObject({
+    working_focus_ids: ['focus-b', 'focus-a'],
   })
 })

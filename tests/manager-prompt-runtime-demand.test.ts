@@ -152,3 +152,55 @@ test('buildMemoryPromptScoreContext excludes task outputs and plan titles from m
   expect(context.queryText).not.toContain('Nightly backlog sweep')
   expect(context.mentionTexts).not.toContain('Temporary rollout checklist')
 })
+
+test('buildManagerPromptPayload surfaces ordered working focus ids in state context', async () => {
+  readHistoryMock.mockClear()
+  readMemoryEntriesMock.mockClear()
+
+  const config = defaultConfig({
+    workDir: '/tmp/mimikit-context-demand-multi-focus',
+  })
+
+  const payload = await buildManagerPromptPayload({
+    stateDir: config.workDir,
+    workDir: config.workDir,
+    inputs: [
+      {
+        id: 'input-1',
+        role: 'user',
+        text: 'switch back to focus b first, then keep focus a warm',
+        focusId: 'focus-b',
+        createdAt: '2026-03-20T00:00:01.000Z',
+      },
+    ],
+    results: [],
+    tasks: [],
+    promptSectionLimits: config.manager.promptSections,
+    focuses: [
+      {
+        id: 'focus-a',
+        title: 'Focus A',
+        status: 'active',
+        createdAt: '2026-03-20T00:00:00.000Z',
+        updatedAt: '2026-03-20T00:00:00.000Z',
+        lastActivityAt: '2026-03-20T00:00:00.000Z',
+      },
+      {
+        id: 'focus-b',
+        title: 'Focus B',
+        status: 'active',
+        createdAt: '2026-03-20T00:00:00.000Z',
+        updatedAt: '2026-03-20T00:00:01.000Z',
+        lastActivityAt: '2026-03-20T00:00:01.000Z',
+      },
+    ],
+    workingFocusIds: ['focus-b', 'focus-a'],
+    wakeProfile: 'user_input',
+    packetMode: 'standard',
+  })
+
+  expect(payload.contextPacket.workingFocusIds).toEqual(['focus-b', 'focus-a'])
+  expect(payload.prompt).toContain('"working_focus_ids": [')
+  expect(payload.prompt).toContain('"focus-b"')
+  expect(payload.prompt).toContain('"focus-a"')
+})

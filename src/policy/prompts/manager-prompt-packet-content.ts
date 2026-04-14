@@ -11,9 +11,15 @@ import {
 import type { ManagerPromptRuntimeData } from './manager-prompt-runtime-helpers.js'
 import type {
   BuildManagerPromptParams,
+  OrderedWorkingFocusIds,
   PromptSelectionSummary,
 } from './manager-prompt-types.js'
 import type { PacketSections } from './select-packet-sections.js'
+
+const buildWorkingFocusIdsPayload = (
+  workingFocusIds: OrderedWorkingFocusIds,
+): { working_focus_ids?: OrderedWorkingFocusIds } =>
+  workingFocusIds.length > 0 ? { working_focus_ids: workingFocusIds } : {}
 
 export const buildStatePacketPayload = (params: {
   selectedSections: PacketSections
@@ -52,6 +58,7 @@ export const buildStatePacketPayload = (params: {
 
   return {
     payload: stringifyPromptJson({
+      ...buildWorkingFocusIdsPayload(params.workingFocusIds),
       ...(params.selectedSections.focus_list
         ? {
             focus_list: buildFocusListPromptPayload(

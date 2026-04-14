@@ -14,6 +14,7 @@ import type {
 } from '../../foundation/types/index.js'
 
 export type PromptSectionLimits = AppConfig['manager']['promptSections']
+export type OrderedWorkingFocusIds = FocusId[]
 
 export type PromptSectionUsage = {
   system: number
@@ -58,7 +59,7 @@ export type BuildManagerPromptParams = {
   actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
-  workingFocusIds?: FocusId[]
+  workingFocusIds?: OrderedWorkingFocusIds
   packetMode?: ManagerPacketMode
   wakeProfile?: ManagerEnv['wakeProfile']
 }
