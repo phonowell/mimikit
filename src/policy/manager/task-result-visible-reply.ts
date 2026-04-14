@@ -4,6 +4,8 @@ import {
 } from '../../surface/shared/path-display.js'
 import { resolveTaskLabel } from '../../work/shared/task-state.js'
 
+import { normalizeManagerReplyText } from './reply-normalize.js'
+
 import type {
   Task,
   TaskResult,
@@ -82,11 +84,11 @@ const resolveRiskLine = (params: {
   result: TaskResult
 }): string | undefined => {
   const stopReasonLine = resolveStopReasonLine(params.result.stopReason)
-  if (stopReasonLine) return `当前风险：${stopReasonLine}`
+  if (stopReasonLine) return stopReasonLine
   const risk = params.result.handoff?.risks?.find(
     (item) => typeof item === 'string' && item.trim().length > 0,
   )
-  return risk ? `当前风险：${risk.trim()}` : undefined
+  return risk ? risk.trim() : undefined
 }
 
 const resolveNextStepLine = (params: {
@@ -95,7 +97,26 @@ const resolveNextStepLine = (params: {
   const nextStep = params.result.handoff?.nextSteps?.find(
     (item) => typeof item === 'string' && item.trim().length > 0,
   )
-  return nextStep ? `下一步：${nextStep.trim()}` : undefined
+  return nextStep ? nextStep.trim() : undefined
+}
+
+const resolveDefaultNextStepLine = (params: { result: TaskResult }): string => {
+  if (
+    params.result.stopReason === 'input_required' ||
+    params.result.stopReason === 'guard_rejected'
+  )
+    return '我先停在这里，等最小必要确认补齐后再继续推进。'
+  if (params.result.status === 'failed' || params.result.status === 'canceled')
+    return '我会先按现有结果收敛停下原因，再决定是补证据、改派还是等待新输入。'
+  return '我会继续沿当前工作线推进后续收尾，并只在需要你拍板时再抬给你。'
+}
+
+const resolveDecisionLine = (params: { result: TaskResult }): string | undefined => {
+  if (params.result.stopReason === 'input_required')
+    return '请直接补充这一步还缺的目标、范围或验收标准。'
+  if (params.result.stopReason === 'guard_rejected')
+    return '请直接确认是否继续这一步，以及要操作的目标对象。'
+  return undefined
 }
 
 export const formatManagerVisibleTaskResultReply = (params: {
@@ -105,14 +126,19 @@ export const formatManagerVisibleTaskResultReply = (params: {
   workDir: string
 }): string => {
   const detail = params.detail?.trim()
-  const lines = [
+  const progressParts = [
     `任务 ${resolveTaskResultRef(params.task, params.result)}：${resolveTaskResultStatusText(params.result)}。`,
   ]
-  if (detail) lines.push(`阶段结论：${detail}`)
+  if (detail) progressParts.push(detail)
+  const lines = [`当前进展：${progressParts.join(' ')}`]
   const riskLine = resolveRiskLine({ result: params.result })
-  if (riskLine) lines.push(riskLine)
-  const nextStepLine = resolveNextStepLine({ result: params.result })
-  if (nextStepLine) lines.push(nextStepLine)
+  if (riskLine) lines.push(`当前风险：${riskLine}`)
+  const decisionLine = resolveDecisionLine({ result: params.result })
+  if (decisionLine) lines.push(`需要你决定：${decisionLine}`)
+  const nextStepLine =
+    resolveNextStepLine({ result: params.result }) ??
+    resolveDefaultNextStepLine({ result: params.result })
+  lines.push(`下一步：${nextStepLine}`)
   lines.push(resolveTaskArchiveLine(params))
-  return lines.join('\n')
+  return normalizeManagerReplyText(lines.join('\n'))
 }

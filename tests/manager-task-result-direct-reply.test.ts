@@ -13,6 +13,7 @@ vi.mock('../src/policy/manager/loop-batch-run-manager.js', () => ({
   runManagerBatch: hoistedMocks.runManagerBatchMock,
 }))
 
+import { formatManagerVisibleTaskResultReply } from '../src/policy/manager/task-result-visible-reply.js'
 import { readHistory } from '../src/persistence/history/store.js'
 import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
 
@@ -84,7 +85,8 @@ test('processManagerBatch routes single task_result batches through manager foll
   const history = await readHistory(runtime.paths.history)
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
-    text: '我会继续推进当前目标；如遇高风险或证据冲突，再抬给你决策。',
+    text:
+      '当前进展：我会继续按当前工作线推进并同步阶段结论。\n下一步：我会继续推进当前目标；如遇高风险或证据冲突，再抬给你决策。',
     usage: {
       input: 13,
       output: 8,
@@ -137,4 +139,39 @@ test('processManagerBatch flushes pending restart after result-only manager foll
     skipPersist: true,
   })
   expect(hoistedMocks.requestMemoryRefreshMock).not.toHaveBeenCalled()
+})
+
+test('formatManagerVisibleTaskResultReply reports result progress naturally without leaking internal protocol terms', () => {
+  const task = createTaskFixture({
+    id: 'task-natural-reply',
+    title: '收敛 manager 用户回复',
+    archivePath:
+      '/tmp/mimikit/.mimikit/tasks/2026-04-14/task-natural-reply.md',
+  })
+
+  const reply = formatManagerVisibleTaskResultReply({
+    task,
+    result: {
+      taskId: task.id,
+      status: 'succeeded',
+      ok: true,
+      output: 'raw output should stay hidden',
+      durationMs: 18,
+      completedAt: '2026-04-14T09:00:00.000Z',
+      archivePath: task.archivePath,
+      handoff: {
+        summary: 'schema 对齐已经完成，结果可继续进入后续收尾。',
+        risks: ['intent-evidence guard 仍可能拦住下一轮自动派发。'],
+        nextSteps: ['enqueue_task 继续补齐 schema 收尾并归档。'],
+      },
+    },
+    detail: 'schema 对齐已经完成，结果可继续进入后续收尾。',
+    workDir: '/tmp/mimikit',
+  })
+
+  expect(reply).toContain('当前进展')
+  expect(reply).toContain('下一步')
+  expect(reply).not.toContain('enqueue_task')
+  expect(reply).not.toContain('intent-evidence')
+  expect(reply).not.toContain('schema')
 })

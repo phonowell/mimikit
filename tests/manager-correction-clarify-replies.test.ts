@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 
+import { normalizeManagerReplyText } from '../src/policy/manager/reply-normalize.js'
 import { TASK_CONTRACT_REQUIRED_HINT } from '../src/policy/manager/task-contract.js'
 
 import {
@@ -121,4 +122,15 @@ test('runManagerCorrectionRounds returns concrete invalid action args instead of
   expect(result.parsed.text).toContain('当前这轮执行单没有形成合法配置')
   expect(result.parsed.text).toContain('目标、范围、验收')
   expect(result.parsed.text).not.toContain('provider')
+})
+
+test('normalizeManagerReplyText rewrites correction-style leakages into natural report language', () => {
+  const reply = normalizeManagerReplyText(`当前这轮执行单没有形成合法配置，我先停在这里。
+enqueue_task 没过 intent-evidence guard，schema 还不完整。`)
+
+  expect(reply).toContain('当前进展')
+  expect(reply).toContain('下一步')
+  expect(reply).not.toContain('enqueue_task')
+  expect(reply).not.toContain('intent-evidence')
+  expect(reply).not.toContain('schema')
 })

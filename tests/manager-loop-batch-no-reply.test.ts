@@ -2,6 +2,7 @@ import { expect, test, vi } from 'vitest'
 
 import { readJsonl } from '../src/persistence/storage/jsonl.js'
 import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
+import { normalizeManagerReplyText } from '../src/policy/manager/reply-normalize.js'
 
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
@@ -40,4 +41,17 @@ test('processManagerBatch flushes pending restart on no-reply fast path', async 
     status: 'ok',
     skippedReason: 'no_agent_visible_inputs',
   })
+})
+
+test('normalizeManagerReplyText strips internal action tags from user-visible replies', () => {
+  const reply = normalizeManagerReplyText(`<M:enqueue_task title="继续推进 schema 收尾" />
+当前进展不清楚。
+下一步由 intent-evidence guard 和 schema 决定。`)
+
+  expect(reply).toContain('当前进展')
+  expect(reply).toContain('下一步')
+  expect(reply).not.toContain('<M:')
+  expect(reply).not.toContain('enqueue_task')
+  expect(reply).not.toContain('intent-evidence')
+  expect(reply).not.toContain('schema')
 })
