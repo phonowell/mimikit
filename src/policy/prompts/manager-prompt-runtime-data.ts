@@ -17,6 +17,7 @@ import {
   hasQuotedInputs,
   type ManagerPromptRuntimeData,
   type ManagerPromptRuntimeDemand,
+  normalizeWorkingFocusIds,
   normalizeRuntimeDemand,
   summarizeRecentHistory,
 } from './manager-prompt-runtime-helpers.js'
@@ -28,7 +29,9 @@ export const prepareManagerPromptRuntimeData = async (
   demandInput?: Partial<ManagerPromptRuntimeDemand>,
 ): Promise<ManagerPromptRuntimeData> => {
   const demand = normalizeRuntimeDemand(demandInput)
-  const workingFocusIds = params.workingFocusIds ?? []
+  const normalizedWorkingFocusIds = normalizeWorkingFocusIds(
+    params.workingFocusIds ?? [],
+  )
   const hydratedHistory = await hydratePromptHistoryResults({
     stateDir: params.stateDir,
     workDir: params.workDir,
@@ -43,7 +46,7 @@ export const prepareManagerPromptRuntimeData = async (
   const statePaths = buildPaths(params.stateDir)
 
   const requiresFocusHistory =
-    (demand.includeWorkingFocuses && workingFocusIds.length > 0) ||
+    (demand.includeWorkingFocuses && normalizedWorkingFocusIds.length > 0) ||
     demand.includeRecentHistory
   const requiresQuoteHistory =
     demand.includeInputs && hasQuotedInputs(params.inputs)
@@ -68,7 +71,7 @@ export const prepareManagerPromptRuntimeData = async (
   const focusPayload = buildFocusPromptPayload({
     focuses: params.focuses ?? [],
     history: focusHistory,
-    workingFocusIds,
+    workingFocusIds: normalizedWorkingFocusIds,
   })
   const quoteLookup =
     demand.includeInputs && hasQuotedInputs(params.inputs)
@@ -84,7 +87,7 @@ export const prepareManagerPromptRuntimeData = async (
           inputs: params.inputs,
           tasks: params.tasks,
           focusPayload,
-          workingFocusIds,
+          workingFocusIds: normalizedWorkingFocusIds,
         }),
         maxBytes: params.promptSectionLimits.memoryMaxBytes,
         includeRemembered: demand.includeRememberedMemory,
@@ -94,6 +97,7 @@ export const prepareManagerPromptRuntimeData = async (
   return {
     pendingResults,
     historyHydratedTaskIds: hydratedHistory.hydratedTaskIds,
+    normalizedWorkingFocusIds,
     focusPayload,
     quoteLookup,
     projectProfilePrompt: shouldLoadProjectProfile

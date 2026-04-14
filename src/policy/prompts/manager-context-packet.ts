@@ -5,6 +5,7 @@ import {
   PREVIEW_MAX_CHARS,
   summarizeLatestResult,
 } from './manager-context-latest-result.js'
+import { normalizeWorkingFocusIds } from './manager-prompt-runtime-helpers.js'
 
 import type {
   FocusId,
@@ -91,21 +92,6 @@ export const shouldIncludePacketSection = (params: {
   return wantsSectionByMode(params.mode, params.section)
 }
 
-export const normalizeManagerPacketWorkingFocusIds = (
-  workingFocusIds: FocusId[],
-): FocusId[] => {
-  const ordered: FocusId[] = []
-  const seen = new Set<FocusId>()
-  for (const focusId of workingFocusIds) {
-    const normalized = focusId?.trim()
-    if (!normalized || seen.has(normalized)) continue
-    seen.add(normalized)
-    ordered.push(normalized)
-    if (ordered.length >= MAX_PACKET_IDS) break
-  }
-  return ordered
-}
-
 export const buildManagerContextPacket = (params: {
   wakeProfile: ManagerWakeProfile
   mode: ManagerPacketMode
@@ -118,9 +104,7 @@ export const buildManagerContextPacket = (params: {
   const latestUserInput = [...params.inputs]
     .reverse()
     .find((item) => item.role === 'user')
-  const workingFocusIds = normalizeManagerPacketWorkingFocusIds(
-    params.workingFocusIds,
-  )
+  const workingFocusIds = normalizeWorkingFocusIds(params.workingFocusIds)
   const packet: ManagerContextPacket = {
     id: `packet-${newId()}`,
     createdAt: nowIso(),

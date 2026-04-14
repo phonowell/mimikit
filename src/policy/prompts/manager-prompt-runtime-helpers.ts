@@ -9,6 +9,7 @@ import type { buildFocusPromptPayload } from '../../work/focus/index.js'
 const MAX_MEMORY_QUERY_CHARS = 4_000
 const MAX_MEMORY_MENTION_ITEMS = 128
 const MAX_RECENT_HISTORY_SUMMARY_ITEMS = 8
+const MAX_NORMALIZED_WORKING_FOCUS_IDS = 5
 
 const pushMention = (target: string[], value: string | undefined): void => {
   const normalized = value?.trim()
@@ -58,12 +59,30 @@ export const normalizeRuntimeDemand = (
 export const hasQuotedInputs = (inputs: UserInput[]): boolean =>
   inputs.some((item) => item.quote?.trim().length)
 
+export const normalizeWorkingFocusIds = (
+  workingFocusIds: FocusId[],
+): FocusId[] => {
+  const ordered: FocusId[] = []
+  const seen = new Set<FocusId>()
+  for (const focusId of workingFocusIds) {
+    const normalized = focusId?.trim()
+    if (!normalized || seen.has(normalized)) continue
+    seen.add(normalized)
+    ordered.push(normalized)
+    if (ordered.length >= MAX_NORMALIZED_WORKING_FOCUS_IDS) break
+  }
+  return ordered
+}
+
 export const buildMemoryPromptScoreContext = (params: {
   inputs: UserInput[]
   tasks: Task[]
   focusPayload: ReturnType<typeof buildFocusPromptPayload>
   workingFocusIds: FocusId[]
 }): MemoryScoreContext => {
+  const normalizedWorkingFocusIds = normalizeWorkingFocusIds(
+    params.workingFocusIds,
+  )
   const mentionTexts: string[] = []
   for (const input of params.inputs) pushMention(mentionTexts, input.text)
   for (const task of params.tasks) pushMention(mentionTexts, task.title)
@@ -90,7 +109,7 @@ export const buildMemoryPromptScoreContext = (params: {
       .join('\n')
       .slice(0, MAX_MEMORY_QUERY_CHARS),
     mentionTexts: mentionTexts.slice(0, MAX_MEMORY_MENTION_ITEMS),
-    workingFocusIds: params.workingFocusIds,
+    workingFocusIds: normalizedWorkingFocusIds,
   }
 }
 
@@ -135,6 +154,7 @@ export const summarizeRecentHistory = (
 export type ManagerPromptRuntimeData = {
   pendingResults: BuildManagerPromptParams['results']
   historyHydratedTaskIds: string[]
+  normalizedWorkingFocusIds: FocusId[]
   focusPayload: ReturnType<typeof buildFocusPromptPayload>
   quoteLookup: ReturnType<typeof buildQuoteReferenceLookup>
   projectProfilePrompt: string

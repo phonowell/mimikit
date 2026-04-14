@@ -59,7 +59,7 @@ export const buildManagerPromptPackets = (params: {
     results: params.runtime.pendingResults,
     tasks: params.tasks,
     plans: params.plans ?? [],
-    workingFocusIds: params.workingFocusIds ?? [],
+    workingFocusIds: params.runtime.normalizedWorkingFocusIds,
   })
   const workingFocusIds = contextPacket.workingFocusIds ?? []
   const sectionText = (value: string, maxBytes: number): string =>
