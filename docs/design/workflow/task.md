@@ -3,8 +3,8 @@
 > 返回 [Workflow 索引](./task-and-action.md)
 
 ## 文档定位
-
-- Task 主规范覆盖生命周期、派发去重、暂停恢复、结果回写与 git 闭环
+- Task 主规范覆盖生命周期、派发去重、暂停恢复、结果回写与 git 闭环，强调它是 manager 派发给 subagent 的局部执行合同。
+- Task 可以分别归属不同的 focus/workline，而 manager 的第一职责是持续推进项目组合，并非事事证明协议完整。
 - 对应实现主源：`src/execution/worker/*`、`src/policy/manager/*`、`src/work/orchestrator/*`
 
 ## 生命周期

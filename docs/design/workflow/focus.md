@@ -4,14 +4,15 @@
 
 ## 文档定位
 
-- Focus 是编排域里的归属单元，用于把 `input / history / task / plan` 挂到同一主题
+- Focus 是编排域里用来隔离工作线（workline）归属的单元，它保证多条线之间的运行与状态隔离。
+- Focus 不是任务板，也不承载执行步骤、验收标准或恢复指令；任务计划等要素只能通过 `assign_focus` 归属。
 - 对应实现主源：`src/work/focus/*`、`src/policy/manager/action-apply-focus.ts`
 
 ## 核心原则
 
-- Focus 只负责归属与容量治理，不承载执行步骤或任务板语义
-- `focus.summary / openItems` 不是执行清单，不是验收标准，也不是恢复指令
-- manager 不再保留 `upsert_focus` 一类直接编辑 focus 文本状态的 action
+- Focus 只负责归属与容量治理，确保工作线之间不会串线；任务板语义不能放到 focus 或 summary 上。
+- `focus.summary / openItems` 不是执行清单、验收标准或恢复指令。
+- manager 不再保留 `upsert_focus` 一类直接编辑 focus 文本状态的 action。
 
 ## 保留 Action
 

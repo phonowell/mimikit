@@ -4,7 +4,8 @@
 
 ## 文档定位
 
-- Plan 主规范覆盖生命周期、触发机制、调度语义与 manager action 合同
+- Plan 主规范覆盖生命周期、触发机制、调度语义与 manager action 合同。它描述 manager 如何把当前推进路径当作假说并运行。
+- 计划并不是最高真相源，每轮推进都要在实际 task 与 runtime state 中验证。
 - 对应实现主源：`src/policy/manager/action-apply-plan.ts`、`src/policy/manager/action-plan-effect.ts`、`src/policy/manager/loop-trigger-plan-execution.ts`
 
 ## 生命周期

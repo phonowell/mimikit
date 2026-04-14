@@ -6,6 +6,7 @@
 
 - 本文档只描述无人在线时段自治作业的最小必要架构：异步触发、单回路编排、外部执行、持久化恢复、人返回后的复盘与续跑。
 - Task/Action/Plan/Focus/Memory 的具体协议仍以 `../workflow/task.md`、`../workflow/action.md`、`../workflow/plan.md`、`../workflow/focus.md`、`../workflow/memory.md` 为准。
+- Focus 是工作线归属与隔离单元；Plan 是当前推进路径的假说而非最高真相源；Task 是局部执行合同；这些定义的权威在各自文档中，并在 manager loop 中以此边界推进。
 
 ## 架构边界
 
@@ -23,7 +24,7 @@
 
 ## 组件职责
 
-- `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，记录每轮 context packet 与 usage ledger，并在批次收尾后触发 memory refresh。
++ `manager`：消费 `inputs/results`，决定回复、任务、计划与收尾策略，记录每轮 context packet 与 usage ledger，并在批次收尾后触发 memory refresh。其第一职责是持续推进项目组合，只在高风险越权或证据不足时才要求更多协议确认，而不是以完备性为主要目标。
 - `worker`：把任务派发给外部执行运行时，并把结果回写到本地状态，同时在结果收尾时写 usage ledger。
 - `runtime domain write surface`：负责 task/plan/focus 真相变更的最小写入口；worker/manager 只提交结构化状态变化，不再在业务模块中散写 collection。
 - `managerLoop`：统一处理计划触发、worker 槽位释放与批次收尾，不再保留独立 trigger loop。
