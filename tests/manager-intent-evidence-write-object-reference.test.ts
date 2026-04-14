@@ -178,15 +178,15 @@ test('asks for lightweight confirmation when competing worklines stay ambiguous'
   expect(result.reason).toBe('ambiguous_workline')
 })
 
-test('enqueue_task(write) stays allowed when user directly references the only active plan even if the next draft is heavily reworded', () => {
+test('same lane + direct reference + unrelated draft stays blocked', () => {
   const currentPlan = createPlanFixture({
-    id: 'plan-auth-guard-owner-ref',
+    id: 'plan-auth-guard-unrelated-direct-ref',
     title: '继续推进 auth guard 主线',
     focusId: 'focus-inbox',
     status: 'active',
     effect: {
       kind: 'enqueue_task',
-      taskKey: 'task-key-auth-guard-owner-ref',
+      taskKey: 'task-key-auth-guard-unrelated-direct-ref',
       taskContract: {
         goal: '继续推进 auth guard 主线并落地下一步实现',
         scope: '只处理 auth guard 主线',
@@ -194,7 +194,7 @@ test('enqueue_task(write) stays allowed when user directly references the only a
       },
       taskTemplate: {
         title: '继续推进 auth guard 主线',
-        executionSpecId: 'spec-auth-guard-owner-ref',
+        executionSpecId: 'spec-auth-guard-unrelated-direct-ref',
         cwd: '/repo/auth-guard',
         resourceMode: 'write',
         useWorktree: false,
@@ -207,14 +207,154 @@ test('enqueue_task(write) stays allowed when user directly references the only a
       {
         type: 'enqueue_task',
         task: {
-          title: '补齐登录拦截剩余落地点',
+          title: '重构 billing retry pipeline',
           cwd: '/repo/auth-guard',
           mode: 'write',
           use_worktree: false,
-          goal: '沿当前鉴权链路继续补实现并完成验收',
-          in_scope: ['聚焦登录门禁后续落地'],
+          goal: '重构 billing retry pipeline 并完成回归验证',
+          in_scope: ['只处理 billing retry pipeline'],
           out_of_scope: [],
-          done_when: ['后续落地完成'],
+          done_when: ['billing retry pipeline 重构完成'],
+          context_refs: [],
+          instructions: [],
+        },
+      },
+    ],
+    {
+      inputs: [createUserInput(`继续沿着 ${currentPlan.id} 这条计划推进。`)],
+      planById: new Map([[currentPlan.id, currentPlan]]),
+      planStatusById: new Map([[currentPlan.id, currentPlan.status]]),
+      resultTaskIds: new Set(['task-finished']),
+      supplementalEvidenceSources: new Set(['task_result']),
+      defaultFocusId: 'focus-inbox',
+    },
+  )
+
+  expect(feedback).toHaveLength(1)
+  expect(feedback[0]?.code).toBe('intent_evidence_missing')
+})
+
+test('two equally anchored worklines differing only by focus stay ambiguous', () => {
+  const firstPlan = createPlanFixture({
+    id: 'plan-auth-guard-focus-a',
+    title: '继续推进登录门禁后续整改',
+    focusId: 'focus-a',
+    status: 'active',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-finished-auth-guard-focus-ambiguous',
+    },
+    effect: {
+      kind: 'enqueue_task',
+      taskKey: 'task-key-auth-guard-focus-a',
+      taskContract: {
+        goal: '沿当前鉴权链路继续推进后续整改',
+        scope: '只处理登录门禁主线',
+        acceptance: ['当前后续整改完成'],
+      },
+      taskTemplate: {
+        title: '继续推进登录门禁后续整改',
+        executionSpecId: 'spec-auth-guard-focus-a',
+        cwd: '/repo/auth-guard',
+        resourceMode: 'write',
+        useWorktree: false,
+      },
+    },
+  })
+  const secondPlan = createPlanFixture({
+    id: 'plan-auth-guard-focus-b',
+    title: '继续推进登录门禁剩余整改',
+    focusId: 'focus-b',
+    status: 'active',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-finished-auth-guard-focus-ambiguous',
+    },
+    effect: {
+      kind: 'enqueue_task',
+      taskKey: 'task-key-auth-guard-focus-b',
+      taskContract: {
+        goal: '沿当前鉴权链路继续推进剩余整改',
+        scope: '只处理登录门禁主线',
+        acceptance: ['当前剩余整改完成'],
+      },
+      taskTemplate: {
+        title: '继续推进登录门禁剩余整改',
+        executionSpecId: 'spec-auth-guard-focus-b',
+        cwd: '/repo/auth-guard',
+        resourceMode: 'write',
+        useWorktree: false,
+      },
+    },
+  })
+
+  const result = resolveLowRiskWriteEnqueueContinuation({
+    item: {
+      type: 'enqueue_task',
+      task: {
+        title: '继续推进登录门禁当前整改',
+        cwd: '/repo/auth-guard',
+        mode: 'write',
+        use_worktree: false,
+        goal: '沿当前鉴权链路继续推进这一批整改',
+        in_scope: ['只处理当前登录门禁主线'],
+        out_of_scope: [],
+        done_when: ['这一批整改完成'],
+        context_refs: [],
+        instructions: [],
+      },
+    },
+    inputTexts: [],
+    planById: new Map([
+      [firstPlan.id, firstPlan],
+      [secondPlan.id, secondPlan],
+    ]),
+    resultTaskIds: new Set(['task-finished-auth-guard-focus-ambiguous']),
+    defaultFocusId: 'focus-a',
+  })
+
+  expect(result.ok).toBe(false)
+  if (result.ok) throw new Error(`expected ambiguity, got ${result.targetId}`)
+  expect(result.reason).toBe('ambiguous_workline')
+})
+
+test('enqueue_task(write) stays allowed when user directly references the only active plan and the next draft stays semantically aligned', () => {
+  const currentPlan = createPlanFixture({
+    id: 'plan-auth-guard-semantic-direct-ref',
+    title: '继续推进 auth guard 主线',
+    focusId: 'focus-inbox',
+    status: 'active',
+    effect: {
+      kind: 'enqueue_task',
+      taskKey: 'task-key-auth-guard-semantic-direct-ref',
+      taskContract: {
+        goal: '继续推进 auth guard 主线并落地下一步实现',
+        scope: '只处理 auth guard 主线',
+        acceptance: ['下一步主线修改完成'],
+      },
+      taskTemplate: {
+        title: '继续推进 auth guard 主线',
+        executionSpecId: 'spec-auth-guard-semantic-direct-ref',
+        cwd: '/repo/auth-guard',
+        resourceMode: 'write',
+        useWorktree: false,
+      },
+    },
+  })
+
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'enqueue_task',
+        task: {
+          title: '继续推进 auth guard 主线下一步实现',
+          cwd: '/repo/auth-guard',
+          mode: 'write',
+          use_worktree: false,
+          goal: '继续推进 auth guard 主线并落地下一步实现',
+          in_scope: ['只处理 auth guard 主线'],
+          out_of_scope: [],
+          done_when: ['下一步主线修改完成'],
           context_refs: [],
           instructions: [],
         },
@@ -237,9 +377,9 @@ test('enqueue_task(write) stays allowed when user directly references the only a
   expect(feedback).toHaveLength(0)
 })
 
-test('enqueue_task(write) stays allowed when user directly references the only result task even if the next draft is heavily reworded', () => {
+test('enqueue_task(write) stays allowed when user directly references the only result task and the next draft stays semantically aligned', () => {
   const finishedTask = createIntentEvidenceTask({
-    id: 'task-auth-guard-owner-ref',
+    id: 'task-auth-guard-semantic-direct-ref',
     title: '收敛 auth guard 的主链',
     cwd: '/repo/auth-guard',
     focusId: 'focus-inbox',
@@ -257,14 +397,14 @@ test('enqueue_task(write) stays allowed when user directly references the only r
       {
         type: 'enqueue_task',
         task: {
-          title: '补齐登录拦截剩余落地点',
+          title: '收敛 auth guard 主链的下一步落地',
           cwd: '/repo/auth-guard',
           mode: 'write',
           use_worktree: false,
-          goal: '沿当前鉴权链路继续补实现并完成验收',
-          in_scope: ['聚焦登录门禁后续落地'],
+          goal: '收敛 auth guard 的主链并完成下一步落地方向',
+          in_scope: ['只处理 auth guard 主链'],
           out_of_scope: [],
-          done_when: ['后续落地完成'],
+          done_when: ['给出主链收敛结果'],
           context_refs: [],
           instructions: [],
         },

@@ -6,6 +6,8 @@ import {
   buildPlanSemanticText,
   buildTaskSemanticText,
   hasSemanticAlignment,
+  matchesPlanToEnqueueDraft,
+  matchesTaskToEnqueueDraft,
   scoreSemanticAlignment,
 } from './authorization-semantics.js'
 
@@ -74,8 +76,7 @@ const collectPlanCandidates = (params: {
         params.resultTaskIds?.has(plan.runtime.lastTaskId)) === true
     const hasOwnership = directReference || runtimeAnchor
     if (!hasOwnership) continue
-    if (!directReference && draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
-    const focusOwnership = plan.focusId.trim() === params.defaultFocusId?.trim()
+    if (draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
     const inputScore = inputText
       ? scoreSemanticAlignment(buildPlanSemanticText(plan), inputText)
       : 0
@@ -89,8 +90,7 @@ const collectPlanCandidates = (params: {
         draftScore +
         inputScore +
         (directReference ? 1.5 : 0) +
-        (runtimeAnchor ? 0.9 : 0) +
-        (focusOwnership ? 0.2 : 0),
+        (runtimeAnchor ? 0.9 : 0),
     })
   }
   return candidates
@@ -130,8 +130,7 @@ const collectStandaloneResultTaskCandidates = (params: {
       candidates: [task.id, task.title],
       inputs: params.inputTexts,
     })
-    if (!directReference && draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
-    const focusOwnership = task.focusId.trim() === params.defaultFocusId?.trim()
+    if (draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
     const inputScore = inputText
       ? scoreSemanticAlignment(buildTaskSemanticText(task), inputText)
       : 0
@@ -145,8 +144,7 @@ const collectStandaloneResultTaskCandidates = (params: {
         draftScore +
         inputScore +
         (directReference ? 1.5 : 0) +
-        0.9 +
-        (focusOwnership ? 0.2 : 0),
+        0.9,
     })
   }
   return candidates
@@ -266,9 +264,18 @@ export const supportsDirectWriteEnqueueContinuationTarget = (params: {
   const continuation = resolveLowRiskWriteEnqueueContinuation(params)
   if (continuation.ok) return true
   const plan = resolveSingleActivePlanContinuationTarget(params)
-  if (inputDirectlyReferencesPlan(params.inputTexts, plan)) return true
+  if (
+    plan &&
+    inputDirectlyReferencesPlan(params.inputTexts, plan) &&
+    matchesPlanToEnqueueDraft(plan, params.item)
+  )
+    return true
   const task = resolveSingleResultTaskContinuationTarget(params)
-  return inputDirectlyReferencesTask(params.inputTexts, task)
+  return (
+    task !== undefined &&
+    inputDirectlyReferencesTask(params.inputTexts, task) &&
+    matchesTaskToEnqueueDraft(task, params.item)
+  )
 }
 
 export const supportsDirectWritePlanUpdateTarget = (params: {
