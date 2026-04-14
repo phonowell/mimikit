@@ -15,6 +15,10 @@ test('continues on the most likely workline when signals converge', () => {
     title: '按整体方案推进登录门禁收尾',
     focusId: 'focus-inbox',
     status: 'active',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-finished-auth-guard-converged',
+    },
     effect: {
       kind: 'enqueue_task',
       taskKey: 'task-key-auth-guard-converged',
@@ -37,6 +41,10 @@ test('continues on the most likely workline when signals converge', () => {
     title: '推进 billing retry 收尾',
     focusId: 'focus-inbox',
     status: 'active',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-other',
+    },
     effect: {
       kind: 'enqueue_task',
       taskKey: 'task-key-billing-retry-other',
@@ -76,6 +84,7 @@ test('continues on the most likely workline when signals converge', () => {
       [targetPlan.id, targetPlan],
       [otherPlan.id, otherPlan],
     ]),
+    resultTaskIds: new Set(['task-finished-auth-guard-converged']),
     defaultFocusId: 'focus-inbox',
   })
 
@@ -91,6 +100,10 @@ test('asks for lightweight confirmation when competing worklines stay ambiguous'
     title: '继续推进登录门禁后续整改',
     focusId: 'focus-inbox',
     status: 'active',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-finished-auth-guard-ambiguous',
+    },
     effect: {
       kind: 'enqueue_task',
       taskKey: 'task-key-auth-guard-ambiguous-a',
@@ -113,6 +126,10 @@ test('asks for lightweight confirmation when competing worklines stay ambiguous'
     title: '继续推进登录门禁剩余整改',
     focusId: 'focus-inbox',
     status: 'active',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-finished-auth-guard-ambiguous',
+    },
     effect: {
       kind: 'enqueue_task',
       taskKey: 'task-key-auth-guard-ambiguous-b',
@@ -152,6 +169,7 @@ test('asks for lightweight confirmation when competing worklines stay ambiguous'
       [firstPlan.id, firstPlan],
       [secondPlan.id, secondPlan],
     ]),
+    resultTaskIds: new Set(['task-finished-auth-guard-ambiguous']),
     defaultFocusId: 'focus-inbox',
   })
 

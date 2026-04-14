@@ -69,10 +69,12 @@ const collectPlanCandidates = (params: {
       candidates: [plan.id, plan.title],
       inputs: params.inputTexts,
     })
-    if (!directReference && draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
     const runtimeAnchor =
       (plan.runtime?.lastTaskId !== undefined &&
         params.resultTaskIds?.has(plan.runtime.lastTaskId)) === true
+    const hasOwnership = directReference || runtimeAnchor
+    if (!hasOwnership) continue
+    if (!directReference && draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
     const focusOwnership = plan.focusId.trim() === params.defaultFocusId?.trim()
     const inputScore = inputText
       ? scoreSemanticAlignment(buildPlanSemanticText(plan), inputText)
