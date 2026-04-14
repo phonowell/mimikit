@@ -1,6 +1,9 @@
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
-import { isSupportedByInputs } from './action-intent-evidence-match.js'
+import {
+  isExactAnchorSupportedByInputs,
+  isSupportedByInputs,
+} from './action-intent-evidence-match.js'
 import {
   matchesPlanToEnqueueDraft,
   matchesTaskToEnqueueDraft,
@@ -41,7 +44,7 @@ const hasExplicitLaneChangeEvidence = (params: {
   const checks: boolean[] = []
   if (params.requiresCwdEvidence) {
     checks.push(
-      isSupportedByInputs({
+      isExactAnchorSupportedByInputs({
         candidates: [params.next.cwd],
         inputs: params.inputTexts,
       }),

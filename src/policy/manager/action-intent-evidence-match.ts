@@ -73,6 +73,19 @@ const resolveCandidateThreshold = (tokenCount: number): number =>
 const normalizeText = (value: string | undefined): string =>
   normalizeInlineWhitespace(value ?? '')
 
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const EXACT_ANCHOR_CONTINUATION_CHARS = String.raw`\p{L}\p{N}_/-`
+
+const matchesExactAnchor = (input: string, candidate: string): boolean => {
+  const normalizedInput = normalizeText(input)
+  const normalizedCandidate = normalizeText(candidate)
+  if (!normalizedInput || !normalizedCandidate) return false
+  const boundaryPattern = `(^|[^${EXACT_ANCHOR_CONTINUATION_CHARS}])${escapeRegExp(normalizedCandidate)}($|[^${EXACT_ANCHOR_CONTINUATION_CHARS}])`
+  return new RegExp(boundaryPattern, 'u').test(normalizedInput)
+}
+
 const scoreCandidateAgainstInput = (
   candidate: string,
   inputText: string,
@@ -91,6 +104,20 @@ export const buildAmbiguousWorklineHint = (candidateRefs: string[]): string => {
   const refs = candidateRefs.filter(Boolean).slice(0, 3)
   const refText = refs.length > 0 ? `（候选：${refs.join('；')}）` : ''
   return `enqueue_task 执行前还缺一个最小确认：当前可继续的工作线不止一条，请直接说明继续哪一条工作线${refText}。`
+}
+
+export const isExactAnchorSupportedByInputs = (params: {
+  candidates: string[]
+  inputs: string[]
+}): boolean => {
+  if (params.inputs.length === 0) return false
+  for (const rawCandidate of params.candidates) {
+    const candidate = normalizeText(rawCandidate)
+    if (!candidate) continue
+    if (params.inputs.some((input) => matchesExactAnchor(input, candidate)))
+      return true
+  }
+  return false
 }
 
 export const isSupportedByInputs = (params: {

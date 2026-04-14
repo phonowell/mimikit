@@ -1,4 +1,7 @@
-import { isSupportedByInputs } from './action-intent-evidence-match.js'
+import {
+  isExactAnchorSupportedByInputs,
+  isSupportedByInputs,
+} from './action-intent-evidence-match.js'
 import { matchesWriteEnqueueLane } from './action-intent-evidence-write-lane.js'
 import { buildSetPlanUpdateSemanticText } from './authorization-plan-semantics.js'
 import {
@@ -45,6 +48,62 @@ export type LowRiskWriteEnqueueContinuationResult =
 const buildCandidateRef = (value: { id: string; title: string }): string =>
   value.title.trim() ? `${value.id} / ${value.title.trim()}` : value.id
 
+const inputDirectlyReferencesPlan = (
+  inputTexts: string[],
+  plan: TaskPlan | undefined,
+): boolean => {
+  if (!plan) return false
+  return (
+    isExactAnchorSupportedByInputs({
+      candidates: [plan.id],
+      inputs: inputTexts,
+    }) ||
+    isSupportedByInputs({
+      candidates: [plan.title],
+      inputs: inputTexts,
+    })
+  )
+}
+
+const inputDirectlyReferencesTask = (
+  inputTexts: string[],
+  task: Task | undefined,
+): boolean => {
+  if (!task) return false
+  return (
+    isExactAnchorSupportedByInputs({
+      candidates: [task.id],
+      inputs: inputTexts,
+    }) ||
+    isSupportedByInputs({
+      candidates: [task.title],
+      inputs: inputTexts,
+    })
+  )
+}
+
+const inputDirectlyReferencesPlanId = (
+  inputTexts: string[],
+  plan: TaskPlan | undefined,
+): boolean => {
+  if (!plan) return false
+  return isExactAnchorSupportedByInputs({
+    candidates: [plan.id],
+    inputs: inputTexts,
+  })
+}
+
+const inputDirectlyReferencesTaskId = (
+  inputTexts: string[],
+  task: Task | undefined,
+): boolean => {
+  if (!task) return false
+  return isExactAnchorSupportedByInputs({
+    candidates: [task.id],
+    inputs: inputTexts,
+  })
+}
+
 const collectPlanCandidates = (params: {
   item: Extract<Parsed, { type: 'enqueue_task' }>
   inputTexts: string[]
@@ -67,10 +126,7 @@ const collectPlanCandidates = (params: {
     )
       continue
     const draftScore = scoreSemanticAlignment(buildPlanSemanticText(plan), draftText)
-    const directReference = isSupportedByInputs({
-      candidates: [plan.id, plan.title],
-      inputs: params.inputTexts,
-    })
+    const directReference = inputDirectlyReferencesPlan(params.inputTexts, plan)
     const runtimeAnchor =
       (plan.runtime?.lastTaskId !== undefined &&
         params.resultTaskIds?.has(plan.runtime.lastTaskId)) === true
@@ -126,10 +182,7 @@ const collectStandaloneResultTaskCandidates = (params: {
     )
       continue
     const draftScore = scoreSemanticAlignment(buildTaskSemanticText(task), draftText)
-    const directReference = isSupportedByInputs({
-      candidates: [task.id, task.title],
-      inputs: params.inputTexts,
-    })
+    const directReference = inputDirectlyReferencesTask(params.inputTexts, task)
     if (draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
     const inputScore = inputText
       ? scoreSemanticAlignment(buildTaskSemanticText(task), inputText)
@@ -231,28 +284,6 @@ export const resolveLowRiskWriteEnqueueContinuation = (params: {
   }
 }
 
-const inputDirectlyReferencesPlan = (
-  inputTexts: string[],
-  plan: TaskPlan | undefined,
-): boolean => {
-  if (!plan) return false
-  return isSupportedByInputs({
-    candidates: [plan.id, plan.title],
-    inputs: inputTexts,
-  })
-}
-
-const inputDirectlyReferencesTask = (
-  inputTexts: string[],
-  task: Task | undefined,
-): boolean => {
-  if (!task) return false
-  return isSupportedByInputs({
-    candidates: [task.id, task.title],
-    inputs: inputTexts,
-  })
-}
-
 export const supportsDirectWriteEnqueueContinuationTarget = (params: {
   item: Extract<Parsed, { type: 'enqueue_task' }>
   inputTexts: string[]
@@ -266,14 +297,14 @@ export const supportsDirectWriteEnqueueContinuationTarget = (params: {
   const plan = resolveSingleActivePlanContinuationTarget(params)
   if (
     plan &&
-    inputDirectlyReferencesPlan(params.inputTexts, plan) &&
+    inputDirectlyReferencesPlanId(params.inputTexts, plan) &&
     matchesPlanToEnqueueDraft(plan, params.item)
   )
     return true
   const task = resolveSingleResultTaskContinuationTarget(params)
   return (
     task !== undefined &&
-    inputDirectlyReferencesTask(params.inputTexts, task) &&
+    inputDirectlyReferencesTaskId(params.inputTexts, task) &&
     matchesTaskToEnqueueDraft(task, params.item)
   )
 }
