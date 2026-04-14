@@ -43,29 +43,46 @@ const buildContractText = (contract: TaskContract | undefined): string => {
   ])
 }
 
+const collectStrongTokens = (value: string): string[] =>
+  tokenizeSearchText(value).filter(
+    (token) =>
+      !token.startsWith('cjk:') && token.length >= STRONG_TOKEN_MIN_LENGTH,
+  )
+
+export const scoreSemanticAlignment = (left: string, right: string): number => {
+  const normalizedLeft = normalizeText(left)
+  const normalizedRight = normalizeText(right)
+  if (!normalizedLeft || !normalizedRight) return 0
+  if (normalizedLeft === normalizedRight) return 1
+  const overlap = Math.max(
+    scoreTextOverlap(normalizedLeft, normalizedRight),
+    scoreTextOverlap(normalizedRight, normalizedLeft),
+  )
+  const leftTokens = collectStrongTokens(normalizedLeft)
+  const rightTokens = collectStrongTokens(normalizedRight)
+  if (leftTokens.length === 0 || rightTokens.length === 0) return overlap
+  const rightTokenSet = new Set(rightTokens)
+  let shared = 0
+  for (const token of leftTokens) {
+    if (!rightTokenSet.has(token)) continue
+    shared += 1
+  }
+  const sharedRatio = shared / Math.min(leftTokens.length, rightTokens.length)
+  return Math.max(overlap, sharedRatio)
+}
+
 export const hasSemanticAlignment = (
   left: string,
   right: string,
   threshold = SEMANTIC_MATCH_THRESHOLD,
 ): boolean => {
+  const score = scoreSemanticAlignment(left, right)
+  if (score >= threshold) return true
   const normalizedLeft = normalizeText(left)
   const normalizedRight = normalizeText(right)
   if (!normalizedLeft || !normalizedRight) return false
-  const overlap = Math.max(
-    scoreTextOverlap(normalizedLeft, normalizedRight),
-    scoreTextOverlap(normalizedRight, normalizedLeft),
-  )
-  if (overlap >= threshold) return true
-  const leftTokens = tokenizeSearchText(normalizedLeft).filter(
-    (token) =>
-      !token.startsWith('cjk:') && token.length >= STRONG_TOKEN_MIN_LENGTH,
-  )
-  const rightTokens = new Set(
-    tokenizeSearchText(normalizedRight).filter(
-      (token) =>
-        !token.startsWith('cjk:') && token.length >= STRONG_TOKEN_MIN_LENGTH,
-    ),
-  )
+  const leftTokens = collectStrongTokens(normalizedLeft)
+  const rightTokens = new Set(collectStrongTokens(normalizedRight))
   let shared = 0
   for (const token of leftTokens) {
     if (!rightTokens.has(token)) continue
@@ -135,19 +152,15 @@ export const matchesPlanToEnqueueDraft = (
   plan: TaskPlan,
   item: EnqueueTaskItem,
 ): boolean =>
-  hasSemanticAlignment(
-    buildPlanSemanticText(plan),
-    buildEnqueueDraftSemanticText(item),
-  )
+  scoreSemanticAlignment(buildPlanSemanticText(plan), buildEnqueueDraftSemanticText(item)) >=
+  SEMANTIC_MATCH_THRESHOLD
 
 export const matchesTaskToEnqueueDraft = (
   task: Task,
   item: EnqueueTaskItem,
 ): boolean =>
-  hasSemanticAlignment(
-    buildTaskSemanticText(task),
-    buildEnqueueDraftSemanticText(item),
-  )
+  scoreSemanticAlignment(buildTaskSemanticText(task), buildEnqueueDraftSemanticText(item)) >=
+  SEMANTIC_MATCH_THRESHOLD
 
 export const matchesPlanToSetPlanDraft = (
   plan: TaskPlan,

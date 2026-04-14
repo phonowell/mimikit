@@ -44,7 +44,7 @@ export const resolveIntentEvidenceRejectionHint = (
   if (!requiresIntentEvidence(item)) return undefined
 
   const inputTexts = collectUserIntentTexts(context.inputs)
-  if (inputTexts.length === 0) {
+  if (inputTexts.length === 0 && item.type !== 'enqueue_task') {
     return buildMissingIntentEvidenceHint({
       actionName: item.type,
       evidenceSources: context.supplementalEvidenceSources,

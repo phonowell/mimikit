@@ -99,6 +99,216 @@ test('read-mode enqueue_task stays allowed when only supplemental evidence sugge
   expect(feedback).toHaveLength(0)
 })
 
+test('enqueue_task(write) stays allowed on task_result follow-up when one active workline is the clear low-risk continuation target', () => {
+  const anchoredPlan = {
+    id: 'plan-followup-low-risk-continue',
+    title: '按整体方案推进 auth guard 主线',
+    focusId: 'focus-inbox',
+    priority: 'normal' as const,
+    status: 'active' as const,
+    trigger: {
+      mode: 'on_worker_slot_freed' as const,
+    },
+    effect: {
+      kind: 'enqueue_task' as const,
+      taskKey: 'task-key-followup-low-risk-continue',
+      taskContract: {
+        goal: '沿当前鉴权链路补齐入口门禁剩余改造',
+        scope: '只处理 auth guard 主线',
+        acceptance: ['入口门禁剩余改造完成'],
+      },
+      taskTemplate: {
+        title: '推进 auth guard 主线收尾',
+        executionSpecId: 'spec-followup-low-risk-continue',
+        cwd: '/repo/auth-guard',
+        resourceMode: 'write' as const,
+        useWorktree: false,
+      },
+    },
+    createdAt: '2026-04-02T00:04:00.000Z',
+    updatedAt: '2026-04-02T00:04:00.000Z',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-finished-followup-low-risk-continue',
+    },
+  }
+  const otherPlan = {
+    id: 'plan-followup-low-risk-other',
+    title: '推进 billing retry 主线',
+    focusId: 'focus-inbox',
+    priority: 'normal' as const,
+    status: 'active' as const,
+    trigger: {
+      mode: 'on_worker_slot_freed' as const,
+    },
+    effect: {
+      kind: 'enqueue_task' as const,
+      taskKey: 'task-key-followup-low-risk-other',
+      taskContract: {
+        goal: '收敛 billing retry 主线并完成回归',
+        scope: '只处理 billing retry pipeline',
+        acceptance: ['billing retry 回归完成'],
+      },
+      taskTemplate: {
+        title: '推进 billing retry 主线',
+        executionSpecId: 'spec-followup-low-risk-other',
+        cwd: '/repo/auth-guard',
+        resourceMode: 'write' as const,
+        useWorktree: false,
+      },
+    },
+    createdAt: '2026-04-02T00:04:00.000Z',
+    updatedAt: '2026-04-02T00:04:00.000Z',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-other',
+    },
+  }
+
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'enqueue_task',
+        task: {
+          title: '补齐入口门禁剩余改造',
+          cwd: '/repo/auth-guard',
+          mode: 'write',
+          use_worktree: false,
+          goal: '沿当前鉴权链路继续补实现并完成验收',
+          in_scope: ['聚焦登录门禁后续落地'],
+          out_of_scope: [],
+          done_when: ['当前入口门禁主线收尾完成'],
+          context_refs: [],
+          instructions: [],
+        },
+      },
+    ],
+    {
+      inputs: [],
+      planById: new Map([
+        [anchoredPlan.id, anchoredPlan],
+        [otherPlan.id, otherPlan],
+      ]),
+      planStatusById: new Map([
+        [anchoredPlan.id, anchoredPlan.status],
+        [otherPlan.id, otherPlan.status],
+      ]),
+      resultTaskIds: new Set(['task-finished-followup-low-risk-continue']),
+      supplementalEvidenceSources: new Set(['task_result']),
+      defaultFocusId: 'focus-inbox',
+    },
+  )
+
+  expect(feedback).toHaveLength(0)
+})
+
+test('enqueue_task(write) asks for lightweight confirmation when task_result follow-up still matches competing worklines', () => {
+  const firstPlan = {
+    id: 'plan-followup-ambiguous-a',
+    title: '继续推进 auth guard 后续整改',
+    focusId: 'focus-inbox',
+    priority: 'normal' as const,
+    status: 'active' as const,
+    trigger: {
+      mode: 'on_worker_slot_freed' as const,
+    },
+    effect: {
+      kind: 'enqueue_task' as const,
+      taskKey: 'task-key-followup-ambiguous-a',
+      taskContract: {
+        goal: '沿当前鉴权链路继续推进 auth guard 后续整改',
+        scope: '只处理 auth guard 主线',
+        acceptance: ['后续整改完成'],
+      },
+      taskTemplate: {
+        title: '继续推进 auth guard 后续整改',
+        executionSpecId: 'spec-followup-ambiguous-a',
+        cwd: '/repo/auth-guard',
+        resourceMode: 'write' as const,
+        useWorktree: false,
+      },
+    },
+    createdAt: '2026-04-02T00:04:00.000Z',
+    updatedAt: '2026-04-02T00:04:00.000Z',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-finished-followup-ambiguous',
+    },
+  }
+  const secondPlan = {
+    id: 'plan-followup-ambiguous-b',
+    title: '继续推进 auth guard 剩余整改',
+    focusId: 'focus-inbox',
+    priority: 'normal' as const,
+    status: 'active' as const,
+    trigger: {
+      mode: 'on_worker_slot_freed' as const,
+    },
+    effect: {
+      kind: 'enqueue_task' as const,
+      taskKey: 'task-key-followup-ambiguous-b',
+      taskContract: {
+        goal: '沿当前鉴权链路继续推进 auth guard 剩余整改',
+        scope: '只处理 auth guard 主线',
+        acceptance: ['剩余整改完成'],
+      },
+      taskTemplate: {
+        title: '继续推进 auth guard 剩余整改',
+        executionSpecId: 'spec-followup-ambiguous-b',
+        cwd: '/repo/auth-guard',
+        resourceMode: 'write' as const,
+        useWorktree: false,
+      },
+    },
+    createdAt: '2026-04-02T00:04:00.000Z',
+    updatedAt: '2026-04-02T00:04:00.000Z',
+    runtime: {
+      runCount: 1,
+      lastTaskId: 'task-finished-followup-ambiguous',
+    },
+  }
+
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'enqueue_task',
+        task: {
+          title: '继续推进 auth guard 当前整改',
+          cwd: '/repo/auth-guard',
+          mode: 'write',
+          use_worktree: false,
+          goal: '沿当前鉴权链路继续推进这一批整改',
+          in_scope: ['只处理 auth guard 主线'],
+          out_of_scope: [],
+          done_when: ['这一批整改完成'],
+          context_refs: [],
+          instructions: [],
+        },
+      },
+    ],
+    {
+      inputs: [],
+      planById: new Map([
+        [firstPlan.id, firstPlan],
+        [secondPlan.id, secondPlan],
+      ]),
+      planStatusById: new Map([
+        [firstPlan.id, firstPlan.status],
+        [secondPlan.id, secondPlan.status],
+      ]),
+      resultTaskIds: new Set(['task-finished-followup-ambiguous']),
+      supplementalEvidenceSources: new Set(['task_result']),
+      defaultFocusId: 'focus-inbox',
+    },
+  )
+
+  expectSingleRejectedFeedback(feedback, {
+    action: 'enqueue_task',
+    error: 'action_execution_rejected',
+    hintIncludes: ['哪一条工作线', 'plan-followup-ambiguous-a', 'plan-followup-ambiguous-b'],
+  })
+})
+
 test('task_control is blocked when user input does not identify the task', () => {
   const task = createTask()
   const feedback = collectManagerActionFeedback(

@@ -10,6 +10,7 @@ import {
   formatSetPlanIntentEvidenceHint,
   formatTaskControlIntentEvidenceHint,
 } from './action-evidence-hints.js'
+import { scoreSemanticAlignment } from './authorization-semantics.js'
 
 import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
 import type { UserInput } from '../../foundation/types/index.js'
@@ -69,6 +70,29 @@ const resolveCandidateThreshold = (tokenCount: number): number =>
       ? MEDIUM_CANDIDATE_THRESHOLD
       : DEFAULT_CANDIDATE_THRESHOLD
 
+const normalizeText = (value: string | undefined): string =>
+  normalizeInlineWhitespace(value ?? '')
+
+const scoreCandidateAgainstInput = (
+  candidate: string,
+  inputText: string,
+): number => {
+  const normalizedCandidate = normalizeText(candidate)
+  if (!normalizedCandidate) return 0
+  const overlap = Math.max(
+    scoreTextOverlap(normalizedCandidate, inputText),
+    scoreTextOverlap(inputText, normalizedCandidate),
+  )
+  if (inputText.includes(normalizedCandidate)) return Math.max(overlap, 1)
+  return Math.max(overlap, scoreSemanticAlignment(normalizedCandidate, inputText))
+}
+
+export const buildAmbiguousWorklineHint = (candidateRefs: string[]): string => {
+  const refs = candidateRefs.filter(Boolean).slice(0, 3)
+  const refText = refs.length > 0 ? `（候选：${refs.join('；')}）` : ''
+  return `enqueue_task 执行前还缺一个最小确认：当前可继续的工作线不止一条，请直接说明继续哪一条工作线${refText}。`
+}
+
 export const isSupportedByInputs = (params: {
   candidates: string[]
   combinedCandidate?: string
@@ -78,17 +102,15 @@ export const isSupportedByInputs = (params: {
   if (!inputText) return false
 
   for (const rawCandidate of params.candidates) {
-    const candidate = normalizeInlineWhitespace(rawCandidate)
+    const candidate = normalizeText(rawCandidate)
     if (!candidate) continue
     const tokenCount = tokenizeSearchText(candidate).length
     if (tokenCount === 0) continue
     const threshold = resolveCandidateThreshold(tokenCount)
-    if (scoreTextOverlap(candidate, inputText) >= threshold) return true
+    if (scoreCandidateAgainstInput(candidate, inputText) >= threshold) return true
   }
 
-  const combinedCandidate = normalizeInlineWhitespace(
-    params.combinedCandidate ?? '',
-  )
+  const combinedCandidate = normalizeText(params.combinedCandidate)
   if (!combinedCandidate) return false
-  return scoreTextOverlap(combinedCandidate, inputText) >= 0.35
+  return scoreCandidateAgainstInput(combinedCandidate, inputText) >= 0.35
 }

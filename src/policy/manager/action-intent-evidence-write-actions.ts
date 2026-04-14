@@ -1,4 +1,5 @@
 import {
+  buildAmbiguousWorklineHint,
   buildMissingIntentEvidenceHint,
   isSupportedByInputs,
 } from './action-intent-evidence-match.js'
@@ -7,6 +8,7 @@ import {
   requiresExplicitWritePlanUpdateLaneEvidence,
 } from './action-intent-evidence-write-lane.js'
 import {
+  resolveLowRiskWriteEnqueueContinuation,
   supportsDirectWriteEnqueueContinuationTarget,
   supportsDirectWritePlanUpdateTarget,
 } from './action-intent-evidence-write-target.js'
@@ -25,6 +27,21 @@ export const resolveEnqueueTaskIntentEvidenceHint = (params: {
   defaultFocusId?: string
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
+  const lowRiskContinuation = resolveLowRiskWriteEnqueueContinuation({
+    item: params.item,
+    inputTexts: params.inputTexts,
+    ...(params.taskById ? { taskById: params.taskById } : {}),
+    ...(params.planById ? { planById: params.planById } : {}),
+    ...(params.resultTaskIds ? { resultTaskIds: params.resultTaskIds } : {}),
+    ...(params.defaultFocusId
+      ? { defaultFocusId: params.defaultFocusId }
+      : {}),
+  })
+  if (lowRiskContinuation.ok) return undefined
+  if (lowRiskContinuation.reason === 'ambiguous_workline') {
+    return buildAmbiguousWorklineHint(lowRiskContinuation.candidateRefs)
+  }
+
   if (
     supportsDirectWriteEnqueueContinuationTarget({
       item: params.item,
@@ -59,6 +76,12 @@ export const resolveEnqueueTaskIntentEvidenceHint = (params: {
 
   const contract = buildTaskContractFromDraft(params.item.task)
   if (!contract) return undefined
+  if (params.inputTexts.length === 0) {
+    return buildMissingIntentEvidenceHint({
+      actionName: params.item.type,
+      evidenceSources: params.supplementalEvidenceSources,
+    })
+  }
   const supported = isSupportedByInputs({
     candidates: [params.item.task.title, contract.goal, contract.scope],
     combinedCandidate: [
@@ -82,6 +105,13 @@ export const resolveSetPlanIntentEvidenceHint = (params: {
   planById?: Map<string, TaskPlan>
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
+  if (params.inputTexts.length === 0) {
+    return buildMissingIntentEvidenceHint({
+      actionName: params.item.type,
+      evidenceSources: params.supplementalEvidenceSources,
+    })
+  }
+
   if (
     requiresExplicitWritePlanUpdateLaneEvidence({
       item: params.item,
