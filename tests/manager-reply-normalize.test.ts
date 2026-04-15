@@ -61,3 +61,21 @@ test('normalizeManagerReplyText keeps task-result replies structured in structur
   expect(normalized).toContain('下一步：')
   expect(normalized).toContain('收敛回复语气')
 })
+
+test('normalizeManagerReplyText structured mode only upgrades explicit labels', () => {
+  const normalized = normalizeManagerReplyText(
+    [
+      '阶段结论：主线实现已经完成。',
+      '这一步还缺继续推进所需的授权和边界信息。',
+      '请直接确认要继续的目标对象。',
+    ].join('\n'),
+    { mode: 'structured' },
+  )
+
+  expect(normalized).toContain('当前进展：主线实现已经完成。')
+  expect(normalized).not.toContain('当前风险：')
+  expect(normalized).not.toContain('需要你决定：')
+  expect(normalized).toContain(
+    '下一步：这一步还缺继续推进所需的授权和边界信息。 请直接确认要继续的目标对象。',
+  )
+})

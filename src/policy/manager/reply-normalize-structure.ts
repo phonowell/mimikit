@@ -9,11 +9,44 @@ type StructuredReply = {
   archive?: string
 }
 
-export const STRUCTURED_LABEL_PATTERN =
-  /^(当前进展|下一步|当前风险|需要你决定)：/
+const PROGRESS_PREFIXES = ['当前进展', '阶段结论'] as const
+const NEXT_PREFIXES = ['下一步', '正在处理'] as const
+const RISK_PREFIXES = ['当前风险', '当前卡点', '停下原因'] as const
+const DECISION_PREFIXES = ['需要你决定', '还需要你直接确认'] as const
 
-const NATURAL_REPLY_LABEL_PATTERN =
-  /^(当前进展|阶段结论|下一步|正在处理|当前风险|当前卡点|需要你决定|还需要你直接确认)[:：]/
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const STRUCTURED_LABELS = [
+  ...PROGRESS_PREFIXES,
+  ...NEXT_PREFIXES,
+  ...RISK_PREFIXES,
+  ...DECISION_PREFIXES,
+]
+const STRUCTURED_LABEL_SOURCE = STRUCTURED_LABELS.map(escapeRegExp).join('|')
+
+export const STRUCTURED_LABEL_PATTERN = new RegExp(
+  `^(?:${STRUCTURED_LABEL_SOURCE})[:：]`,
+  'u',
+)
+
+const NATURAL_REPLY_LABEL_PATTERN = new RegExp(
+  `^(?:${STRUCTURED_LABEL_SOURCE})[:：]`,
+  'u',
+)
+
+const readPrefixedContent = (
+  line: string,
+  prefixes: readonly string[],
+): string | undefined => {
+  for (const prefix of prefixes) {
+    const matched = line.match(
+      new RegExp(`^${escapeRegExp(prefix)}[:：]\\s*(.*)$`, 'u'),
+    )
+    if (matched) return matched[1]?.trim() ?? ''
+  }
+  return undefined
+}
 
 const toStructuredContent = (
   line: string,
@@ -25,57 +58,15 @@ const toStructuredContent = (
   if (!trimmed) return { kind: 'other', content: '' }
   if (trimmed.startsWith('[任务归档]') || /^任务归档[:：]/.test(trimmed))
     return { kind: 'archive', content: trimmed }
-  if (trimmed.startsWith('当前进展：')) {
-    return {
-      kind: 'progress',
-      content: trimmed.replace(/^当前进展：/, '').trim(),
-    }
-  }
-  if (trimmed.startsWith('阶段结论：')) {
-    return {
-      kind: 'progress',
-      content: trimmed.replace(/^阶段结论：/, '').trim(),
-    }
-  }
-  if (trimmed.startsWith('下一步：'))
-    return { kind: 'next', content: trimmed.replace(/^下一步：/, '').trim() }
-  if (trimmed.startsWith('正在处理：'))
-    return { kind: 'next', content: trimmed.replace(/^正在处理：/, '').trim() }
-  if (trimmed.startsWith('当前风险：'))
-    return { kind: 'risk', content: trimmed.replace(/^当前风险：/, '').trim() }
-  if (trimmed.startsWith('当前卡点：'))
-    return { kind: 'risk', content: trimmed.replace(/^当前卡点：/, '').trim() }
-  if (trimmed.startsWith('停下原因：'))
-    return { kind: 'risk', content: trimmed }
-  if (trimmed.startsWith('需要你决定：')) {
-    return {
-      kind: 'decision',
-      content: trimmed.replace(/^需要你决定：/, '').trim(),
-    }
-  }
-  if (trimmed.startsWith('还需要你直接确认：')) {
-    return {
-      kind: 'decision',
-      content: trimmed.replace(/^还需要你直接确认：/, '').trim(),
-    }
-  }
+  const progress = readPrefixedContent(trimmed, PROGRESS_PREFIXES)
+  if (progress !== undefined) return { kind: 'progress', content: progress }
+  const next = readPrefixedContent(trimmed, NEXT_PREFIXES)
+  if (next !== undefined) return { kind: 'next', content: next }
+  const risk = readPrefixedContent(trimmed, RISK_PREFIXES)
+  if (risk !== undefined) return { kind: 'risk', content: risk || trimmed }
+  const decision = readPrefixedContent(trimmed, DECISION_PREFIXES)
+  if (decision !== undefined) return { kind: 'decision', content: decision }
   if (trimmed.startsWith('任务 ')) return { kind: 'progress', content: trimmed }
-  if (
-    /(继续推进|继续沿当前工作线推进|继续按当前目标推进|我会继续)/.test(trimmed)
-  )
-    return { kind: 'next', content: trimmed }
-  if (
-    /(请直接说明|请明确|请补充|请先|需要你|请你|是否|继续哪一条工作线)/.test(
-      trimmed,
-    )
-  )
-    return { kind: 'decision', content: trimmed }
-  if (
-    /(风险|阻塞|失败|未通过|无法|不能|还缺|不足|命中门禁|需要补充输入|直接授权和边界信息)/.test(
-      trimmed,
-    )
-  )
-    return { kind: 'risk', content: trimmed }
   return { kind: 'other', content: trimmed }
 }
 

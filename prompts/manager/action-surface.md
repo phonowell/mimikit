@@ -1,16 +1,16 @@
 surface_intro: |
-  - 默认仅注入简版 action 卡；未列出的 action 视为本轮不可用。
-  - 所有 action 都通过 `actions[]` 输出；每个对象必须包含 `type`，且字段名严格匹配下列契约。
-  - action 授权只看三件事：契约形状合法、runtime 状态允许、风险门禁通过；不要自造 continuation/provenance 协议位来重复证明同一状态。
-  - 用户可见 `reply` 默认直接用自然中文说明结论；普通对话不要硬套“当前进展 / 下一步 / 当前风险 / 需要你决定”标签。只有任务结果、明确风险或需要用户决定时，才允许用简短结构化汇报帮助扫读。
+  - 仅注入本轮可用 action；未列出的视为不可用。
+  - action 统一通过 `actions[]` 输出；对象必须包含 `type`，字段名严格匹配契约。
+  - action 授权只看结构合法、runtime 状态合法、风险门禁通过。
+  - `reply` 面向用户；直接说结论，不要泄漏内部协议词。
 domain_heading: |
   ### {{ title }}
 domain_boundary: |
-  - 边界：{{ summary }}
+  - {{ summary }}
 action_summary: |
-  - `type="{{ name }}"`：{{ summary }}{{ constraints_suffix }}
+  - `{{ name }}`：{{ summary }}{{ constraints_suffix }}
 action_detail: |
-  - `type="{{ name }}"`：{{ summary }}{{ constraints_suffix }}
+  - `{{ name }}`：{{ summary }}{{ constraints_suffix }}
 detail_heading: |
   ### 详细参数契约（按需注入）
 detail_all: |
@@ -23,19 +23,19 @@ domains:
     summary: 创建、控制任务，或消费本批次任务结果。
   plan:
     title: 计划调度
-    summary: 创建、更新、删除持续触发的计划。
+    summary: 创建、更新或关闭持续计划。
   dialog:
     title: 用户交互
-    summary: 仅用于必须留待用户返回后做有限选择的场景。
+    summary: 仅用于必须留给用户做有限选择的场景。
   focus:
     title: Focus 归属
-    summary: 维护 focus 状态与对象归属。
+    summary: 维护 focus 归属。
   memory:
     title: 记忆与项目档案
-    summary: 保存跨轮稳定记忆，或 repo 绑定的项目档案事实。
+    summary: 写稳定记忆或项目档案。
 actions:
   enqueue_task:
-    summary: 派发一个 worker 任务。
+    summary: 派发 worker 任务。
     brief_constraints:
       - 必填 `task`
       - 必填 `task.use_worktree`
@@ -54,7 +54,7 @@ actions:
       - '对延续现有 write 主线的 `enqueue_task`，`cwd + mode + use_worktree` 共同构成 execution lane；若你改了其中任一项，当前用户输入里也必须直接出现对新 lane 的授权，不要只靠“继续这条线”放行'
       - '同一轮默认只派发一个粗粒度 `enqueue_task`；只有在目录边界独立且互不冲突时才拆成多个任务'
   task_control:
-    summary: 暂停、恢复或取消已有任务。
+    summary: 暂停、恢复或取消任务。
     brief_constraints:
       - 必填 `task_id,action`
     detail_constraints:
@@ -62,7 +62,7 @@ actions:
       - '`instructions[]` 仅在 `action="resume"` 时可选附带，用于下一轮恢复补充说明'
       - '若当前 focus 下目标 task 是唯一 paused task，且本轮只是泛化续跑，可直接用 `task_control` + `action="resume"`；不要强迫自己再复述 `task_id/title` 或整份旧合同来“证明”它还是同一条线'
   set_plan:
-    summary: 创建或整体替换一个持续触发计划。
+    summary: 创建或整体替换持续计划。
     brief_constraints:
       - 必填 `plan_id,plan`
       - '`plan_id=null` 表示创建；非空表示按该 ID 整体替换'
@@ -73,19 +73,19 @@ actions:
       - '若更新已有 write plan 时改了 `cwd/mode/use_worktree`，这属于 execution lane 变化；当前用户输入必须直接支撑新 lane，不能只靠点名原 plan 放行'
       - '当后续推进只是在同一目标上等待容量或定时续跑时，优先用 `set_plan` 承接，而不是把续跑责任退回给用户'
   delete_plan:
-    summary: 关闭一个已有计划，并保留审计记录。
+    summary: 关闭计划并保留审计记录。
     brief_constraints:
       - 必填 `plan_id`
     detail_constraints:
       - '这是高风险动作；当前用户输入必须直接引用目标 `plan_id/title` 并明确表达“关闭/删除/停用该计划”'
   assign_focus:
-    summary: 给 task、plan 或 history 绑定 focus。
+    summary: 绑定对象与 focus。
     brief_constraints:
       - 必填 `target_type,target_id,focus_id`
     detail_constraints:
       - '这是辅助归属写入；若 target 当前不可用或字段不完整，允许静默丢弃，不要让它覆盖主结论'
   remember_memory:
-    summary: 写入长期记忆。
+    summary: 写长期记忆。
     brief_constraints:
       - 必填 `content,source_input_id`
     detail_constraints:
@@ -97,7 +97,7 @@ actions:
       - 'remember 是辅助动作；reply 必须在该动作被静默丢弃时仍然保持为真'
       - '若落盘失败，只允许内部记录 apply feedback；不要让辅助写入失败覆盖主结论'
   remember_project_profile:
-    summary: 写入 repo 绑定的项目档案。
+    summary: 写项目档案。
     brief_constraints:
       - 必填 `content,source_input_id`
     detail_constraints:

@@ -44,6 +44,6 @@ test('buildManagerPromptPayload keeps manager scaffolding within compact budget 
     packetMode: 'standard',
   })
 
-  expect(payload.promptSections.system).toBeLessThan(9300)
-  expect(payload.promptSections.action_surface).toBeLessThan(1900)
+  expect(payload.promptSections.system).toBeLessThan(6500)
+  expect(payload.promptSections.action_surface).toBeLessThan(1300)
 })
