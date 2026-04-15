@@ -132,6 +132,7 @@ export const runManagerCorrectionRounds = async (params: {
       runtime,
       batchId: params.batchId,
       roundId: runResult.roundId,
+      ...(workingFocusIds[0] ? { defaultFocusId: workingFocusIds[0] } : {}),
       inputs,
       results,
       parsed: parsed.actions,

@@ -65,6 +65,7 @@ export const resolveRoundFollowup = async (params: {
   runtime: ManagerRuntime
   batchId?: string
   roundId?: string
+  defaultFocusId?: string
   inputs?: Parameters<typeof buildActionFeedbackContext>[0]['inputs']
   results?: TaskResult[]
   parsed: Parsed[]
@@ -82,6 +83,9 @@ export const resolveRoundFollowup = async (params: {
         allowAskUserChoice: params.allowAskUserChoice,
         resultTaskIds: params.resultTaskIds,
         wakeProfile: params.wakeProfile,
+        ...(params.defaultFocusId
+          ? { defaultFocusId: params.defaultFocusId }
+          : {}),
         ...(params.inputs ? { inputs: params.inputs } : {}),
       }),
       scheduleNowIso: resolveScheduleNowIso(

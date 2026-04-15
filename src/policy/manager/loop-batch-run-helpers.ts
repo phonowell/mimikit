@@ -29,6 +29,7 @@ export const buildActionFeedbackContext = (params: {
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
   wakeProfile: ManagerWakeProfile
+  defaultFocusId?: string
   inputs?: UserInput[]
   recentUserIntentTexts?: string[]
 }): {
@@ -53,6 +54,7 @@ export const buildActionFeedbackContext = (params: {
     allowAskUserChoice,
     resultTaskIds,
     wakeProfile,
+    defaultFocusId,
     inputs,
     recentUserIntentTexts,
   } = params
@@ -77,7 +79,7 @@ export const buildActionFeedbackContext = (params: {
     restartRuntimeAvailable: runtime.process.session.requestExit !== undefined,
     restartRuntimeScheduled: runtime.process.session.restartScheduled,
     restartRuntimeBusy: !canScheduleManagerRestart(runtime),
-    defaultFocusId: resolveDefaultFocusId(runtime),
+    defaultFocusId: defaultFocusId ?? resolveDefaultFocusId(runtime),
     ...(recentUserIntentTexts && recentUserIntentTexts.length > 0
       ? { recentUserIntentTexts }
       : {}),
