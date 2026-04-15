@@ -7,7 +7,6 @@ const INTERNAL_TERM_REPLACEMENTS: Array<[pattern: RegExp, value: string]> = [
   [/\btask_control\b/gi, '任务操作'],
   [/\bremember_memory\b/gi, '长期记忆'],
   [/\bremember_project_profile\b/gi, '项目档案'],
-  [/\bintent-evidence(?:\s+guard)?\b/gi, '授权门禁'],
   [/\bschema\b/gi, '结果结构'],
   [/\bguard\b/gi, '门禁'],
   [/\bgoal\b/gi, '目标'],
@@ -24,18 +23,6 @@ export const normalizeSentence = (value: string): string => {
     next = next.replace(pattern, replacement)
   next = next
     .replace(/结果结构\s*对齐(?:已经)?完成/g, '结果已经整理完成')
-    .replace(
-      /授权门禁\s*仍可能拦住下一轮自动派发[。.]?/g,
-      '下一轮自动派发仍可能被门禁拦住。',
-    )
-    .replace(
-      /后续任务[^。\n]*授权门禁[^。\n]*结果结构[^。\n]*(?:不完整|拦住|缺失|不足)[^。\n]*[。.]?/g,
-      '这一步还缺继续推进所需的授权和边界信息。',
-    )
-    .replace(
-      /下一步[^。\n]*授权门禁[^。\n]*结果结构[^。\n]*[。.]?/g,
-      '下一步：我会在授权和边界信息明确后继续推进。',
-    )
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/\s+([，。；：])/g, '$1')
     .trim()

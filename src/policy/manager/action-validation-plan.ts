@@ -10,7 +10,6 @@ import {
 } from './action-validation-helpers.js'
 import {
   resolveScheduleNowOption,
-  validateHighRiskActionIntentEvidence,
   validateWithSchema,
 } from './action-validation-shared.js'
 import {
@@ -58,7 +57,7 @@ export const validateSetPlan = (
     if (!status) return rejected(formatPlanNotFoundHint('set_plan'))
     if (status === 'done') return rejected(formatSetPlanDoneForbiddenHint())
   }
-  return validateHighRiskActionIntentEvidence(item, context)
+  return []
 }
 
 export const validateDeletePlan = (
@@ -70,5 +69,5 @@ export const validateDeletePlan = (
   if (item.type !== 'delete_plan') return schemaIssues
   const status = context.planStatusById?.get(item.plan_id)
   if (!status) return rejected(formatPlanNotFoundHint('delete_plan'))
-  return validateHighRiskActionIntentEvidence(item, context)
+  return []
 }

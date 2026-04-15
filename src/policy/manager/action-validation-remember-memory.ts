@@ -6,7 +6,6 @@ import {
   formatRememberMemoryNotStableHint,
   formatStableDigestIssueHint,
 } from './action-feedback-hints-basic.js'
-import { validateRememberMemoryIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import {
   suppressed,
   type ValidationIssue,
@@ -19,6 +18,9 @@ import type { UserInput } from '../../foundation/types/index.js'
 type RememberMemoryValidationContext = {
   inputs?: UserInput[]
 }
+
+const formatRememberMemorySourceInputHint = (): string =>
+  'remember_memory 只允许引用本轮可见输入；source_input_id 未命中当前输入时直接丢弃该辅助写入。'
 
 const formatRememberMemoryIssue = (issue: RememberMemoryContentIssue): string =>
   formatStableDigestIssueHint(issue)
@@ -40,9 +42,9 @@ export const validateRememberMemoryAction = (
     )
   }
 
-  const evidenceResult = validateRememberMemoryIntentEvidence({
-    item,
-    ...(context.inputs ? { inputs: context.inputs } : {}),
-  })
-  return evidenceResult ? suppressed(evidenceResult) : []
+  const inputIds = new Set((context.inputs ?? []).map((input) => input.id))
+  if (!inputIds.has(result.data.source_input_id))
+    return suppressed(formatRememberMemorySourceInputHint())
+
+  return []
 }

@@ -19,11 +19,9 @@ export type FeedbackContext = {
   allowAskUserChoice?: boolean
   wakeProfile?: ManagerWakeProfile
   inputs?: UserInput[]
-  supplementalEvidenceSources?: Set<'task_result'>
   restartRuntimeAvailable?: boolean
   restartRuntimeScheduled?: boolean
   restartRuntimeBusy?: boolean
   currentActions?: Parsed[]
   defaultFocusId?: string
-  recentUserIntentTexts?: string[]
 }

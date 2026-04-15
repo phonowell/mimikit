@@ -14,10 +14,7 @@ import {
 } from './action-validation-plan.js'
 import { validateRememberMemoryAction } from './action-validation-remember-memory.js'
 import { validateRememberProjectProfileAction } from './action-validation-remember-project-profile.js'
-import {
-  validateHighRiskActionIntentEvidence,
-  validateWithSchema,
-} from './action-validation-shared.js'
+import { validateWithSchema } from './action-validation-shared.js'
 import {
   enqueueTaskActionSchema,
   rememberMemoryActionSchema,
@@ -55,7 +52,7 @@ export const validateRunTask = (
   }
   const managerRuleIssues = validateEnqueueTaskManagerRules(item, context)
   if (managerRuleIssues.length > 0) return managerRuleIssues
-  return validateHighRiskActionIntentEvidence(item, context)
+  return []
 }
 
 export const validateTaskControl = (
@@ -96,7 +93,7 @@ export const validateTaskControl = (
     )
       return rejected(formatTaskControlAlreadyDoneHint('cancel', taskTarget))
   }
-  return validateHighRiskActionIntentEvidence(item, context)
+  return []
 }
 
 export const validateRememberMemory = (

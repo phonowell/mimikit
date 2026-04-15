@@ -51,7 +51,7 @@ test('manager action logger persists batch and round diagnostics for lifecycle a
     item: {
       action: 'enqueue_task',
       error: 'action_execution_rejected',
-      hint: 'need user intent evidence',
+      hint: 'need user input',
       attempted: '{"task_id":"task-1"}',
     },
     index: 1,

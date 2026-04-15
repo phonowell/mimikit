@@ -79,7 +79,7 @@
 ## 我们的缺口是什么
 
 - 当前真实业务主线缺口：manager 仍更像轻量调度器，向上汇报、向下管理与离线常规判断不足，用户仍需承担较高跟进成本；下一阶段主线目标是把 manager 收敛为“承担推进责任的编排中层”。
-- 已闭环的上一轮缺口：`plan.runtime` 分层、`focus` digest 硬边界、`Task.git.lifecycle` 入模、后台任务注册/写域治理、manager 默认 surface 去掉 `lookup`、worker 完成改为 `M:task_handoff + M:skill_usage status="done"` 协议、`mutate_task` 显式写回 `review_passed|merged|cleaned`、git 闭环写回的 intent-evidence 门禁与 archive/handoff 同步，均已落地。
+- 已闭环的上一轮缺口：`plan.runtime` 分层、`focus` digest 硬边界、`Task.git.lifecycle` 入模、后台任务注册/写域治理、manager 默认 surface 去掉 `lookup`、worker 完成改为 `M:task_handoff + M:skill_usage status="done"` 协议、`mutate_task` 显式写回 `review_passed|merged|cleaned`、git 闭环写回的旧门禁与 archive/handoff 同步，均已落地。
 - 基于 2026-03-23 对 `.agents` 全量 skill（`code-deduplication`、`context-engineering-collection`、`book-sft-pipeline`、`digital-brain`、`reasoning-trace-optimizer`、`comprehensive-research-agent`、`advanced-evaluation`、`bdi-mental-states`、`context-compression`、`context-degradation`、`context-fundamentals`、`context-optimization`、`evaluation`、`filesystem-context`、`hosted-agents`、`memory-systems`、`multi-agent-patterns`、`project-development`、`tool-design`、`skill-template`、`prompt-engineering-patterns`、`workflow-orchestration-patterns`）与真实代码的再次核验，当前实现未发现新的主线目标偏离；以下收敛项已由代码确认：
 - `manager` prompt/action surface 文案已迁入 `prompts/manager/action-surface.md`，不再把会注入 LLM 的自然语言说明硬编码在 TS。
 - `M:state_packet.tasks` / `M:state_packet.plans` 已收缩为编排态信息，不再携带 `task.prompt`、`task_prompt` 或完整 task contract。
@@ -174,7 +174,8 @@
 - `2026-04-08` 证据系统/续跑判定惨痛教训：
   - 为修补“协议过严、经常误拦”，曾引入大量 fallback、显式锚点、唯一对象捷径和 shape-based continuation；结果同时制造两类故障：该继续的主链被误拦，不该继续的无关主线被误放。
   - 这不是单点实现疏漏，而是授权模型错位：对脆弱格式信号过严，对弱结构信号过宽；同类问题已在 continuation、follow-up、set_plan、resume、cancel、plan 绑定、plan 写回多处复现。
-  - 后续涉及 intent-evidence / continuation / follow-up / plan ownership 的设计，默认先问“这层 guard 是否真的必要”；若只是为低风险主链补协议，不如直接删掉。
+  - 后续涉及 continuation / follow-up / plan ownership 的设计，默认先问“这层 guard 是否真的必要”；若只是为低风险主链补协议，不如直接删掉。
+  - `2026-04-15` 决议：intent-evidence 风格的证据门禁已从 manager 校验链路彻底移除；今后禁止以“用户意图证据 / 显式授权证据 / supplemental evidence / 词面 overlap 授权”名义重新引入同类 guard。高风险动作只允许依赖 schema 合法性、runtime 状态合法性和真实副作用边界，不得再追加一层会把主链卡死的证据系统。
   - 严禁再把 `cwd`/`resourceMode`/`useWorktree`/`lastTaskId`/唯一 active object 当作直接授权条件；它们最多只能帮助定位候选对象。
   - 需要可追溯时优先让 runtime 记录 provenance；不要再逼模型生产脆弱锚点来换取“可继续执行”的资格。
   - 若一个证据机制长期造成误拦、误放、维护负担高于收益，应优先删除或收缩，而不是继续堆补丁修补它。
@@ -182,7 +183,7 @@
   - action 授权的最小模型只能是：结构合法、runtime 状态合法、风险门禁通过；不要再叠第四层“模型自证自己在延续同一条线”。
   - 不要为“可审计”“可区分 handoff”再补顶层 `decision` 一类平行协议位；`reply + actions + runtime state` 已能表达的编排判断，不得再复制一份给模型填写。
   - 不要把 result-only follow-up 做成专门的修复陷阱；reply-only 停下本身不是错误，高风险越权才是错误。
-  - intent-evidence 只该拦高风险动作；read continuation、resume、低风险 plan/task 延续不应再做词面重叠授权。
+  - 任何额外证据门禁都不该拦低风险动作；read continuation、resume、低风险 plan/task 延续不应再做词面重叠授权。
   - 若某条规则的主要作用是逼模型“补协议形状”而不是降低真实风险，应直接删除。
   - `continuation_of` 一类 continuation 锚点若不进入 runtime 真状态，就不该存在于 action 合同里；纯靠模型回填的“我是在延续这条线”不是可靠状态。
   - “replacement-cancel”“resume-existing”这类 validation 预判，本质是在替 runtime 重复做状态决策；若 apply/runtime 已能基于 fingerprint 和状态机处理，应删除 validation 旁路。

@@ -19,9 +19,6 @@ export const buildCorrectionFallbackReply = (
 ): string => {
   const first = feedback[0]
   if (!first) return GENERIC_CORRECTION_REPLY
-  if (feedback.every((item) => item.code === 'intent_evidence_missing'))
-    return '当前没有足够的直接授权来继续这一步，我先停在这里。若要继续，请直接说明要执行什么、范围是什么、怎样算完成；如果是在操作现有任务或计划，请明确指出它。'
-
   if (feedback.every((item) => item.code === 'task_contract_missing'))
     return '继续执行前还缺最小执行边界：目标、处理范围、完成标准，以及执行目录与模式。请把这几项直接说清楚后再继续。'
 

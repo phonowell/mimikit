@@ -6,7 +6,6 @@ import {
   formatRememberMemoryNotStableHint,
   formatStableDigestIssueHint,
 } from './action-feedback-hints-basic.js'
-import { validateRememberProjectProfileIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import {
   suppressed,
   type ValidationIssue,
@@ -19,6 +18,9 @@ import type { UserInput } from '../../foundation/types/index.js'
 type RememberProjectProfileValidationContext = {
   inputs?: UserInput[]
 }
+
+const formatRememberProjectProfileSourceInputHint = (): string =>
+  'remember_project_profile 只允许引用本轮可见输入；source_input_id 未命中当前输入时直接丢弃该辅助写入。'
 
 const formatRememberProjectProfileIssue = (
   issue: RememberMemoryContentIssue,
@@ -41,9 +43,9 @@ export const validateRememberProjectProfileAction = (
     )
   }
 
-  const evidenceResult = validateRememberProjectProfileIntentEvidence({
-    item,
-    ...(context.inputs ? { inputs: context.inputs } : {}),
-  })
-  return evidenceResult ? suppressed(evidenceResult) : []
+  const inputIds = new Set((context.inputs ?? []).map((input) => input.id))
+  if (!inputIds.has(result.data.source_input_id))
+    return suppressed(formatRememberProjectProfileSourceInputHint())
+
+  return []
 }

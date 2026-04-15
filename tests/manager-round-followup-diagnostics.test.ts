@@ -72,7 +72,7 @@ test('resolveRoundFollowup writes batch and round diagnostics on feedback and su
       {
         action: 'enqueue_task',
         error: 'action_execution_rejected',
-        hint: 'need current user intent evidence',
+        hint: 'need current user input',
         attempted: JSON.stringify(parsed[0]),
       },
     ],

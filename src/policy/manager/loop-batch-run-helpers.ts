@@ -3,7 +3,6 @@ import { resolveDefaultFocusId } from '../../work/focus/state.js'
 
 import { canScheduleManagerRestart } from './restart-runtime.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence-match.js'
 import type {
   ManagerActionFeedback,
   ManagerWakeProfile,
@@ -31,7 +30,6 @@ export const buildActionFeedbackContext = (params: {
   wakeProfile: ManagerWakeProfile
   defaultFocusId?: string
   inputs?: UserInput[]
-  recentUserIntentTexts?: string[]
 }): {
   stateDir: string
   taskStatusById: Map<string, TaskStatus>
@@ -42,12 +40,10 @@ export const buildActionFeedbackContext = (params: {
   allowAskUserChoice: boolean
   wakeProfile: ManagerWakeProfile
   inputs: UserInput[]
-  supplementalEvidenceSources: Set<SupplementalEvidenceSource>
   restartRuntimeAvailable: boolean
   restartRuntimeScheduled: boolean
   restartRuntimeBusy: boolean
   defaultFocusId: string
-  recentUserIntentTexts?: string[]
 } => {
   const {
     runtime,
@@ -56,11 +52,8 @@ export const buildActionFeedbackContext = (params: {
     wakeProfile,
     defaultFocusId,
     inputs,
-    recentUserIntentTexts,
   } = params
   const currentInputs = inputs ?? runtime.process.session.inflightInputs
-  const supplementalEvidenceSources = new Set<SupplementalEvidenceSource>()
-  if (resultTaskIds.size > 0) supplementalEvidenceSources.add('task_result')
   return {
     stateDir: runtime.config.workDir,
     taskStatusById: new Map(
@@ -75,14 +68,10 @@ export const buildActionFeedbackContext = (params: {
     allowAskUserChoice,
     wakeProfile,
     inputs: currentInputs,
-    supplementalEvidenceSources,
     restartRuntimeAvailable: runtime.process.session.requestExit !== undefined,
     restartRuntimeScheduled: runtime.process.session.restartScheduled,
     restartRuntimeBusy: !canScheduleManagerRestart(runtime),
     defaultFocusId: defaultFocusId ?? resolveDefaultFocusId(runtime),
-    ...(recentUserIntentTexts && recentUserIntentTexts.length > 0
-      ? { recentUserIntentTexts }
-      : {}),
   }
 }
 

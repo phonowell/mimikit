@@ -86,8 +86,8 @@
 - 当前固化规则明确禁止稳定偏好：
   - 改写用户目标、验收标准或 `task/plan/focus/memory` 分层
   - 把一次性安排、执行中状态、临时判断升级为长期规则
-  - 绕过 `intent-evidence guard`，或直接触发、放宽高风险 action 门禁
-- 这层边界应优先通过 manager prompt rule 与现有 provenance guard 落地；不要扩张为独立策略层、偏好推断器、人格画像或自动行为引擎。
+  - 变相扩张为新的动作授权系统，或借长期记忆绕开 schema / runtime / 副作用边界
+- 这层边界应优先通过 manager prompt rule 与最小 provenance guard 落地；不要扩张为独立策略层、偏好推断器、人格画像或自动行为引擎。
 
 ## 刷新（refresh）与遗忘
 
