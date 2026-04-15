@@ -116,3 +116,53 @@ test('enqueue_task(write) stays allowed when user directly references the only r
 
   expect(feedback).toHaveLength(0)
 })
+
+test('enqueue_task(write) stays allowed when the only result-task anchor is outside default focus but still comes from the current batch', () => {
+  const finishedTask = createIntentEvidenceTask({
+    id: 'task-auth-guard-cross-focus-direct-ref',
+    title: '收敛 auth guard 的主链',
+    cwd: '/repo/auth-guard',
+    focusId: 'focus-auth-guard',
+    status: 'succeeded',
+    resourceMode: 'write',
+    contract: {
+      goal: '收敛 auth guard 的主链并给出下一步落地方向',
+      scope: '只处理 auth guard 主链',
+      acceptance: ['给出主链收敛结果'],
+    },
+  })
+
+  const feedback = collectManagerActionFeedback(
+    [
+      {
+        type: 'enqueue_task',
+        task: {
+          title: '收敛 auth guard 主链的下一步落地',
+          cwd: '/repo/auth-guard',
+          mode: 'write',
+          use_worktree: false,
+          goal: '收敛 auth guard 的主链并完成下一步落地方向',
+          in_scope: ['只处理 auth guard 主链'],
+          out_of_scope: [],
+          done_when: ['给出主链收敛结果'],
+          context_refs: [],
+          instructions: [],
+        },
+      },
+    ],
+    {
+      inputs: [
+        createUserInput(
+          `继续沿着 ${finishedTask.id} 这条任务主线推进，直接往下做。`,
+        ),
+      ],
+      taskById: new Map([[finishedTask.id, finishedTask]]),
+      taskStatusById: new Map([[finishedTask.id, finishedTask.status]]),
+      resultTaskIds: new Set([finishedTask.id]),
+      supplementalEvidenceSources: new Set(['task_result']),
+      defaultFocusId: 'focus-inbox',
+    },
+  )
+
+  expect(feedback).toHaveLength(0)
+})

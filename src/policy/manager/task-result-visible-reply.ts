@@ -4,7 +4,7 @@ import {
 } from '../../surface/shared/path-display.js'
 import { resolveTaskLabel } from '../../work/shared/task-state.js'
 
-import { normalizeManagerReplyText } from './reply-normalize.js'
+import { normalizeSentence } from './reply-normalize-terms.js'
 
 import type {
   Task,
@@ -21,9 +21,9 @@ const TASK_RESULT_STATUS_TEXT: Record<TaskResult['status'], string> = {
 const TASK_RESULT_STOP_REASON_HINT: Partial<
   Record<TaskResultStopReason, string>
 > = {
-  closure_pending: '待执行 merge/cleanup 收尾',
-  guard_rejected: '命中门禁',
-  input_required: '需要补充输入',
+  closure_pending: '还差 merge/cleanup 这类收尾。',
+  guard_rejected: '这一步命中了当前门禁。',
+  input_required: '还缺必要输入。',
 }
 
 const BLOCKED_NEXT_STEP = '我先停在这里，等最小必要确认补齐后再继续推进。'
@@ -33,6 +33,17 @@ const TASK_RESULT_DECISION_TEXT: Partial<Record<TaskResultStopReason, string>> =
     guard_rejected: '请直接确认是否继续这一步，以及要操作的目标对象。',
     input_required: '请直接补充这一步还缺的目标、范围或验收标准。',
   }
+
+const trimSentencePunctuation = (value: string): string =>
+  value.trim().replace(/[。.!！?？]+$/u, '')
+
+const toVisibleSentence = (value: string): string => {
+  const normalized = normalizeSentence(value)
+    .replace(/^(当前进展|当前风险|下一步|需要你决定)[:：]/u, '')
+    .trim()
+  if (!normalized) return ''
+  return `${trimSentencePunctuation(normalized)}。`
+}
 
 const resolveTaskResultStatusText = (result: TaskResult): string => {
   if (result.taskStatus === 'paused' && result.outcome === 'blocked')
@@ -70,15 +81,14 @@ const resolveTaskArchiveLine = (params: {
         toDisplayPath(rawArchivePath, params.workDir)
       ).trim()
     : ''
-  return archivePath ? `[任务归档](${archivePath})` : '任务归档: 未生成'
+  return archivePath ? `可回看[任务归档](${archivePath})` : '任务归档暂未生成。'
 }
 
 const resolveStopReasonRisk = (
   stopReason: TaskResult['stopReason'],
 ): string | undefined => {
   if (!stopReason || stopReason === 'completed') return undefined
-  const hint = TASK_RESULT_STOP_REASON_HINT[stopReason]
-  return hint ? `停下原因：${stopReason}（${hint}）` : `停下原因：${stopReason}`
+  return TASK_RESULT_STOP_REASON_HINT[stopReason]
 }
 
 const resolveRiskLine = (result: TaskResult): string | undefined => {
@@ -87,14 +97,15 @@ const resolveRiskLine = (result: TaskResult): string | undefined => {
   const risk = result.handoff?.risks?.find(
     (item) => typeof item === 'string' && item.trim().length > 0,
   )
-  return risk ? risk.trim() : undefined
+  return risk ? toVisibleSentence(risk) : undefined
 }
 
 const resolveNextStepLine = (result: TaskResult): string => {
   const nextStep = result.handoff?.nextSteps?.find(
     (item) => typeof item === 'string' && item.trim().length > 0,
   )
-  if (nextStep) return nextStep.trim()
+  if (nextStep)
+    return `我会继续处理：${trimSentencePunctuation(toVisibleSentence(nextStep))}。`
   if (
     result.stopReason === 'input_required' ||
     result.stopReason === 'guard_rejected'
@@ -111,19 +122,21 @@ export const formatManagerVisibleTaskResultReply = (params: {
   detail?: string
   workDir: string
 }): string => {
-  const detail = params.detail?.trim()
-  const progressParts = [
-    `任务 ${resolveTaskResultRef(params.task, params.result)}：${resolveTaskResultStatusText(params.result)}。`,
+  const detail = params.detail ? toVisibleSentence(params.detail) : ''
+  const progressLine = [
+    `任务 ${resolveTaskResultRef(params.task, params.result)}${resolveTaskResultStatusText(params.result)}。`,
+    detail,
   ]
-  if (detail) progressParts.push(detail)
-  const lines = [`当前进展：${progressParts.join(' ')}`]
+    .filter(Boolean)
+    .join(' ')
+  const lines = [progressLine]
   const riskLine = resolveRiskLine(params.result)
-  if (riskLine) lines.push(`当前风险：${riskLine}`)
+  if (riskLine) lines.push(`当前卡点：${riskLine}`)
   const decisionLine = params.result.stopReason
     ? TASK_RESULT_DECISION_TEXT[params.result.stopReason]
     : undefined
-  if (decisionLine) lines.push(`需要你决定：${decisionLine}`)
-  lines.push(`下一步：${resolveNextStepLine(params.result)}`)
+  if (decisionLine) lines.push(`还需要你直接确认：${decisionLine}`)
+  lines.push(resolveNextStepLine(params.result))
   lines.push(resolveTaskArchiveLine(params))
-  return normalizeManagerReplyText(lines.join('\n'))
+  return lines.join('\n')
 }

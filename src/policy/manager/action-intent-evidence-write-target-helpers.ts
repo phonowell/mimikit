@@ -136,15 +136,13 @@ export const collectStandaloneResultTaskCandidates = (
 export const resolveSingleActivePlanContinuationTarget = (
   params: Pick<
     EnqueueContinuationParams,
-    'item' | 'planById' | 'defaultFocusId'
+    'item' | 'planById' | 'resultTaskIds' | 'defaultFocusId'
   >,
 ): TaskPlan | undefined => {
-  const focusId = params.defaultFocusId?.trim()
-  if (!focusId || !params.planById) return undefined
+  if (!params.planById) return undefined
   const candidates = [...params.planById.values()].filter(
     (plan) =>
       plan.status === 'active' &&
-      plan.focusId.trim() === focusId &&
       matchesWriteEnqueueLane({
         item: params.item,
         cwd: plan.effect.taskTemplate.cwd,
@@ -152,7 +150,19 @@ export const resolveSingleActivePlanContinuationTarget = (
         useWorktree: plan.effect.taskTemplate.useWorktree,
       }),
   )
-  return candidates.length === 1 ? candidates[0] : undefined
+  const anchoredCandidates = candidates.filter(
+    (plan) =>
+      plan.runtime.lastTaskId !== undefined &&
+      params.resultTaskIds?.has(plan.runtime.lastTaskId) === true,
+  )
+  if (anchoredCandidates.length === 1) return anchoredCandidates[0]
+  if (anchoredCandidates.length > 1) return undefined
+  const focusId = params.defaultFocusId?.trim()
+  if (!focusId) return undefined
+  const focusCandidates = candidates.filter(
+    (plan) => plan.focusId.trim() === focusId,
+  )
+  return focusCandidates.length === 1 ? focusCandidates[0] : undefined
 }
 
 export const resolveSingleResultTaskContinuationTarget = (
@@ -161,22 +171,17 @@ export const resolveSingleResultTaskContinuationTarget = (
     'item' | 'taskById' | 'resultTaskIds' | 'defaultFocusId'
   >,
 ): Task | undefined => {
-  const focusId = params.defaultFocusId?.trim()
-  if (!focusId || !params.taskById || !params.resultTaskIds?.size)
-    return undefined
+  if (!params.taskById || !params.resultTaskIds?.size) return undefined
   const candidates = [...params.resultTaskIds]
     .map((taskId) => params.taskById?.get(taskId))
     .filter((task): task is Task => {
       if (!task) return false
-      return (
-        task.focusId.trim() === focusId &&
-        matchesWriteEnqueueLane({
-          item: params.item,
-          cwd: task.cwd,
-          resourceMode: task.resourceMode,
-          useWorktree: Boolean(task.git),
-        })
-      )
+      return matchesWriteEnqueueLane({
+        item: params.item,
+        cwd: task.cwd,
+        resourceMode: task.resourceMode,
+        useWorktree: Boolean(task.git),
+      })
     })
   return candidates.length === 1 ? candidates[0] : undefined
 }

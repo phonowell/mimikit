@@ -152,7 +152,9 @@
 - 失败降级原则：辅助动作、记忆写入、档案写入、摘要写回一类非主链动作失败时，优先 suppress、丢弃或停在内部反馈；只有会改变用户目标、验收标准、任务执行或高风险副作用的失败，才允许升级为用户可见阻塞。
 - Runtime 续跑原则：若 runtime 已基于 active plan、触发器或结构化状态拥有明确续跑路径，不要再额外要求模型显式复述同一 `enqueue_task`/`set_plan` 才能继续；manager 负责判断是否继续，不负责重复输出 runtime 已能决定的脚手架。
 - 用户可见回复约束：内部 action 名、schema 字段名、guard 名、修复回合提示默认不得直接泄漏到用户回复；面向用户只输出阶段结论、当前风险与还缺的最小输入。
+- 用户可见回复文体：默认优先自然中文收口，不要把 `当前进展/当前风险/下一步/需要你决定` 一类结构化标签当成主文体；若不是产品契约，不要把 `stopReason` 枚举值或内部状态码直接吐给用户。
 - Intent-evidence 原则：优先使用结构化锚点、对象归属、focus/task/plan 关系与 runtime 状态判定是否可继续；字面子串命中、低阈值词面 overlap 只能作为弱辅助，不得成为核心通行机制。
+- 结果锚点优先级：`resultTaskIds` 与 `plan.runtime.lastTaskId` 属于当前 batch 的强 provenance；它们可以跨 `focus` 指向同一条续跑主线。`defaultFocusId` 只用于缩小候选，不得压过当前结果锚点或导致锚点失效。
 - Worker 协议原则：worker 输出中真正决定主链推进的最小字段才允许 hard-required；`handoff`、evidence、artifacts、归档引用一类附属结果应允许 runtime 补齐、归一化或留空，不得因为附属结构缺失就把整轮执行判成协议失败。
 - try/catch 谨慎：避免吞错；暴露错误优于静默失败
 - idle 维护约束：记忆压缩、问题总结、归档整理等后台任务默认只产出派生工件；只有显式验收门禁通过时，才允许有限写回 `task状态`、`plan进度`、`archive`、`focus`，且不得改写 `用户目标`、`验收标准`、`memory`。

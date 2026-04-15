@@ -100,15 +100,18 @@ const resolveSemanticWriteEnqueueContinuationTargets = (params: {
   defaultFocusId?: string
 }): CurrentWriteLane[] => {
   const focusId = params.defaultFocusId?.trim()
-  if (!focusId) return []
   const targets: CurrentWriteLane[] = []
   if (params.planById) {
-    const plans = [...params.planById.values()].filter(
-      (plan) =>
-        plan.status === 'active' &&
-        plan.focusId.trim() === focusId &&
-        matchesPlanToEnqueueDraft(plan, params.item),
-    )
+    const plans = [...params.planById.values()].filter((plan) => {
+      if (plan.status !== 'active') return false
+      if (!matchesPlanToEnqueueDraft(plan, params.item)) return false
+      const runtimeAnchor =
+        plan.runtime.lastTaskId !== undefined &&
+        params.resultTaskIds?.has(plan.runtime.lastTaskId) === true
+      return (
+        runtimeAnchor || (focusId ? plan.focusId.trim() === focusId : false)
+      )
+    })
     for (const plan of plans) {
       targets.push({
         cwd: plan.effect.taskTemplate.cwd,
@@ -122,10 +125,7 @@ const resolveSemanticWriteEnqueueContinuationTargets = (params: {
       .map((taskId) => params.taskById?.get(taskId))
       .filter((task): task is Task => {
         if (!task) return false
-        return (
-          task.focusId.trim() === focusId &&
-          matchesTaskToEnqueueDraft(task, params.item)
-        )
+        return matchesTaskToEnqueueDraft(task, params.item)
       })
     for (const task of tasks) {
       targets.push({
