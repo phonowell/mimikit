@@ -75,6 +75,6 @@ test('processManagerBatch renders closure-pending result as not-yet-completed', 
   const history = await readHistory(runtime.paths.history)
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
-    text: '任务 收尾 output tokens 收缩（task-closure-pending）：待收尾。\n当前风险：停下原因：closure_pending（待执行 merge/cleanup 收尾）\n[任务归档](.mimikit/tasks/2026-04-01/task-closure-pending.md)',
+    text: '当前进展：任务 收尾 output tokens 收缩（task-closure-pending）：待收尾。\n当前风险：停下原因：closure_pending（待执行 merge/cleanup 收尾）\n下一步：我会继续沿当前工作线推进后续收尾，并只在需要你拍板时再抬给你。\n[任务归档](.mimikit/tasks/2026-04-01/task-closure-pending.md)',
   })
 })

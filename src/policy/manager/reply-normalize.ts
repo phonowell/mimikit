@@ -13,7 +13,12 @@ const INTERNAL_TERM_REPLACEMENTS: Array<[pattern: RegExp, value: string]> = [
   [/\bintent-evidence(?:\s+guard)?\b/gi, '直接授权'],
   [/\bschema\b/gi, '内部格式'],
   [/\bguard\b/gi, '门禁'],
+  [/\bgoal\b/gi, '目标'],
+  [/\bin_scope\b/gi, '处理范围'],
+  [/\bdone_when\b/gi, '完成标准'],
   [/\bcwd\/mode\b/gi, '执行目录与模式'],
+  [/\bsource_input_id\b/gi, '当前输入'],
+  [/\btask id\/title\b/gi, '任务'],
 ]
 
 const STRUCTURED_LABEL_PATTERN = /^(当前进展|下一步|当前风险|需要你决定)：/
@@ -90,7 +95,7 @@ const toStructuredContent = (line: string): {
 } => {
   const trimmed = normalizeSentence(line)
   if (!trimmed) return { kind: 'other', content: '' }
-  if (trimmed.startsWith('[任务归档]') || trimmed.startsWith('任务归档：'))
+  if (trimmed.startsWith('[任务归档]') || /^任务归档[:：]/.test(trimmed))
     return { kind: 'archive', content: trimmed }
   if (trimmed.startsWith('当前进展：'))
     return { kind: 'progress', content: trimmed.replace(/^当前进展：/, '').trim() }

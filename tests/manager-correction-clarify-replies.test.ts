@@ -90,10 +90,14 @@ test('runManagerCorrectionRounds explains missing execution boundary in user ter
 
   expect(result.roundLimitReached).toBe(true)
   expect(result.parsed.text).toContain('继续执行前还缺最小执行边界')
-  expect(result.parsed.text).toContain('goal')
-  expect(result.parsed.text).toContain('in_scope')
-  expect(result.parsed.text).toContain('done_when')
-  expect(result.parsed.text).toContain('cwd/mode')
+  expect(result.parsed.text).toContain('目标')
+  expect(result.parsed.text).toContain('处理范围')
+  expect(result.parsed.text).toContain('完成标准')
+  expect(result.parsed.text).toContain('执行目录与模式')
+  expect(result.parsed.text).not.toContain('goal')
+  expect(result.parsed.text).not.toContain('in_scope')
+  expect(result.parsed.text).not.toContain('done_when')
+  expect(result.parsed.text).not.toContain('cwd/mode')
 })
 
 test('runManagerCorrectionRounds returns concrete invalid action args instead of generic scope clarification', async () => {
@@ -121,11 +125,13 @@ test('runManagerCorrectionRounds returns concrete invalid action args instead of
   expect(result.roundLimitReached).toBe(true)
   expect(result.parsed.text).toContain('当前这轮执行单没有形成合法配置')
   expect(result.parsed.text).toContain('目标、范围、验收')
+  expect(result.parsed.text).toContain('执行目录与模式')
   expect(result.parsed.text).not.toContain('provider')
+  expect(result.parsed.text).not.toContain('cwd/mode')
 })
 
 test('normalizeManagerReplyText rewrites correction-style leakages into natural report language', () => {
-  const reply = normalizeManagerReplyText(`当前这轮执行单没有形成合法配置，我先停在这里。
+  const reply = normalizeManagerReplyText(`继续执行前还缺最小执行边界：goal、in_scope、done_when，以及 cwd/mode。
 enqueue_task 没过 intent-evidence guard，schema 还不完整。`)
 
   expect(reply).toContain('当前进展')
@@ -133,4 +139,8 @@ enqueue_task 没过 intent-evidence guard，schema 还不完整。`)
   expect(reply).not.toContain('enqueue_task')
   expect(reply).not.toContain('intent-evidence')
   expect(reply).not.toContain('schema')
+  expect(reply).not.toContain('goal')
+  expect(reply).not.toContain('in_scope')
+  expect(reply).not.toContain('done_when')
+  expect(reply).not.toContain('cwd/mode')
 })

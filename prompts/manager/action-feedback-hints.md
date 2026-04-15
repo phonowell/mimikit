@@ -29,7 +29,7 @@ enqueue_task_worktree_prepare_failed: |
 enqueue_task_batch_conflict: |
   enqueue_task 执行失败：默认按粗粒度派单；同一批次里多个任务命中了重叠目录：{{ conflict_paths }}。请先收敛为一个 worker 任务；只有当目录边界独立且不会互相改动时，才拆成多个 `enqueue_task`。
 enqueue_task_contract_missing: |
-  enqueue_task 执行失败：继续派发前还缺最小任务合同：`goal`、至少一条 `in_scope[]`、至少一条 `done_when[]`，以及有效的 `cwd/mode`。请补齐 `task` 后重试；`instructions[]` 只能作为短补充，不替代任务合同。
+  这一步还缺最小执行边界：目标、至少一条处理范围、至少一条完成标准，以及有效的执行目录与模式。请先把这些信息补齐；补充说明只能作为短备注，不能替代任务边界。
 plan_not_found: |
   {{ action }} 执行失败：未找到 plan ID。
 set_plan_done_forbidden: |

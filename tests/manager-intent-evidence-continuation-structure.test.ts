@@ -64,7 +64,7 @@ test('enqueue_task stays blocked when a single active plan is the only current c
   expectSingleRejectedFeedback(feedback, {
     action: 'enqueue_task',
     error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过'],
+    hintIncludes: ['授权'],
   })
 })
 
@@ -115,6 +115,6 @@ test('enqueue_task stays blocked when a single result task is the only current c
   expectSingleRejectedFeedback(feedback, {
     action: 'enqueue_task',
     error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过'],
+    hintIncludes: ['授权'],
   })
 })

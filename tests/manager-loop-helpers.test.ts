@@ -61,7 +61,7 @@ test('buildFallbackReply summarizes latest result instead of echoing raw output'
       workDir: '/tmp/mimikit',
     }),
   ).resolves.toBe(
-    '任务 Ship release（task-1）：已完成。\n阶段结论：Release branch is ready for review.\n[任务归档](.mimikit/tasks/2026-03-23/task-1_ship-release.md)',
+    '当前进展：任务 Ship release（task-1）：已完成。 Release branch is ready for review.\n下一步：我会继续沿当前工作线推进后续收尾，并只在需要你拍板时再抬给你。\n[任务归档](.mimikit/tasks/2026-03-23/task-1_ship-release.md)',
   )
 })
 
@@ -83,7 +83,7 @@ test('buildFallbackReply surfaces stop reason when result stops without summary'
       workDir: '/tmp/mimikit',
     }),
   ).resolves.toBe(
-    '任务 Ship release（task-1）：已失败。\n当前风险：停下原因：input_required（需要补充输入）\n任务归档: 未生成',
+    '当前进展：任务 Ship release（task-1）：已失败。\n当前风险：停下原因：input_required（需要补充输入）\n需要你决定：请直接补充这一步还缺的目标、范围或验收标准。\n下一步：我先停在这里，等最小必要确认补齐后再继续推进。\n任务归档: 未生成',
   )
 })
 
@@ -106,6 +106,6 @@ test('buildFallbackReply does not echo raw output when summary is missing', asyn
       workDir: '/tmp/mimikit',
     }),
   ).resolves.toBe(
-    '任务 Ship release（task-1）：已完成。\n[任务归档](.mimikit/tasks/2026-03-23/task-1_ship-release.md)',
+    '当前进展：任务 Ship release（task-1）：已完成。\n下一步：我会继续沿当前工作线推进后续收尾，并只在需要你拍板时再抬给你。\n[任务归档](.mimikit/tasks/2026-03-23/task-1_ship-release.md)',
   )
 })

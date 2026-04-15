@@ -37,7 +37,7 @@ test('enqueue_task is blocked when only supplemental evidence suggests new work'
   expect(feedback[0]?.action).toBe('enqueue_task')
   expect(feedback[0]?.error).toBe('action_execution_rejected')
   expect(feedback[0]?.code).toBe('intent_evidence_missing')
-  expect(feedback[0]?.hint).toContain('intent-evidence guard 未通过')
+  expect(feedback[0]?.hint).toContain('授权')
   expect(feedback[0]?.hint).toContain('task_result')
 })
 
@@ -267,7 +267,7 @@ test('enqueue_task(write) stays blocked when only a semantically similar same-la
   expectSingleRejectedFeedback(feedback, {
     action: 'enqueue_task',
     error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过'],
+    hintIncludes: ['授权'],
   })
 })
 
@@ -453,7 +453,7 @@ test('set_plan(write) does not treat a longer cwd as exact lane evidence', () =>
   expectSingleRejectedFeedback(feedback, {
     action: 'set_plan',
     error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过'],
+    hintIncludes: ['授权'],
   })
 })
 
@@ -476,7 +476,7 @@ test('task_control is blocked when user input does not identify the task', () =>
   expectSingleRejectedFeedback(feedback, {
     action: 'task_control',
     error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过', task.id],
+    hintIncludes: ['授权', task.id],
   })
 })
 
@@ -533,6 +533,6 @@ test('task_control stays blocked when user input only mentions weak runtime sign
   expectSingleRejectedFeedback(feedback, {
     action: 'task_control',
     error: 'action_execution_rejected',
-    hintIncludes: ['intent-evidence guard 未通过', task.id],
+    hintIncludes: ['授权', task.id],
   })
 })

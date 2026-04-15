@@ -23,14 +23,14 @@ export const buildCorrectionFallbackReply = (
     return '当前没有足够的直接授权来继续这一步，我先停在这里。若要继续，请直接说明要执行什么、范围是什么、怎样算完成；如果是在操作现有任务或计划，请明确指出它。'
 
   if (feedback.every((item) => item.code === 'task_contract_missing'))
-    return '继续执行前还缺最小执行边界：goal、in_scope、done_when，以及 cwd/mode。请把这几项直接说清楚后再继续。'
+    return '继续执行前还缺最小执行边界：目标、处理范围、完成标准，以及执行目录与模式。请把这几项直接说清楚后再继续。'
 
   if (feedback.every((item) => item.code === 'invalid_action_args')) {
     if (feedback.every((item) => item.action === 'set_plan'))
       return '当前这轮计划没有形成合法配置，我先停在这里。若要继续，请直接说明计划要做什么、何时触发，以及对应任务边界。'
 
     if (feedback.every((item) => item.action === 'enqueue_task'))
-      return '当前这轮执行单没有形成合法配置，我先停在这里。若要继续，请直接说明目标、范围、验收，以及 cwd/mode。'
+      return '当前这轮执行单没有形成合法配置，我先停在这里。若要继续，请直接说明目标、范围、验收，以及执行目录与模式。'
 
     return '当前这轮内部执行单没有形成合法配置，我先停在这里。请换一种更直接、边界更清晰的说法重试。'
   }
