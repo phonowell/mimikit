@@ -1,23 +1,24 @@
 .status-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, auto);
+  grid-template-areas:
+    'dot text'
+    'dot subtext';
+  column-gap: 8px;
+  row-gap: 2px;
   align-items: center;
-  gap: 8px;
   margin: 0;
   color: var(--muted-contrast, var(--muted));
   font-size: 13px;
 }
 
 .status-text {
+  grid-area: text;
   text-transform: uppercase;
 }
 
-.status-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 .status-subtext {
+  grid-area: subtext;
   color: var(--muted-contrast, var(--muted));
   font-size: 11px;
   line-height: 1.35;
@@ -25,6 +26,7 @@
 }
 
 .status-dot {
+  grid-area: dot;
   width: 8px;
   height: 8px;
   border-radius: 50%;

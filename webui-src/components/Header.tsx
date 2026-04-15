@@ -38,14 +38,12 @@ export const Header = ({
       <div className="status-group" aria-label="Status">
         <p className="status-item">
           <span className="status-dot" data-state={statusState}></span>
-          <span className="status-copy">
-            <span className="status-text" aria-live="polite">
-              {statusText}
-            </span>
-            {qualitySummary ? (
-              <span className="status-subtext">{qualitySummary}</span>
-            ) : null}
+          <span className="status-text" aria-live="polite">
+            {statusText}
           </span>
+          {qualitySummary ? (
+            <span className="status-subtext">{qualitySummary}</span>
+          ) : null}
         </p>
       </div>
       <div className="app-actions" role="toolbar" aria-label="Controls">
