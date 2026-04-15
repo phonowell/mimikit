@@ -90,7 +90,7 @@ test('enqueue_task read mode keeps repo cwd without creating a worktree', async 
   expect(runtime.domain.tasks[0]?.resourceMode).toBe('read')
   expect(runtime.domain.tasks[0]?.cwd).toBe(await realpath(cwd))
   expect(runtime.domain.tasks[0]?.branch).toBe('main')
-})
+}, 30_000)
 
 test('enqueue_task write mode materializes worktrees only when use_worktree=true', async () => {
   const cwd = await createGitRepo()

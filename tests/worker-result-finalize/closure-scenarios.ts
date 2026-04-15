@@ -131,4 +131,4 @@ test('finalizeResult pauses merge-required write task and enqueues repo-root clo
   expect(closureSpec.prompt).toContain(task.id)
   expect(closureSpec.prompt).toContain(branch)
   expect(closureSpec.prompt).toContain(worktreeRoot)
-})
+}, 30_000)

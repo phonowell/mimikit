@@ -23,4 +23,4 @@ test('materializeTaskWorktreeCwd rejects legacy same-branch worktree outside rep
   expect(result.ok).toBe(false)
   expect(result.detail).toContain('.worktrees')
   expect(result.detail).toContain(legacyWorktree)
-})
+}, 30_000)

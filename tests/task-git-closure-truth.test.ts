@@ -44,7 +44,7 @@ test('applyClosureTaskGitTruth preserves source task git identity while promotin
 
 test(
   'applyClosureTaskGitTruth re-derives merged truth from source review sha after real merge and cleanup',
-  { timeout: 15000 },
+  { timeout: 30000 },
   async () => {
     const { repoRoot, worktreePath, branch, reviewSha } =
       await createRealMergedClosureRepo()

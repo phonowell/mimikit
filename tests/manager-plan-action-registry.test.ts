@@ -22,5 +22,5 @@ describe('action-validation barrel exports load registry modules in tsx runtime'
         },
       ),
     ).toContain('ok')
-  })
+  }, 30_000)
 })

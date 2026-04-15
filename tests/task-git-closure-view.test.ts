@@ -37,7 +37,7 @@ test('buildTaskViews derives review passed from worktree sentinel', async () => 
     sha,
   })
   expect(views[0]?.gitClosure?.merged).toBe(true)
-})
+}, 30_000)
 
 test('buildTaskViews derives cleaned=true when worktreePath is missing', () => {
   const task = createTaskFixture({

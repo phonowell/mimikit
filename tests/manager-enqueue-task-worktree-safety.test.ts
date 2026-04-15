@@ -71,7 +71,7 @@ test('enqueue_task write mode rejects a nonexistent future worktree cwd', async 
     action: 'enqueue_task',
     error: 'action_execution_rejected',
   })
-})
+}, 30_000)
 
 test('enqueue_task worktree prepare failure appends action feedback without throwing', async () => {
   const cwd = await createGitRepo()

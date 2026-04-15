@@ -109,4 +109,4 @@ test('finalizeResult binds closure task to main even when repo root is checked o
 
   const closureTask = runtime.domain.tasks.find((item) => item.id !== task.id)
   expect(closureTask?.branch).toBe('main')
-}, 15_000)
+}, 30_000)

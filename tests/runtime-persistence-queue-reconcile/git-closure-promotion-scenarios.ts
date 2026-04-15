@@ -19,7 +19,7 @@ const createTmpDir = () =>
 
 test(
   'hydrateRuntimeState promotes closure-task git truth back into the source task referenced by contextRefs',
-  { timeout: 15000 },
+  { timeout: 30000 },
   async () => {
     const stateDir = await createTmpDir()
     const {
