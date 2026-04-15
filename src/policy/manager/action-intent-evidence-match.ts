@@ -97,7 +97,10 @@ const scoreCandidateAgainstInput = (
     scoreTextOverlap(inputText, normalizedCandidate),
   )
   if (inputText.includes(normalizedCandidate)) return Math.max(overlap, 1)
-  return Math.max(overlap, scoreSemanticAlignment(normalizedCandidate, inputText))
+  return Math.max(
+    overlap,
+    scoreSemanticAlignment(normalizedCandidate, inputText),
+  )
 }
 
 export const buildAmbiguousWorklineHint = (candidateRefs: string[]): string => {
@@ -134,7 +137,8 @@ export const isSupportedByInputs = (params: {
     const tokenCount = tokenizeSearchText(candidate).length
     if (tokenCount === 0) continue
     const threshold = resolveCandidateThreshold(tokenCount)
-    if (scoreCandidateAgainstInput(candidate, inputText) >= threshold) return true
+    if (scoreCandidateAgainstInput(candidate, inputText) >= threshold)
+      return true
   }
 
   const combinedCandidate = normalizeText(params.combinedCandidate)

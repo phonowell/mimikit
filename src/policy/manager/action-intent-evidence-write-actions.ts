@@ -33,14 +33,11 @@ export const resolveEnqueueTaskIntentEvidenceHint = (params: {
     ...(params.taskById ? { taskById: params.taskById } : {}),
     ...(params.planById ? { planById: params.planById } : {}),
     ...(params.resultTaskIds ? { resultTaskIds: params.resultTaskIds } : {}),
-    ...(params.defaultFocusId
-      ? { defaultFocusId: params.defaultFocusId }
-      : {}),
+    ...(params.defaultFocusId ? { defaultFocusId: params.defaultFocusId } : {}),
   })
   if (lowRiskContinuation.ok) return undefined
-  if (lowRiskContinuation.reason === 'ambiguous_workline') {
+  if (lowRiskContinuation.reason === 'ambiguous_workline')
     return buildAmbiguousWorklineHint(lowRiskContinuation.candidateRefs)
-  }
 
   if (
     supportsDirectWriteEnqueueContinuationTarget({

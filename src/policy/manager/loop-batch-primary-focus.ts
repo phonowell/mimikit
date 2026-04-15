@@ -75,9 +75,7 @@ const resolveLatestTriggerFocusId = (
   return undefined
 }
 
-const dedupeFocusIds = (
-  focusIds: Array<FocusId | undefined>,
-): FocusId[] => {
+const dedupeFocusIds = (focusIds: Array<FocusId | undefined>): FocusId[] => {
   const ordered: FocusId[] = []
   const seen = new Set<FocusId>()
   for (const focusId of focusIds) {
@@ -89,9 +87,7 @@ const dedupeFocusIds = (
   return ordered
 }
 
-const resolveLatestOpenTaskFocusIds = (
-  runtime: ManagerRuntime,
-): FocusId[] => {
+const resolveLatestOpenTaskFocusIds = (runtime: ManagerRuntime): FocusId[] => {
   const openTasks = runtime.domain.tasks
     .filter(
       (task) =>
@@ -109,9 +105,7 @@ const resolveLatestOpenTaskFocusIds = (
   )
 }
 
-const resolveRecentActiveFocusIds = (
-  runtime: ManagerRuntime,
-): FocusId[] =>
+const resolveRecentActiveFocusIds = (runtime: ManagerRuntime): FocusId[] =>
   runtime.domain.focuses
     .filter((focus) => focus.status === 'active')
     .sort((a, b) => {

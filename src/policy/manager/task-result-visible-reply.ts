@@ -111,7 +111,9 @@ const resolveDefaultNextStepLine = (params: { result: TaskResult }): string => {
   return '我会继续沿当前工作线推进后续收尾，并只在需要你拍板时再抬给你。'
 }
 
-const resolveDecisionLine = (params: { result: TaskResult }): string | undefined => {
+const resolveDecisionLine = (params: {
+  result: TaskResult
+}): string | undefined => {
   if (params.result.stopReason === 'input_required')
     return '请直接补充这一步还缺的目标、范围或验收标准。'
   if (params.result.stopReason === 'guard_rejected')

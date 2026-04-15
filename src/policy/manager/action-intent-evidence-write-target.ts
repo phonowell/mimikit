@@ -1,33 +1,25 @@
 import {
-  isExactAnchorSupportedByInputs,
-  isSupportedByInputs,
-} from './action-intent-evidence-match.js'
-import { matchesWriteEnqueueLane } from './action-intent-evidence-write-lane.js'
+  collectPlanCandidates,
+  collectStandaloneResultTaskCandidates,
+  resolveSingleActivePlanContinuationTarget,
+  resolveSingleResultTaskContinuationTarget,
+} from './action-intent-evidence-write-target-helpers.js'
+import {
+  inputDirectlyReferencesPlan,
+  inputDirectlyReferencesPlanId,
+  inputDirectlyReferencesTaskId,
+} from './action-intent-evidence-write-target-references.js'
 import { buildSetPlanUpdateSemanticText } from './authorization-plan-semantics.js'
 import {
-  buildEnqueueDraftSemanticText,
-  buildPlanSemanticText,
-  buildTaskSemanticText,
   hasSemanticAlignment,
   matchesPlanToEnqueueDraft,
   matchesTaskToEnqueueDraft,
-  scoreSemanticAlignment,
 } from './authorization-semantics.js'
 
 import type { Task, TaskPlan } from '../../foundation/types/index.js'
 import type { Parsed } from '../actions/model/spec.js'
 
-const LOW_RISK_DRAFT_MATCH_THRESHOLD = 0.35
 const LOW_RISK_AMBIGUOUS_DELTA = 0.15
-
-type EnqueueContinuationCandidate = {
-  kind: 'plan' | 'task'
-  id: string
-  ref: string
-  draftScore: number
-  inputScore: number
-  score: number
-}
 
 export type LowRiskWriteEnqueueContinuationResult =
   | {
@@ -44,211 +36,6 @@ export type LowRiskWriteEnqueueContinuationResult =
       reason: 'ambiguous_workline'
       candidateRefs: string[]
     }
-
-const buildCandidateRef = (value: { id: string; title: string }): string =>
-  value.title.trim() ? `${value.id} / ${value.title.trim()}` : value.id
-
-const inputDirectlyReferencesPlan = (
-  inputTexts: string[],
-  plan: TaskPlan | undefined,
-): boolean => {
-  if (!plan) return false
-  return (
-    isExactAnchorSupportedByInputs({
-      candidates: [plan.id],
-      inputs: inputTexts,
-    }) ||
-    isSupportedByInputs({
-      candidates: [plan.title],
-      inputs: inputTexts,
-    })
-  )
-}
-
-const inputDirectlyReferencesTask = (
-  inputTexts: string[],
-  task: Task | undefined,
-): boolean => {
-  if (!task) return false
-  return (
-    isExactAnchorSupportedByInputs({
-      candidates: [task.id],
-      inputs: inputTexts,
-    }) ||
-    isSupportedByInputs({
-      candidates: [task.title],
-      inputs: inputTexts,
-    })
-  )
-}
-
-const inputDirectlyReferencesPlanId = (
-  inputTexts: string[],
-  plan: TaskPlan | undefined,
-): boolean => {
-  if (!plan) return false
-  return isExactAnchorSupportedByInputs({
-    candidates: [plan.id],
-    inputs: inputTexts,
-  })
-}
-
-const inputDirectlyReferencesTaskId = (
-  inputTexts: string[],
-  task: Task | undefined,
-): boolean => {
-  if (!task) return false
-  return isExactAnchorSupportedByInputs({
-    candidates: [task.id],
-    inputs: inputTexts,
-  })
-}
-
-const collectPlanCandidates = (params: {
-  item: Extract<Parsed, { type: 'enqueue_task' }>
-  inputTexts: string[]
-  planById?: Map<string, TaskPlan>
-  resultTaskIds?: Set<string>
-  defaultFocusId?: string
-}): EnqueueContinuationCandidate[] => {
-  const draftText = buildEnqueueDraftSemanticText(params.item)
-  const inputText = params.inputTexts.join('\n').trim()
-  const candidates: EnqueueContinuationCandidate[] = []
-  for (const plan of params.planById?.values() ?? []) {
-    if (plan.status !== 'active') continue
-    if (
-      !matchesWriteEnqueueLane({
-        item: params.item,
-        cwd: plan.effect.taskTemplate.cwd,
-        resourceMode: plan.effect.taskTemplate.resourceMode,
-        useWorktree: plan.effect.taskTemplate.useWorktree,
-      })
-    )
-      continue
-    const draftScore = scoreSemanticAlignment(buildPlanSemanticText(plan), draftText)
-    const directReference = inputDirectlyReferencesPlan(params.inputTexts, plan)
-    const runtimeAnchor =
-      (plan.runtime?.lastTaskId !== undefined &&
-        params.resultTaskIds?.has(plan.runtime.lastTaskId)) === true
-    const hasOwnership = directReference || runtimeAnchor
-    if (!hasOwnership) continue
-    if (draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
-    const inputScore = inputText
-      ? scoreSemanticAlignment(buildPlanSemanticText(plan), inputText)
-      : 0
-    candidates.push({
-      kind: 'plan',
-      id: plan.id,
-      ref: buildCandidateRef({ id: plan.id, title: plan.title }),
-      draftScore,
-      inputScore,
-      score:
-        draftScore +
-        inputScore +
-        (directReference ? 1.5 : 0) +
-        (runtimeAnchor ? 0.9 : 0),
-    })
-  }
-  return candidates
-}
-
-const collectStandaloneResultTaskCandidates = (params: {
-  item: Extract<Parsed, { type: 'enqueue_task' }>
-  inputTexts: string[]
-  taskById?: Map<string, Task>
-  planById?: Map<string, TaskPlan>
-  resultTaskIds?: Set<string>
-  defaultFocusId?: string
-}): EnqueueContinuationCandidate[] => {
-  const draftText = buildEnqueueDraftSemanticText(params.item)
-  const inputText = params.inputTexts.join('\n').trim()
-  const anchoredTaskIds = new Set(
-    [...(params.planById?.values() ?? [])]
-      .map((plan) => plan.runtime?.lastTaskId)
-      .filter((taskId): taskId is string => Boolean(taskId)),
-  )
-  const candidates: EnqueueContinuationCandidate[] = []
-  for (const taskId of params.resultTaskIds ?? []) {
-    if (anchoredTaskIds.has(taskId)) continue
-    const task = params.taskById?.get(taskId)
-    if (!task) continue
-    if (
-      !matchesWriteEnqueueLane({
-        item: params.item,
-        cwd: task.cwd,
-        resourceMode: task.resourceMode,
-        useWorktree: Boolean(task.git),
-      })
-    )
-      continue
-    const draftScore = scoreSemanticAlignment(buildTaskSemanticText(task), draftText)
-    const directReference = inputDirectlyReferencesTask(params.inputTexts, task)
-    if (draftScore < LOW_RISK_DRAFT_MATCH_THRESHOLD) continue
-    const inputScore = inputText
-      ? scoreSemanticAlignment(buildTaskSemanticText(task), inputText)
-      : 0
-    candidates.push({
-      kind: 'task',
-      id: task.id,
-      ref: buildCandidateRef({ id: task.id, title: task.title }),
-      draftScore,
-      inputScore,
-      score:
-        draftScore +
-        inputScore +
-        (directReference ? 1.5 : 0) +
-        0.9,
-    })
-  }
-  return candidates
-}
-
-const resolveSingleActivePlanContinuationTarget = (params: {
-  item: Extract<Parsed, { type: 'enqueue_task' }>
-  planById?: Map<string, TaskPlan>
-  defaultFocusId?: string
-}): TaskPlan | undefined => {
-  const focusId = params.defaultFocusId?.trim()
-  if (!focusId || !params.planById) return undefined
-  const candidates = [...params.planById.values()].filter(
-    (plan) =>
-      plan.status === 'active' &&
-      plan.focusId.trim() === focusId &&
-      matchesWriteEnqueueLane({
-        item: params.item,
-        cwd: plan.effect.taskTemplate.cwd,
-        resourceMode: plan.effect.taskTemplate.resourceMode,
-        useWorktree: plan.effect.taskTemplate.useWorktree,
-      }),
-  )
-  return candidates.length === 1 ? candidates[0] : undefined
-}
-
-const resolveSingleResultTaskContinuationTarget = (params: {
-  item: Extract<Parsed, { type: 'enqueue_task' }>
-  taskById?: Map<string, Task>
-  resultTaskIds?: Set<string>
-  defaultFocusId?: string
-}): Task | undefined => {
-  const focusId = params.defaultFocusId?.trim()
-  if (!focusId || !params.taskById || !params.resultTaskIds?.size)
-    return undefined
-  const candidates = [...params.resultTaskIds]
-    .map((taskId) => params.taskById?.get(taskId))
-    .filter((task): task is Task => {
-      if (!task) return false
-      return (
-        task.focusId.trim() === focusId &&
-        matchesWriteEnqueueLane({
-          item: params.item,
-          cwd: task.cwd,
-          resourceMode: task.resourceMode,
-          useWorktree: Boolean(task.git),
-        })
-      )
-    })
-  return candidates.length === 1 ? candidates[0] : undefined
-}
 
 export const resolveLowRiskWriteEnqueueContinuation = (params: {
   item: Extract<Parsed, { type: 'enqueue_task' }>

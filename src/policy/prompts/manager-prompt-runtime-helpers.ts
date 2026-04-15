@@ -65,7 +65,7 @@ export const normalizeWorkingFocusIds = (
   const ordered: FocusId[] = []
   const seen = new Set<FocusId>()
   for (const focusId of workingFocusIds) {
-    const normalized = focusId?.trim()
+    const normalized = focusId.trim()
     if (!normalized || seen.has(normalized)) continue
     seen.add(normalized)
     ordered.push(normalized)

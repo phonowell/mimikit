@@ -1,15 +1,15 @@
 import { compactTaskContractForMatching } from '../../foundation/shared/task-contract-compact.js'
-import {
-  scoreTextOverlap,
-  tokenizeSearchText,
-} from '../../foundation/shared/text-search.js'
-import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 
 import {
   describePlanMaxRuns,
   describePlanPriority,
   describePlanTrigger,
 } from './authorization-plan-semantics.js'
+import {
+  hasSemanticAlignment as hasSemanticAlignmentWithThreshold,
+  normalizeSemanticText,
+  scoreSemanticAlignment as scoreSemanticAlignmentBase,
+} from './authorization-semantic-score.js'
 
 import type {
   Task,
@@ -20,17 +20,12 @@ import type {
 import type { Parsed } from '../actions/model/spec.js'
 
 const SEMANTIC_MATCH_THRESHOLD = 0.35
-const STRONG_TOKEN_MIN_LENGTH = 3
-const STRONG_TOKEN_MATCH_COUNT = 2
 
 type EnqueueTaskItem = Extract<Parsed, { type: 'enqueue_task' }>
 type SetPlanItem = Extract<Parsed, { type: 'set_plan' }>
 
-const normalizeText = (value: string | undefined): string =>
-  normalizeInlineWhitespace(value ?? '')
-
 const buildSemanticText = (values: Array<string | undefined>): string =>
-  values.map(normalizeText).filter(Boolean).join('\n')
+  values.map(normalizeSemanticText).filter(Boolean).join('\n')
 
 const buildContractText = (contract: TaskContract | undefined): string => {
   const compact = compactTaskContractForMatching(contract)
@@ -41,55 +36,6 @@ const buildContractText = (contract: TaskContract | undefined): string => {
     ...compact.acceptance,
     compact.outOfScope,
   ])
-}
-
-const collectStrongTokens = (value: string): string[] =>
-  tokenizeSearchText(value).filter(
-    (token) =>
-      !token.startsWith('cjk:') && token.length >= STRONG_TOKEN_MIN_LENGTH,
-  )
-
-export const scoreSemanticAlignment = (left: string, right: string): number => {
-  const normalizedLeft = normalizeText(left)
-  const normalizedRight = normalizeText(right)
-  if (!normalizedLeft || !normalizedRight) return 0
-  if (normalizedLeft === normalizedRight) return 1
-  const overlap = Math.max(
-    scoreTextOverlap(normalizedLeft, normalizedRight),
-    scoreTextOverlap(normalizedRight, normalizedLeft),
-  )
-  const leftTokens = collectStrongTokens(normalizedLeft)
-  const rightTokens = collectStrongTokens(normalizedRight)
-  if (leftTokens.length === 0 || rightTokens.length === 0) return overlap
-  const rightTokenSet = new Set(rightTokens)
-  let shared = 0
-  for (const token of leftTokens) {
-    if (!rightTokenSet.has(token)) continue
-    shared += 1
-  }
-  const sharedRatio = shared / Math.min(leftTokens.length, rightTokens.length)
-  return Math.max(overlap, sharedRatio)
-}
-
-export const hasSemanticAlignment = (
-  left: string,
-  right: string,
-  threshold = SEMANTIC_MATCH_THRESHOLD,
-): boolean => {
-  const score = scoreSemanticAlignment(left, right)
-  if (score >= threshold) return true
-  const normalizedLeft = normalizeText(left)
-  const normalizedRight = normalizeText(right)
-  if (!normalizedLeft || !normalizedRight) return false
-  const leftTokens = collectStrongTokens(normalizedLeft)
-  const rightTokens = new Set(collectStrongTokens(normalizedRight))
-  let shared = 0
-  for (const token of leftTokens) {
-    if (!rightTokens.has(token)) continue
-    shared += 1
-    if (shared >= STRONG_TOKEN_MATCH_COUNT) return true
-  }
-  return false
 }
 
 export const buildTaskSemanticText = (
@@ -144,23 +90,36 @@ export const collectTaskIntentCandidates = (
 ): string[] =>
   task
     ? [task.id, task.title, task.contract?.goal, task.contract?.scope].filter(
-        (value): value is string => Boolean(normalizeText(value)),
+        (value): value is string => Boolean(normalizeSemanticText(value)),
       )
     : []
+
+export const scoreSemanticAlignment = (left: string, right: string): number =>
+  scoreSemanticAlignmentBase(left, right)
+
+export const hasSemanticAlignment = (
+  left: string,
+  right: string,
+  threshold = SEMANTIC_MATCH_THRESHOLD,
+): boolean => hasSemanticAlignmentWithThreshold(left, right, threshold)
 
 export const matchesPlanToEnqueueDraft = (
   plan: TaskPlan,
   item: EnqueueTaskItem,
 ): boolean =>
-  scoreSemanticAlignment(buildPlanSemanticText(plan), buildEnqueueDraftSemanticText(item)) >=
-  SEMANTIC_MATCH_THRESHOLD
+  scoreSemanticAlignment(
+    buildPlanSemanticText(plan),
+    buildEnqueueDraftSemanticText(item),
+  ) >= SEMANTIC_MATCH_THRESHOLD
 
 export const matchesTaskToEnqueueDraft = (
   task: Task,
   item: EnqueueTaskItem,
 ): boolean =>
-  scoreSemanticAlignment(buildTaskSemanticText(task), buildEnqueueDraftSemanticText(item)) >=
-  SEMANTIC_MATCH_THRESHOLD
+  scoreSemanticAlignment(
+    buildTaskSemanticText(task),
+    buildEnqueueDraftSemanticText(item),
+  ) >= SEMANTIC_MATCH_THRESHOLD
 
 export const matchesPlanToSetPlanDraft = (
   plan: TaskPlan,
@@ -187,11 +146,11 @@ export const matchesPlanToTaskTitle = (
   plan: TaskPlan,
   task: Pick<Task, 'title'>,
 ): boolean => {
-  const taskTitle = normalizeText(task.title)
+  const taskTitle = normalizeSemanticText(task.title)
   if (!taskTitle) return false
   return (
-    normalizeText(plan.title) === taskTitle ||
-    normalizeText(plan.effect.taskTemplate.title) === taskTitle
+    normalizeSemanticText(plan.title) === taskTitle ||
+    normalizeSemanticText(plan.effect.taskTemplate.title) === taskTitle
   )
 }
 
@@ -199,13 +158,17 @@ export const matchesPlanToResult = (
   plan: TaskPlan,
   result: Pick<TaskResult, 'taskId' | 'title' | 'handoff'>,
 ): boolean => {
-  const resultTitle = normalizeText(result.title)
+  const resultTitle = normalizeSemanticText(result.title)
   if (resultTitle) {
     return (
-      normalizeText(plan.title) === resultTitle ||
-      normalizeText(plan.effect.taskTemplate.title) === resultTitle
+      normalizeSemanticText(plan.title) === resultTitle ||
+      normalizeSemanticText(plan.effect.taskTemplate.title) === resultTitle
     )
   }
   const resultSummary = buildResultSemanticText(result)
-  return hasSemanticAlignment(plan.effect.taskTemplate.title, resultSummary)
+  return hasSemanticAlignment(
+    plan.effect.taskTemplate.title,
+    resultSummary,
+    SEMANTIC_MATCH_THRESHOLD,
+  )
 }

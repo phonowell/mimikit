@@ -34,7 +34,8 @@ export const buildStatePacketPayload = (params: {
   selection: PromptSelectionSummary
 } => {
   const shouldIncludeWorkingFocuses =
-    params.selectedSections.working_focuses && params.workingFocusIds.length === 1
+    params.selectedSections.working_focuses &&
+    params.workingFocusIds.length === 1
   const tasksSection = params.selectedSections.tasks
     ? buildTasksPromptPayloadSection(params.tasks, [], params.workDir, {
         workingFocusIds: params.workingFocusIds,
@@ -68,8 +69,7 @@ export const buildStatePacketPayload = (params: {
             ),
           }
         : {}),
-      ...(params.selectedSections.working_focuses
-      && shouldIncludeWorkingFocuses
+      ...(params.selectedSections.working_focuses && shouldIncludeWorkingFocuses
         ? {
             working_focuses: buildWorkingFocusesPromptPayload(
               params.focusPayload.workingFocuses,

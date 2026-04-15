@@ -17,8 +17,8 @@ import {
   hasQuotedInputs,
   type ManagerPromptRuntimeData,
   type ManagerPromptRuntimeDemand,
-  normalizeWorkingFocusIds,
   normalizeRuntimeDemand,
+  normalizeWorkingFocusIds,
   summarizeRecentHistory,
 } from './manager-prompt-runtime-helpers.js'
 
