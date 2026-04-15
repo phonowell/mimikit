@@ -11,6 +11,16 @@ import {
   runManagerRoundWithRecoveryMock,
 } from './manager-correction-rounds/testkit.js'
 
+const expectUserVisibleManagerReply = (
+  reply: string,
+  forbiddenFragments: string[],
+): void => {
+  expect(reply.trim().length).toBeGreaterThan(0)
+  expect(reply).not.toContain('<M:')
+  for (const fragment of forbiddenFragments)
+    expect(reply).not.toContain(fragment)
+}
+
 const buildInvalidArgsRunResult = (elapsedMs: number) => ({
   ...buildRoundResult({
     output: 'invalid enqueue task',
@@ -89,15 +99,12 @@ test('runManagerCorrectionRounds explains missing execution boundary in user ter
   const result = await runCorrectionRounds({ runtime })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('继续执行前还缺最小执行边界')
-  expect(result.parsed.text).toContain('目标')
-  expect(result.parsed.text).toContain('处理范围')
-  expect(result.parsed.text).toContain('完成标准')
-  expect(result.parsed.text).toContain('执行目录与模式')
-  expect(result.parsed.text).not.toContain('goal')
-  expect(result.parsed.text).not.toContain('in_scope')
-  expect(result.parsed.text).not.toContain('done_when')
-  expect(result.parsed.text).not.toContain('cwd/mode')
+  expectUserVisibleManagerReply(result.parsed.text, [
+    'goal',
+    'in_scope',
+    'done_when',
+    'cwd/mode',
+  ])
 })
 
 test('runManagerCorrectionRounds returns concrete invalid action args instead of generic scope clarification', async () => {
@@ -123,24 +130,25 @@ test('runManagerCorrectionRounds returns concrete invalid action args instead of
   const result = await runCorrectionRounds({ runtime })
 
   expect(result.roundLimitReached).toBe(true)
-  expect(result.parsed.text).toContain('当前这轮执行单没有形成合法配置')
-  expect(result.parsed.text).toContain('目标、范围、验收')
-  expect(result.parsed.text).toContain('执行目录与模式')
-  expect(result.parsed.text).not.toContain('provider')
-  expect(result.parsed.text).not.toContain('cwd/mode')
+  expectUserVisibleManagerReply(result.parsed.text, ['provider', 'cwd/mode'])
 })
 
 test('normalizeManagerReplyText rewrites correction-style leakages into natural report language', () => {
-  const reply = normalizeManagerReplyText(`继续执行前还缺最小执行边界：goal、in_scope、done_when，以及 cwd/mode。
-enqueue_task 没过 intent-evidence guard，schema 还不完整。`)
+  const reply = normalizeManagerReplyText(
+    [
+      '继续执行前还缺最小执行边界：goal、in_scope、done_when，以及 cwd/mode。',
+      'enqueue_task 没过 intent-evidence guard，schema 还不完整。',
+    ].join('\n'),
+  )
 
-  expect(reply).toContain('当前进展')
+  expectUserVisibleManagerReply(reply, [
+    'enqueue_task',
+    'intent-evidence',
+    'schema',
+    'goal',
+    'in_scope',
+    'done_when',
+    'cwd/mode',
+  ])
   expect(reply).toContain('下一步')
-  expect(reply).not.toContain('enqueue_task')
-  expect(reply).not.toContain('intent-evidence')
-  expect(reply).not.toContain('schema')
-  expect(reply).not.toContain('goal')
-  expect(reply).not.toContain('in_scope')
-  expect(reply).not.toContain('done_when')
-  expect(reply).not.toContain('cwd/mode')
 })

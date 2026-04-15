@@ -127,7 +127,7 @@ test('set_plan(write) update stays allowed when the user explicitly authorizes t
     {
       inputs: [
         createUserInput(
-          `把 ${currentPlan.id} 这个计划改掉，切到 /repo/billing，并且用 worktree 继续推进。`,
+          `把 ${currentPlan.id} 这个计划改掉；cwd=/repo/billing；mode=write；use_worktree=true。`,
         ),
       ],
       planById: new Map([[currentPlan.id, currentPlan]]),

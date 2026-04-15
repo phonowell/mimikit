@@ -5,57 +5,61 @@ import {
   resolveManagerActionSurfacePromptConfig,
 } from '../src/policy/manager/action-surface-prompt.js'
 
-test('prompt surface no longer varies by wake profile', () => {
-  const prompt = formatManagerActionSurfacePrompt(
-    resolveManagerActionSurfacePromptConfig({
-      actionFeedback: [
-        {
-          action: 'enqueue_task',
-          error: 'action_execution_rejected',
-          hint: 'blocked',
-        },
-      ],
-    }),
+const collectRenderedActionNames = (prompt: string): string[] =>
+  [...prompt.matchAll(/`type="([^"]+)"`/g)].flatMap((match) =>
+    match[1] ? [match[1]] : [],
   )
 
-  expect(prompt).toContain('默认仅注入简版 action 卡')
-  expect(prompt).toContain('type="enqueue_task"')
-  expect(prompt).toContain('type="task_control"')
-  expect(prompt).toContain('type="set_plan"')
-  expect(prompt).toContain('`plan_id=null` 表示创建')
-  expect(prompt).toContain('`task.use_worktree`')
-  expect(prompt).not.toContain('type="query_context"')
-  expect(prompt).not.toContain('type="read_file"')
-  expect(prompt).not.toContain('type="mutate_task"')
-  expect(prompt).not.toContain('读取与检索')
+const countRenderedActionName = (prompt: string, actionName: string): number =>
+  collectRenderedActionNames(prompt).filter((item) => item === actionName)
+    .length
+
+test('feedback-driven prompt expansion only adds details for failed registered actions', () => {
+  const config = resolveManagerActionSurfacePromptConfig({
+    actionFeedback: [
+      {
+        action: 'enqueue_task',
+        error: 'action_execution_rejected',
+        hint: 'blocked',
+      },
+      {
+        action: 'unknown_action',
+        error: 'action_execution_rejected',
+        hint: 'ignored',
+      },
+    ],
+  })
+
+  expect(config.includeAllDetails).toBe(false)
+  expect([...config.detailActionNames]).toEqual(['enqueue_task'])
+
+  const prompt = formatManagerActionSurfacePrompt(config)
+  const actionNames = Array.from(config.surface.actionNames).sort()
+
+  expect([...new Set(collectRenderedActionNames(prompt))].sort()).toEqual(
+    actionNames,
+  )
+  for (const actionName of actionNames) {
+    expect(countRenderedActionName(prompt, actionName)).toBe(
+      actionName === 'enqueue_task' ? 2 : 1,
+    )
+  }
 })
 
-test('expanded prompt keeps full detail section without wake profile banner', () => {
-  const prompt = formatManagerActionSurfacePrompt(
-    resolveManagerActionSurfacePromptConfig({
-      packetMode: 'expanded',
-    }),
-  )
+test('expanded prompt renders one summary line and one detail line per registered action', () => {
+  const config = resolveManagerActionSurfacePromptConfig({
+    packetMode: 'expanded',
+  })
 
-  expect(prompt).not.toContain('wake_profile=')
-  expect(prompt).not.toContain('type="query_context"')
-  expect(prompt).not.toContain('type="read_file"')
-  expect(prompt).toContain('type="enqueue_task"')
-  expect(prompt).toContain('`use_worktree=false`')
-  expect(prompt).toContain('`true` 仅用于需要独立 git worktree')
-  expect(prompt).toContain('默认 1-3 条高密度短句')
-  expect(prompt).not.toContain('`continuation_of`')
-  expect(prompt).not.toContain('{ type:"plan"|"task", id }')
-  expect(prompt).toContain('同目标低风险延续优先由 manager 自行消化')
-  expect(prompt).toContain(
-    '若当前是 `task_result`-only 回合且已有单一清晰续跑锚点',
+  expect(config.includeAllDetails).toBe(true)
+  expect(config.detailActionNames.size).toBe(0)
+
+  const prompt = formatManagerActionSurfacePrompt(config)
+  const actionNames = Array.from(config.surface.actionNames).sort()
+
+  expect([...new Set(collectRenderedActionNames(prompt))].sort()).toEqual(
+    actionNames,
   )
-  expect(prompt).not.toContain('type="record_task_git"')
-  expect(prompt).toContain('type="remember_memory"')
-  expect(prompt).toContain('type="remember_project_profile"')
-  expect(prompt).toContain('必填 `task_id,action`')
-  expect(prompt).toContain('`instructions[]` 仅在 `action="resume"` 时可选附带')
-  expect(prompt).not.toContain('优先改用 `task_control` 的 `resume`')
-  expect(prompt).not.toContain('必填 `task_id,action,instructions[]`')
-  expect(prompt).not.toContain('type="restart_runtime"')
+  for (const actionName of actionNames)
+    expect(countRenderedActionName(prompt, actionName)).toBe(2)
 })

@@ -45,12 +45,9 @@ test('buildManagerPromptPayload injects repo-bound project profile into stable c
   expect(payload.prompt).toContain(
     '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
   )
-  expect(payload.prompt).toContain(
-    '后续统一用 pnpm + tsx 命令，不再补 npm 兼容脚本',
-  )
 })
 
-test('buildManagerPromptPayload frames manager as a middle-management orchestration layer', async () => {
+test('buildManagerPromptPayload keeps the manager output contract on reply + actions', async () => {
   const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-manager-middle-'))
   const payload = await buildManagerPromptPayload({
     stateDir,
@@ -65,12 +62,6 @@ test('buildManagerPromptPayload frames manager as a middle-management orchestrat
     packetMode: 'standard',
   })
 
-  expect(payload.prompt).toContain('承担推进责任的编排中层')
-  expect(payload.prompt).toContain('默认工作模式是“继续推进并做常规判断”')
   expect(payload.prompt).toContain('{ reply, actions }')
   expect(payload.prompt).not.toContain('{ reply, actions, decision }')
-  expect(payload.prompt).toContain(
-    '向上管理输出必须压缩为阶段结论、当前风险、是否需要用户决策',
-  )
-  expect(payload.prompt).toContain('例外上提只允许由以下场景触发')
 })

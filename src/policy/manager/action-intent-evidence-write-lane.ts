@@ -1,9 +1,6 @@
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
-import {
-  isExactAnchorSupportedByInputs,
-  isSupportedByInputs,
-} from './action-intent-evidence-match.js'
+import { isExactAnchorSupportedByInputs } from './action-intent-evidence-match.js'
 import {
   matchesPlanToEnqueueDraft,
   matchesTaskToEnqueueDraft,
@@ -24,15 +21,22 @@ type CurrentWriteLane = {
   useWorktree: boolean | undefined
 }
 
-const modeEvidenceLabels = (mode: DraftWriteLane['mode']): string[] =>
-  mode === 'write'
-    ? ['写入模式 (write)', '写入', 'write']
-    : ['只读模式 (read)', '只读', 'read']
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-const worktreeEvidenceLabels = (useWorktree: boolean): string[] =>
-  useWorktree
-    ? ['使用 worktree', '用 worktree', 'worktree']
-    : ['不使用 worktree', '不要用 worktree', '直接在仓库目录执行']
+const hasStructuredFieldValueEvidence = (params: {
+  field: 'mode' | 'use_worktree'
+  value: string
+  inputTexts: string[]
+}): boolean => {
+  const field = escapeRegExp(params.field)
+  const value = escapeRegExp(params.value)
+  const pattern = new RegExp(
+    `\\b${field}\\b\\s*[:=]\\s*["'\`]?${value}["'\`]?`,
+    'iu',
+  )
+  return params.inputTexts.some((input) => pattern.test(input))
+}
 
 const hasExplicitLaneChangeEvidence = (params: {
   requiresCwdEvidence: boolean
@@ -52,17 +56,19 @@ const hasExplicitLaneChangeEvidence = (params: {
   }
   if (params.requiresModeEvidence) {
     checks.push(
-      isSupportedByInputs({
-        candidates: modeEvidenceLabels(params.next.mode),
-        inputs: params.inputTexts,
+      hasStructuredFieldValueEvidence({
+        field: 'mode',
+        value: params.next.mode,
+        inputTexts: params.inputTexts,
       }),
     )
   }
   if (params.requiresWorktreeEvidence) {
     checks.push(
-      isSupportedByInputs({
-        candidates: worktreeEvidenceLabels(params.next.use_worktree === true),
-        inputs: params.inputTexts,
+      hasStructuredFieldValueEvidence({
+        field: 'use_worktree',
+        value: String(params.next.use_worktree === true),
+        inputTexts: params.inputTexts,
       }),
     )
   }
