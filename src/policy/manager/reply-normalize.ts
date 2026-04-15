@@ -1,4 +1,5 @@
 import {
+  naturalizeReply,
   shapeStructuredReply,
   STRUCTURED_LABEL_PATTERN,
 } from './reply-normalize-structure.js'
@@ -8,22 +9,32 @@ import {
   dedupeConsecutiveParagraphs,
 } from './reply-normalize-tools.js'
 
-export const normalizeManagerReplyText = (value: string): string => {
+type ReplyNormalizationMode = 'natural' | 'structured'
+
+export const normalizeManagerReplyText = (
+  value: string,
+  options: {
+    mode?: ReplyNormalizationMode
+  } = {},
+): string => {
   const normalized = value.replace(/\r\n/g, '\n').trim()
   if (!normalized) return ''
+  const mode = options.mode ?? 'natural'
+  const normalizedLines = normalized
+    .split('\n')
+    .map((line) => normalizeSentence(line))
+    .filter(Boolean)
+    .join('\n')
   const compacted = dedupeConsecutiveParagraphs(
     dedupeConsecutiveLines(
-      shapeStructuredReply(
-        normalized
-          .split('\n')
-          .map((line) => normalizeSentence(line))
-          .filter(Boolean)
-          .join('\n'),
-      ),
+      mode === 'structured'
+        ? shapeStructuredReply(normalizedLines)
+        : naturalizeReply(normalizedLines),
     ),
   )
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+  if (mode !== 'structured') return compacted
   const lines = compacted.split('\n').filter(Boolean)
   if (
     lines.some((line) => STRUCTURED_LABEL_PATTERN.test(line)) &&

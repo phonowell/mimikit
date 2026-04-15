@@ -51,6 +51,9 @@ export const appendManagerBatchReply = async (params: {
         tasks: params.runtime.domain.tasks,
         workDir: params.runtime.config.workDir,
       }),
+      {
+        mode: params.results.length > 0 ? 'structured' : 'natural',
+      },
     )
   await appendManagerReply({
     runtime: params.runtime,

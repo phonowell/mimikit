@@ -101,7 +101,9 @@ export const processManagerBatch = async (params: {
         ? { roundId: managerRun.diagnostics.roundId }
         : {}),
     })
-    const normalizedReplyText = normalizeManagerReplyText(parsed.text)
+    const normalizedReplyText = normalizeManagerReplyText(parsed.text, {
+      mode: results.length > 0 ? 'structured' : 'natural',
+    })
     agentAppended = await appendManagerBatchReply({
       runtime,
       agentInputs,

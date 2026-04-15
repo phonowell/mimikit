@@ -12,6 +12,9 @@ type StructuredReply = {
 export const STRUCTURED_LABEL_PATTERN =
   /^(当前进展|下一步|当前风险|需要你决定)：/
 
+const NATURAL_REPLY_LABEL_PATTERN =
+  /^(当前进展|阶段结论|下一步|正在处理|当前风险|当前卡点|需要你决定|还需要你直接确认)[:：]/
+
 const toStructuredContent = (
   line: string,
 ): {
@@ -40,12 +43,20 @@ const toStructuredContent = (
     return { kind: 'next', content: trimmed.replace(/^正在处理：/, '').trim() }
   if (trimmed.startsWith('当前风险：'))
     return { kind: 'risk', content: trimmed.replace(/^当前风险：/, '').trim() }
+  if (trimmed.startsWith('当前卡点：'))
+    return { kind: 'risk', content: trimmed.replace(/^当前卡点：/, '').trim() }
   if (trimmed.startsWith('停下原因：'))
     return { kind: 'risk', content: trimmed }
   if (trimmed.startsWith('需要你决定：')) {
     return {
       kind: 'decision',
       content: trimmed.replace(/^需要你决定：/, '').trim(),
+    }
+  }
+  if (trimmed.startsWith('还需要你直接确认：')) {
+    return {
+      kind: 'decision',
+      content: trimmed.replace(/^还需要你直接确认：/, '').trim(),
     }
   }
   if (trimmed.startsWith('任务 ')) return { kind: 'progress', content: trimmed }
@@ -133,3 +144,12 @@ export const shapeStructuredReply = (value: string): string => {
 
   return structured.join('\n')
 }
+
+export const naturalizeReply = (value: string): string =>
+  value
+    .split('\n')
+    .map((line) =>
+      normalizeSentence(line).replace(NATURAL_REPLY_LABEL_PATTERN, '').trim(),
+    )
+    .filter(Boolean)
+    .join('\n')

@@ -1,5 +1,5 @@
 unregistered_action: |
-  Only registered actions are allowed: {{ registered_actions }}.
+  只允许使用已注册 action：{{ registered_actions }}。
 invalid_action_args_empty: |
   参数格式不符合要求。
 invalid_action_args_with_issues: |

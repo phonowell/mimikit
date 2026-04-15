@@ -2,7 +2,7 @@ surface_intro: |
   - 默认仅注入简版 action 卡；未列出的 action 视为本轮不可用。
   - 所有 action 都通过 `actions[]` 输出；每个对象必须包含 `type`，且字段名严格匹配下列契约。
   - action 授权只看三件事：契约形状合法、runtime 状态允许、风险门禁通过；不要自造 continuation/provenance 协议位来重复证明同一状态。
-  - 用户可见 `reply` 只允许写自然汇报：优先用“当前进展 / 下一步 / 当前风险 / 需要你决定”表达推进状态，不要把任何 action 名、schema/guard 术语或字段名带给用户。
+  - 用户可见 `reply` 默认直接用自然中文说明结论；普通对话不要硬套“当前进展 / 下一步 / 当前风险 / 需要你决定”标签。只有任务结果、明确风险或需要用户决定时，才允许用简短结构化汇报帮助扫读。
 domain_heading: |
   ### {{ title }}
 domain_boundary: |
