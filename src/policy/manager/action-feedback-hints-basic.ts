@@ -15,13 +15,6 @@ const formatTaskControlTargetSuffix = (target?: TaskControlTarget): string => {
   return parts.length > 0 ? `（${parts.join('，')}）` : ''
 }
 
-export const formatUnregisteredActionHint = (
-  registeredActions: string[],
-): string =>
-  renderActionFeedbackHint('unregistered_action', {
-    registered_actions: registeredActions.join(', '),
-  })
-
 export const formatInvalidActionArgsEmptyHint = (): string =>
   renderActionFeedbackHint('invalid_action_args_empty')
 

@@ -2,24 +2,6 @@ import { expect, test } from 'vitest'
 
 import { collectManagerActionValidationOutcome } from '../../src/policy/manager/action-feedback-collect.js'
 
-test('ask_user_choice is treated as an unregistered action', () => {
-  const feedback = collectManagerActionValidationOutcome([
-    {
-      type: 'ask_user_choice',
-      question: 'choose format',
-      default_option_id: 'option-a',
-      options: [
-        { id: 'option-a', label: 'A', reason: 'alpha' },
-        { id: 'option-b', label: 'B', reason: 'beta' },
-      ],
-    },
-  ])
-
-  expect(feedback.feedback).toHaveLength(1)
-  expect(feedback.feedback[0]?.action).toBe('ask_user_choice')
-  expect(feedback.feedback[0]?.error).toBe('unregistered_action')
-})
-
 test('assign_focus suppresses malformed auxiliary focus writes instead of surfacing invalid_action_args', () => {
   const outcome = collectManagerActionValidationOutcome([
     {

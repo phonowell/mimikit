@@ -138,21 +138,60 @@ test('parseManagerTurn allows remember_project_profile without source_quote', ()
   ])
 })
 
-test('parseManagerTurn rejects removed record_task_git action', () => {
-  expect(() =>
-    parseManagerTurn({
-      reply: '收到。',
-      actions: [
-        {
-          type: 'record_task_git',
-          task_id: 'task-auth-guard',
-          state: 'merged',
-          source_input_id: 'input-user',
-          source_quote: '已合并到 main',
+test('parseManagerTurn drops low-risk legacy top-level fields and unknown actions', () => {
+  const parsed = parseManagerTurn({
+    reply: '收到。',
+    decision: {
+      mode: 'escalate',
+      reason: 'evidence_conflict',
+    },
+    actions: [
+      {
+        type: 'record_task_git',
+        task_id: 'task-auth-guard',
+        state: 'merged',
+        source_input_id: 'input-user',
+        source_quote: '已合并到 main',
+      },
+      {
+        type: 'enqueue_task',
+        continuation_of: {
+          type: 'plan',
+          id: 'plan-current-anchor',
         },
-      ],
-    }),
-  ).toThrow()
+        task: {
+          title: '继续推进当前主线',
+          cwd: '/tmp/mimikit',
+          mode: 'write',
+          goal: '继续推进当前主线并落地修改',
+          in_scope: ['主线续跑'],
+          out_of_scope: [],
+          done_when: ['下一步主线完成'],
+          context_refs: [],
+          instructions: [],
+        },
+      },
+    ],
+  })
+
+  expect(parsed.reply).toBe('收到。')
+  expect(parsed.actions).toEqual([
+    {
+      type: 'enqueue_task',
+      task: {
+        title: '继续推进当前主线',
+        cwd: '/tmp/mimikit',
+        mode: 'write',
+        use_worktree: false,
+        goal: '继续推进当前主线并落地修改',
+        in_scope: ['主线续跑'],
+        out_of_scope: [],
+        done_when: ['下一步主线完成'],
+        context_refs: [],
+        instructions: [],
+      },
+    },
+  ])
 })
 
 test('parseManagerTurn accepts task_control cancel without instructions', () => {
@@ -176,18 +215,35 @@ test('parseManagerTurn accepts task_control cancel without instructions', () => 
   ])
 })
 
-test('parseManagerTurn rejects task_control cancel with instructions', () => {
-  expect(() =>
-    parseManagerTurn({
-      reply: '收到。',
-      actions: [
-        {
-          type: 'task_control',
-          task_id: 'task-cancel-target',
-          action: 'cancel',
-          instructions: ['stop this task'],
-        },
-      ],
-    }),
-  ).toThrow(/instructions/i)
+test('parseManagerTurn strips task_control instructions for non-resume actions', () => {
+  const parsed = parseManagerTurn({
+    reply: '收到。',
+    actions: [
+      {
+        type: 'task_control',
+        task_id: 'task-cancel-target',
+        action: 'cancel',
+        instructions: ['stop this task'],
+      },
+      {
+        type: 'task_control',
+        task_id: 'task-pause-target',
+        action: 'pause',
+        instructions: ['wait for user reply'],
+      },
+    ],
+  })
+
+  expect(parsed.actions).toEqual([
+    {
+      type: 'task_control',
+      task_id: 'task-cancel-target',
+      action: 'cancel',
+    },
+    {
+      type: 'task_control',
+      task_id: 'task-pause-target',
+      action: 'pause',
+    },
+  ])
 })

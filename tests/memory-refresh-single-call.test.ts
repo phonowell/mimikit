@@ -111,3 +111,49 @@ test('single-call drops invalid delete ids and downgrades to noop', async () => 
   expect(result.reason).toBe('invalid_delete_entry_ids')
   expect(result.deleteEntryIds).toEqual([])
 })
+
+test('single-call downgrades invalid json output to noop instead of throwing', async () => {
+  runManagerLlmCallMock.mockResolvedValue({
+    output: 'not-json-at-all',
+    elapsedMs: 5,
+  })
+
+  const result = await runMemoryRefreshSingleCall({
+    payload: buildPayload('# Empty memory'),
+  })
+
+  expect(result).toEqual({
+    mode: 'noop',
+    reason: 'memory_refresh_single_call_invalid_json',
+    entries: [],
+    deleteEntryIds: [],
+  })
+})
+
+test('single-call downgrades invalid schema output to noop instead of throwing', async () => {
+  runManagerLlmCallMock.mockResolvedValue({
+    output: JSON.stringify({
+      mode: 'patch',
+      reason: 'ready',
+      entries: [
+        {
+          title: 'Project preference',
+          content: 'Use strict typing',
+          evidence_ids: [123],
+        },
+      ],
+    }),
+    elapsedMs: 5,
+  })
+
+  const result = await runMemoryRefreshSingleCall({
+    payload: buildPayload('# Empty memory'),
+  })
+
+  expect(result).toEqual({
+    mode: 'noop',
+    reason: 'memory_refresh_single_call_invalid_schema',
+    entries: [],
+    deleteEntryIds: [],
+  })
+})

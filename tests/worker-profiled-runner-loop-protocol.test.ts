@@ -87,12 +87,29 @@ test('worker structured output schema requires reply and allows optional handoff
     },
   })
 
-  expect(() =>
+  expect(
     parseWorkerTurn({
       reply: 'legacy',
       legacy_done_marker: { status: 'done' },
     }),
-  ).toThrow()
+  ).toEqual({
+    reply: 'legacy',
+  })
+
+  expect(
+    parseWorkerTurn({
+      reply: '结论：已完成',
+      handoff: {
+        summary: '已完成',
+        unexpected: 'noise',
+      },
+    }),
+  ).toEqual({
+    reply: '结论：已完成',
+    handoff: {
+      summary: '已完成',
+    },
+  })
 })
 
 test('runWorkerLoop rejects non-structured worker output immediately', async () => {
@@ -113,6 +130,36 @@ test('runWorkerLoop rejects non-structured worker output immediately', async () 
           }),
       }),
     ).rejects.toThrow('missing structured result')
+  } finally {
+    await rm(stateDir, { recursive: true, force: true })
+  }
+})
+
+test('runWorkerLoop keeps reply when structured handoff is malformed', async () => {
+  const stateDir = await createTmpDir()
+  const task = createTask('malformed-handoff')
+
+  try {
+    const result = await runWorkerLoop({
+      stateDir,
+      task,
+      prompt: '执行测试任务',
+      archiveBase: { role: 'worker', taskId: task.id },
+      runModel: () =>
+        Promise.resolve({
+          output: JSON.stringify({
+            reply: '已完成主任务',
+            handoff: {
+              summary: 'done',
+              unexpected: 'noise',
+            },
+          }),
+          elapsedMs: 12,
+        }),
+    })
+
+    expect(result.output).toBe('已完成主任务')
+    expect(result.handoff).toEqual({ summary: 'done' })
   } finally {
     await rm(stateDir, { recursive: true, force: true })
   }

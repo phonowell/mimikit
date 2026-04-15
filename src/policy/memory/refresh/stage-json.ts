@@ -19,15 +19,34 @@ export const parseStageJson = <TSchema extends z.ZodTypeAny>(
   output: string,
   schema: TSchema,
   stage: string,
-): z.infer<TSchema> => {
+):
+  | {
+      ok: true
+      data: z.infer<TSchema>
+    }
+  | {
+      ok: false
+      reason: string
+    } => {
   const payload = pickJsonObject(output)
   let parsedRaw: unknown
   try {
     parsedRaw = JSON.parse(payload)
   } catch {
-    throw new Error(`memory_refresh_${stage}_invalid_json`)
+    return {
+      ok: false,
+      reason: `memory_refresh_${stage}_invalid_json`,
+    }
   }
   const parsed = schema.safeParse(parsedRaw)
-  if (!parsed.success) throw new Error(`memory_refresh_${stage}_invalid_schema`)
-  return parsed.data
+  if (!parsed.success) {
+    return {
+      ok: false,
+      reason: `memory_refresh_${stage}_invalid_schema`,
+    }
+  }
+  return {
+    ok: true,
+    data: parsed.data,
+  }
 }

@@ -141,11 +141,20 @@ export const runMemoryRefreshSingleCall = async (params: {
       ? { modelReasoningEffort: params.payload.modelReasoningEffort }
       : {}),
   })
-  const parsed = parseStageJson(
+  const parsedStage = parseStageJson(
     result.output,
     singleCallOutputSchema,
     'single_call',
   )
+  if (!parsedStage.ok) {
+    return {
+      mode: 'noop',
+      reason: parsedStage.reason,
+      entries: [],
+      deleteEntryIds: [],
+    }
+  }
+  const parsed = parsedStage.data
   const sanitized = sanitizeEntries(params.payload, parsed)
   const { entries, deleteEntryIds } = sanitized
   const hasPatch =

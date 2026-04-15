@@ -185,6 +185,7 @@
   - 不要把 result-only follow-up 做成专门的修复陷阱；reply-only 停下本身不是错误，高风险越权才是错误。
   - 任何额外证据门禁都不该拦低风险动作；read continuation、resume、低风险 plan/task 延续不应再做词面重叠授权。
   - 若某条规则的主要作用是逼模型“补协议形状”而不是降低真实风险，应直接删除。
+  - `2026-04-15` 追加禁令：低风险协议噪声、历史残留字段、附属结构错误（如未知 action、废弃顶层字段、`continuation_of`、非关键 `handoff` 噪声）禁止再进入主链致命失败路径。若不影响高风险副作用与真实状态判定，统一在 parse/normalize 入口丢弃、裁剪或 suppress；永远不要再把这类傻逼设计加回来。
   - `continuation_of` 一类 continuation 锚点若不进入 runtime 真状态，就不该存在于 action 合同里；纯靠模型回填的“我是在延续这条线”不是可靠状态。
   - “replacement-cancel”“resume-existing”这类 validation 预判，本质是在替 runtime 重复做状态决策；若 apply/runtime 已能基于 fingerprint 和状态机处理，应删除 validation 旁路。
   - 若 runtime 已能依据 fingerprint、对象归属或状态机做 `reuse/resume/continue`，validation 只能校验合法性，不能再加一层“先改成另一种 action 才能通过”的前置编排。
