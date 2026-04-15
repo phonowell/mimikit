@@ -71,6 +71,7 @@ export const buildManagerPromptPackets = (params: {
     workDir: params.workDir,
     plans: params.plans,
     workingFocusIds,
+    primaryWorkline: contextPacket.primaryWorkline,
     ...(contextPacket.latestResult?.taskId
       ? { latestResultTaskId: contextPacket.latestResult.taskId }
       : {}),

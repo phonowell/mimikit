@@ -52,6 +52,23 @@ export type ManagerContextPacket = {
   activeTaskIds?: string[] | undefined
   activePlanIds?: string[] | undefined
   workingFocusIds?: FocusId[] | undefined
+  primaryWorkline?:
+    | {
+        focusId: FocusId
+        source:
+          | 'user_input'
+          | 'task_result'
+          | 'trigger'
+          | 'plan_stage'
+          | 'open_task'
+          | 'recent_activity'
+        summary?: string | undefined
+        needsDecision?: boolean | undefined
+        sourceInputId?: string | undefined
+        sourceTaskId?: string | undefined
+        sourcePlanId?: string | undefined
+      }
+    | undefined
 }
 
 export type ManagerEnv = {

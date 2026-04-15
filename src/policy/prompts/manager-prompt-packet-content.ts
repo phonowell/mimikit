@@ -15,11 +15,49 @@ import type {
   PromptSelectionSummary,
 } from './manager-prompt-types.js'
 import type { PacketSections } from './select-packet-sections.js'
+import type { ManagerContextPacket } from '../../foundation/types/index.js'
 
 const buildWorkingFocusIdsPayload = (
   workingFocusIds: OrderedWorkingFocusIds,
 ): { working_focus_ids?: OrderedWorkingFocusIds } =>
   workingFocusIds.length > 0 ? { working_focus_ids: workingFocusIds } : {}
+
+const buildPrimaryWorklinePayload = (
+  primaryWorkline: ManagerContextPacket['primaryWorkline'],
+): {
+  primary_workline?: {
+    focus_id: string
+    source: string
+    summary?: string
+    needs_decision?: boolean
+    source_input_id?: string
+    source_task_id?: string
+    source_plan_id?: string
+  }
+} =>
+  primaryWorkline
+    ? {
+        primary_workline: {
+          focus_id: primaryWorkline.focusId,
+          source: primaryWorkline.source,
+          ...(primaryWorkline.summary
+            ? { summary: primaryWorkline.summary }
+            : {}),
+          ...(primaryWorkline.needsDecision !== undefined
+            ? { needs_decision: primaryWorkline.needsDecision }
+            : {}),
+          ...(primaryWorkline.sourceInputId
+            ? { source_input_id: primaryWorkline.sourceInputId }
+            : {}),
+          ...(primaryWorkline.sourceTaskId
+            ? { source_task_id: primaryWorkline.sourceTaskId }
+            : {}),
+          ...(primaryWorkline.sourcePlanId
+            ? { source_plan_id: primaryWorkline.sourcePlanId }
+            : {}),
+        },
+      }
+    : {}
 
 export const buildStatePacketPayload = (params: {
   selectedSections: PacketSections
@@ -29,6 +67,7 @@ export const buildStatePacketPayload = (params: {
   plans: BuildManagerPromptParams['plans']
   workingFocusIds: string[]
   latestResultTaskId?: string
+  primaryWorkline?: ManagerContextPacket['primaryWorkline']
 }): {
   payload: string
   selection: PromptSelectionSummary
@@ -62,6 +101,7 @@ export const buildStatePacketPayload = (params: {
   return {
     payload: stringifyPromptJson({
       ...buildWorkingFocusIdsPayload(params.workingFocusIds),
+      ...buildPrimaryWorklinePayload(params.primaryWorkline),
       ...(params.selectedSections.focus_list
         ? {
             focus_list: buildFocusListPromptPayload(

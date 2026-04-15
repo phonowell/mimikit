@@ -1,5 +1,6 @@
 import { truncateText } from '../../foundation/shared/text.js'
 import { newId, nowIso } from '../../foundation/shared/utils.js'
+import { resolvePrimaryWorkline } from '../manager/workline-priority.js'
 
 import {
   PREVIEW_MAX_CHARS,
@@ -105,6 +106,13 @@ export const buildManagerContextPacket = (params: {
     .reverse()
     .find((item) => item.role === 'user')
   const workingFocusIds = normalizeWorkingFocusIds(params.workingFocusIds)
+  const primaryWorkline = resolvePrimaryWorkline({
+    workingFocusIds,
+    inputs: params.inputs,
+    results: params.results,
+    tasks: params.tasks,
+    plans: params.plans,
+  })
   const packet: ManagerContextPacket = {
     id: `packet-${newId()}`,
     createdAt: nowIso(),
@@ -141,6 +149,7 @@ export const buildManagerContextPacket = (params: {
       .map((plan) => plan.id)
       .slice(0, MAX_PACKET_IDS),
     workingFocusIds,
+    ...(primaryWorkline ? { primaryWorkline } : {}),
   }
   return packet
 }
