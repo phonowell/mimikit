@@ -1,6 +1,4 @@
-import {
-  validateRegisteredManagerAction,
-} from './action-registry-definitions.js'
+import { validateRegisteredManagerAction } from './action-registry-definitions.js'
 
 import type { FeedbackContext } from './action-validation.js'
 import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'

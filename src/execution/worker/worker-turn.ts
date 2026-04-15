@@ -3,8 +3,8 @@ import { z } from 'zod'
 import { normalizeStrictOutputSchema } from '../../foundation/shared/strict-output-schema.js'
 
 import {
-  workerTaskHandoffSchema,
   type StructuredTaskHandoff,
+  workerTaskHandoffSchema,
 } from './task-handoff-protocol.js'
 import { type WorkerTurn, workerTurnSchema } from './worker-turn-schema.js'
 
@@ -21,7 +21,8 @@ const stripNullFields = (value: unknown): unknown => {
 }
 
 const stripUndefinedFields = (value: unknown): unknown => {
-  if (Array.isArray(value)) return value.map((item) => stripUndefinedFields(item))
+  if (Array.isArray(value))
+    return value.map((item) => stripUndefinedFields(item))
   if (!value || typeof value !== 'object') return value
 
   const normalized: Record<string, unknown> = {}
@@ -32,7 +33,9 @@ const stripUndefinedFields = (value: unknown): unknown => {
   return normalized
 }
 
-const normalizeWorkerHandoff = (value: unknown): StructuredTaskHandoff | undefined => {
+const normalizeWorkerHandoff = (
+  value: unknown,
+): StructuredTaskHandoff | undefined => {
   if (!value || typeof value !== 'object') return undefined
   const handoff = value as Record<string, unknown>
   const sanitized = {
