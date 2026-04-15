@@ -6,6 +6,33 @@ type RecoverOwnerDeps = NonNullable<
   Parameters<typeof recoverUnhealthyRuntimeOwner>[1]
 >
 
+const createBaseRuntimeOwnerInput = (port?: number) => ({
+  workDir: '/tmp/mimikit-state',
+  owner: {
+    lockPath: '/tmp/mimikit-state/.instance.lock',
+    ownerPid: 411,
+    runtimeId: 'runtime-411-live',
+    updatedAt: '2026-03-26T04:50:00.000Z',
+    ...(port ? { port } : {}),
+  },
+  port: 8787,
+})
+
+const createReachableDeps = (params?: {
+  killPidBestEffort?: RecoverOwnerDeps['killPidBestEffort']
+  resolveOwnerPort?: RecoverOwnerDeps['resolveOwnerPort']
+  isPortReachable?: RecoverOwnerDeps['isPortReachable']
+}): RecoverOwnerDeps => ({
+  isPidAlive: () => true,
+  killPidBestEffort:
+    params?.killPidBestEffort ?? vi.fn(() => Promise.resolve(true)),
+  resolveControlPid: () => 410,
+  resolveOwnerPort: params?.resolveOwnerPort ?? (() => null),
+  isPortReachable: params?.isPortReachable ?? (() => Promise.resolve(true)),
+  removeLockPath: () => Promise.resolve(),
+  removeLeasePath: () => Promise.resolve(),
+})
+
 test('recoverUnhealthyRuntimeOwner clears an unreachable webui runtime owner', async () => {
   const killPidBestEffort = vi
     .fn<RecoverOwnerDeps['killPidBestEffort']>()
@@ -65,25 +92,10 @@ test('recoverUnhealthyRuntimeOwner leaves a reachable runtime untouched', async 
 
   await expect(
     recoverUnhealthyRuntimeOwner(
-      {
-        workDir: '/tmp/mimikit-state',
-        owner: {
-          lockPath: '/tmp/mimikit-state/.instance.lock',
-          ownerPid: 411,
-          runtimeId: 'runtime-411-live',
-          updatedAt: '2026-03-26T04:50:00.000Z',
-        },
-        port: 8787,
-      },
-      {
-        isPidAlive: () => true,
+      createBaseRuntimeOwnerInput(),
+      createReachableDeps({
         killPidBestEffort,
-        resolveControlPid: () => 410,
-        resolveOwnerPort: () => null,
-        isPortReachable: () => Promise.resolve(true),
-        removeLockPath: () => Promise.resolve(),
-        removeLeasePath: () => Promise.resolve(),
-      },
+      }),
     ),
   ).resolves.toBe(false)
 
@@ -95,26 +107,12 @@ test('recoverUnhealthyRuntimeOwner probes the lease port before falling back to 
 
   await expect(
     recoverUnhealthyRuntimeOwner(
-      {
-        workDir: '/tmp/mimikit-state',
-        owner: {
-          lockPath: '/tmp/mimikit-state/.instance.lock',
-          ownerPid: 411,
-          runtimeId: 'runtime-411-live',
-          updatedAt: '2026-03-26T04:50:00.000Z',
-          port: 9898,
-        },
-        port: 8787,
-      },
-      {
-        isPidAlive: () => true,
+      createBaseRuntimeOwnerInput(9898),
+      createReachableDeps({
         killPidBestEffort,
-        resolveControlPid: () => 410,
         resolveOwnerPort: () => 7777,
         isPortReachable: (port) => Promise.resolve(port === 9898),
-        removeLockPath: () => Promise.resolve(),
-        removeLeasePath: () => Promise.resolve(),
-      },
+      }),
     ),
   ).resolves.toBe(false)
 
@@ -126,25 +124,12 @@ test('recoverUnhealthyRuntimeOwner uses the owner command port when lease lacks 
 
   await expect(
     recoverUnhealthyRuntimeOwner(
-      {
-        workDir: '/tmp/mimikit-state',
-        owner: {
-          lockPath: '/tmp/mimikit-state/.instance.lock',
-          ownerPid: 411,
-          runtimeId: 'runtime-411-live',
-          updatedAt: '2026-03-26T04:50:00.000Z',
-        },
-        port: 8787,
-      },
-      {
-        isPidAlive: () => true,
+      createBaseRuntimeOwnerInput(),
+      createReachableDeps({
         killPidBestEffort,
-        resolveControlPid: () => 410,
         resolveOwnerPort: () => 9898,
         isPortReachable: (port) => Promise.resolve(port === 9898),
-        removeLockPath: () => Promise.resolve(),
-        removeLeasePath: () => Promise.resolve(),
-      },
+      }),
     ),
   ).resolves.toBe(false)
 

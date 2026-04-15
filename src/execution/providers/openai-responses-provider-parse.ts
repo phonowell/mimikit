@@ -1,14 +1,13 @@
 import { randomUUID } from 'node:crypto'
 
+import { asRecord, asString } from '../../foundation/shared/json.js'
 import { normalizeUsage } from '../../foundation/shared/utils.js'
 
-import { asRecord, asString } from './provider-payload.js'
-
-import type { TokenUsage } from './token-usage.js'
 import type {
   OpenAiResponsesProviderRequest,
   ProviderPromptSegment,
 } from './types.js'
+import type { TokenUsage } from '../../foundation/types/base.js'
 
 const toDataPayload = (chunk: string): unknown => {
   const dataLines = chunk

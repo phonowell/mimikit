@@ -1,7 +1,3 @@
-import { mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-
 import { afterEach, expect, test, vi } from 'vitest'
 
 import { ProviderError } from '../src/execution/providers/provider-error.js'
@@ -14,10 +10,9 @@ import { readHistory } from '../src/persistence/history/store.js'
 import { recoverManagerBatchFailure } from '../src/policy/manager/loop-batch-flow.js'
 import { createTask } from '../src/work/orchestrator/task-lifecycle.js'
 
-import { createTestRuntimeState } from './helpers/runtime-state.js'
+import { createManagerBatchFailureRuntimeKit } from './helpers/manager-batch-failure.js'
 
 import type { TaskResult, UserInput } from '../src/foundation/types/index.js'
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const mockedSendTelegramTextMessage = vi.fn(() =>
   Promise.resolve({ messageId: 'tg-1' }),
@@ -28,39 +23,18 @@ vi.mock('../src/surface/channels/telegram/client.js', () => ({
     mockedSendTelegramTextMessage(...args),
 }))
 
-const tempDirs: string[] = []
+const runtimeKit = createManagerBatchFailureRuntimeKit()
 
-const createTmpDir = async (): Promise<string> => {
-  const dir = await mkdtemp(join(tmpdir(), 'mimikit-manager-failure-recover-'))
-  tempDirs.push(dir)
-  return dir
-}
-
-const createRuntime = async (): Promise<RuntimeState> => {
-  const workDir = await createTmpDir()
-  const runtime = await createTestRuntimeState({
-    workDir,
-    runtimeId: 'runtime-manager-failure-recover-test',
-    pausedQueue: true,
-  })
-  const now = new Date().toISOString()
-  runtime.domain.focuses.push({
-    id: 'focus-main',
-    title: 'Main',
-    status: 'active',
-    createdAt: now,
-    updatedAt: now,
-    lastActivityAt: now,
-  })
-  return runtime
-}
 afterEach(async () => {
   mockedSendTelegramTextMessage.mockClear()
-  for (const dir of tempDirs.splice(0, tempDirs.length))
-    await rm(dir, { recursive: true, force: true })
+  await runtimeKit.cleanup()
 })
+
 test('recoverManagerBatchFailure keeps task results pending for replay after manager fetch failure', async () => {
-  const runtime = await createRuntime()
+  const runtime = await runtimeKit.createRuntime({
+    runtimeId: 'runtime-manager-failure-recover-test',
+    tempDirPrefix: 'mimikit-manager-failure-recover-',
+  })
   const task = createTask(
     runtime.config.workDir,
     'fix manager issue',

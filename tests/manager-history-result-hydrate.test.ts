@@ -22,7 +22,7 @@ const { readMemoryEntriesMock } = vi.hoisted(() => ({
 vi.mock('../src/persistence/history/store.js', () => ({
   readHistory: readHistoryMock,
 }))
-vi.mock('../src/work/memory/store.js', () => ({
+vi.mock('../src/work/memory/entry-codec.js', () => ({
   readMemoryEntries: readMemoryEntriesMock,
 }))
 

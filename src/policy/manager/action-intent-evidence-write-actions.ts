@@ -2,6 +2,7 @@ import {
   buildAmbiguousWorklineHint,
   buildMissingIntentEvidenceHint,
   isSupportedByInputs,
+  type SupplementalEvidenceSource,
 } from './action-intent-evidence-match.js'
 import {
   requiresExplicitWriteEnqueueLaneEvidence,
@@ -14,9 +15,33 @@ import {
 } from './action-intent-evidence-write-target.js'
 import { buildTaskContractFromDraft } from './task-contract.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { Task, TaskPlan } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
+
+const buildMissingWriteIntentEvidenceHint = (
+  actionName: Parsed['type'],
+  supplementalEvidenceSources?: Set<SupplementalEvidenceSource>,
+): string =>
+  buildMissingIntentEvidenceHint({
+    actionName,
+    evidenceSources: supplementalEvidenceSources,
+  })
+
+const buildEnqueueWriteIntentContext = (params: {
+  item: Extract<Parsed, { type: 'enqueue_task' }>
+  inputTexts: string[]
+  taskById?: Map<string, Task>
+  planById?: Map<string, TaskPlan>
+  resultTaskIds?: Set<string>
+  defaultFocusId?: string
+}) => ({
+  item: params.item,
+  inputTexts: params.inputTexts,
+  ...(params.taskById ? { taskById: params.taskById } : {}),
+  ...(params.planById ? { planById: params.planById } : {}),
+  ...(params.resultTaskIds ? { resultTaskIds: params.resultTaskIds } : {}),
+  ...(params.defaultFocusId ? { defaultFocusId: params.defaultFocusId } : {}),
+})
 
 export const resolveEnqueueTaskIntentEvidenceHint = (params: {
   item: Extract<Parsed, { type: 'enqueue_task' }>
@@ -27,57 +52,30 @@ export const resolveEnqueueTaskIntentEvidenceHint = (params: {
   defaultFocusId?: string
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
-  const lowRiskContinuation = resolveLowRiskWriteEnqueueContinuation({
-    item: params.item,
-    inputTexts: params.inputTexts,
-    ...(params.taskById ? { taskById: params.taskById } : {}),
-    ...(params.planById ? { planById: params.planById } : {}),
-    ...(params.resultTaskIds ? { resultTaskIds: params.resultTaskIds } : {}),
-    ...(params.defaultFocusId ? { defaultFocusId: params.defaultFocusId } : {}),
-  })
+  const enqueueContext = buildEnqueueWriteIntentContext(params)
+  const lowRiskContinuation =
+    resolveLowRiskWriteEnqueueContinuation(enqueueContext)
   if (lowRiskContinuation.ok) return undefined
   if (lowRiskContinuation.reason === 'ambiguous_workline')
     return buildAmbiguousWorklineHint(lowRiskContinuation.candidateRefs)
 
-  if (
-    supportsDirectWriteEnqueueContinuationTarget({
-      item: params.item,
-      inputTexts: params.inputTexts,
-      ...(params.taskById ? { taskById: params.taskById } : {}),
-      ...(params.planById ? { planById: params.planById } : {}),
-      ...(params.resultTaskIds ? { resultTaskIds: params.resultTaskIds } : {}),
-      ...(params.defaultFocusId
-        ? { defaultFocusId: params.defaultFocusId }
-        : {}),
-    })
-  )
+  if (supportsDirectWriteEnqueueContinuationTarget(enqueueContext))
     return undefined
 
-  if (
-    requiresExplicitWriteEnqueueLaneEvidence({
-      item: params.item,
-      inputTexts: params.inputTexts,
-      ...(params.taskById ? { taskById: params.taskById } : {}),
-      ...(params.planById ? { planById: params.planById } : {}),
-      ...(params.resultTaskIds ? { resultTaskIds: params.resultTaskIds } : {}),
-      ...(params.defaultFocusId
-        ? { defaultFocusId: params.defaultFocusId }
-        : {}),
-    })
-  ) {
-    return buildMissingIntentEvidenceHint({
-      actionName: params.item.type,
-      evidenceSources: params.supplementalEvidenceSources,
-    })
+  if (requiresExplicitWriteEnqueueLaneEvidence(enqueueContext)) {
+    return buildMissingWriteIntentEvidenceHint(
+      params.item.type,
+      params.supplementalEvidenceSources,
+    )
   }
 
   const contract = buildTaskContractFromDraft(params.item.task)
   if (!contract) return undefined
   if (params.inputTexts.length === 0) {
-    return buildMissingIntentEvidenceHint({
-      actionName: params.item.type,
-      evidenceSources: params.supplementalEvidenceSources,
-    })
+    return buildMissingWriteIntentEvidenceHint(
+      params.item.type,
+      params.supplementalEvidenceSources,
+    )
   }
   const supported = isSupportedByInputs({
     candidates: [params.item.task.title, contract.goal, contract.scope],
@@ -90,10 +88,10 @@ export const resolveEnqueueTaskIntentEvidenceHint = (params: {
   })
   return supported
     ? undefined
-    : buildMissingIntentEvidenceHint({
-        actionName: params.item.type,
-        evidenceSources: params.supplementalEvidenceSources,
-      })
+    : buildMissingWriteIntentEvidenceHint(
+        params.item.type,
+        params.supplementalEvidenceSources,
+      )
 }
 
 export const resolveSetPlanIntentEvidenceHint = (params: {
@@ -103,10 +101,10 @@ export const resolveSetPlanIntentEvidenceHint = (params: {
   supplementalEvidenceSources?: Set<SupplementalEvidenceSource>
 }): string | undefined => {
   if (params.inputTexts.length === 0) {
-    return buildMissingIntentEvidenceHint({
-      actionName: params.item.type,
-      evidenceSources: params.supplementalEvidenceSources,
-    })
+    return buildMissingWriteIntentEvidenceHint(
+      params.item.type,
+      params.supplementalEvidenceSources,
+    )
   }
 
   if (
@@ -116,10 +114,10 @@ export const resolveSetPlanIntentEvidenceHint = (params: {
       ...(params.planById ? { planById: params.planById } : {}),
     })
   ) {
-    return buildMissingIntentEvidenceHint({
-      actionName: params.item.type,
-      evidenceSources: params.supplementalEvidenceSources,
-    })
+    return buildMissingWriteIntentEvidenceHint(
+      params.item.type,
+      params.supplementalEvidenceSources,
+    )
   }
 
   if (
@@ -148,8 +146,8 @@ export const resolveSetPlanIntentEvidenceHint = (params: {
   })
   return supported
     ? undefined
-    : buildMissingIntentEvidenceHint({
-        actionName: params.item.type,
-        evidenceSources: params.supplementalEvidenceSources,
-      })
+    : buildMissingWriteIntentEvidenceHint(
+        params.item.type,
+        params.supplementalEvidenceSources,
+      )
 }

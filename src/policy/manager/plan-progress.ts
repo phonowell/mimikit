@@ -2,7 +2,7 @@ import { clipCompactText } from '../../foundation/shared/text.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { GLOBAL_FOCUS_ID } from '../../work/focus/constants.js'
-import { updateRuntimePlan } from '../../work/orchestrator/runtime-domain-write.js'
+import { updateRuntimePlan } from '../../work/orchestrator/plan-state-write.js'
 import { resolveTaskResultSummary } from '../../work/shared/task-state.js'
 
 import {

@@ -5,21 +5,16 @@ import { readProviderErrorCode } from '../../src/execution/providers/provider-er
 
 import { createHomeDir, trackHomeDir, writeCodexConfig } from './testkit.js'
 
-test('treats invalid api key 401 from responses endpoint as retryable transient failure', async () => {
+const prepareProviderEnv = async (): Promise<void> => {
   const homeDir = await createHomeDir()
   trackHomeDir(homeDir)
   await writeCodexConfig(homeDir)
   process.env.HOME = homeDir
   process.env.AICODING_API_KEY = 'provider-env-key'
+}
 
-  globalThis.fetch = vi.fn<typeof fetch>().mockResolvedValue(
-    new Response(JSON.stringify({ error: 'Invalid API key' }), {
-      status: 401,
-      headers: { 'content-type': 'application/json' },
-    }),
-  )
-
-  const error = await openAiResponsesProvider
+const runProviderToError = (): Promise<unknown> =>
+  openAiResponsesProvider
     .run({
       provider: 'openai-responses',
       role: 'manager',
@@ -30,6 +25,18 @@ test('treats invalid api key 401 from responses endpoint as retryable transient 
     })
     .catch((rejected: unknown) => rejected)
 
+test('treats invalid api key 401 from responses endpoint as retryable transient failure', async () => {
+  await prepareProviderEnv()
+
+  globalThis.fetch = vi.fn<typeof fetch>().mockResolvedValue(
+    new Response(JSON.stringify({ error: 'Invalid API key' }), {
+      status: 401,
+      headers: { 'content-type': 'application/json' },
+    }),
+  )
+
+  const error = await runProviderToError()
+
   expect(error).toMatchObject({
     retryable: true,
   })
@@ -38,11 +45,7 @@ test('treats invalid api key 401 from responses endpoint as retryable transient 
 })
 
 test('treats missing responses completed event as retryable transient failure', async () => {
-  const homeDir = await createHomeDir()
-  trackHomeDir(homeDir)
-  await writeCodexConfig(homeDir)
-  process.env.HOME = homeDir
-  process.env.AICODING_API_KEY = 'provider-env-key'
+  await prepareProviderEnv()
 
   const incompleteSse = [
     'event: response.output_text.done',
@@ -57,16 +60,7 @@ test('treats missing responses completed event as retryable transient failure', 
     }),
   )
 
-  const error = await openAiResponsesProvider
-    .run({
-      provider: 'openai-responses',
-      role: 'manager',
-      prompt: 'ping',
-      workDir: process.cwd(),
-      timeoutMs: 30_000,
-      model: 'gpt-5',
-    })
-    .catch((rejected: unknown) => rejected)
+  const error = await runProviderToError()
 
   expect(error).toMatchObject({
     retryable: true,

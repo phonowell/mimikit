@@ -17,8 +17,8 @@ import { formatAuxiliaryWriteFailedHint } from './action-feedback-hints-basic.js
 import { resolveActionFocusId } from './action-focus-id.js'
 import { rememberProjectProfileActionSchema } from './manager-turn-schema.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 export const applyRememberProjectProfileAction = async (
   runtime: ManagerRuntime,

@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 
+import {
+  normalizeEntryInline,
+  normalizeEntryText,
+} from '../../foundation/shared/markdown-entry.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { runSerialized } from '../../persistence/storage/serialized-lock.js'
 
@@ -16,14 +20,9 @@ import {
   type RememberProjectProfileResult,
 } from './entry-types.js'
 
-const normalizeInline = (value: string): string =>
-  value.replace(/\s+/g, ' ').trim()
+const normalizeInline = (value: string): string => normalizeEntryInline(value)
 
-const normalizeText = (value: string): string =>
-  value
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+const normalizeText = (value: string): string => normalizeEntryText(value)
 
 const buildEntryId = (content: string): string =>
   `${PROJECT_PROFILE_ENTRY_ID_PREFIX}${createHash('sha1').update(content).digest('hex').slice(0, 12)}`

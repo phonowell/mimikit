@@ -1,12 +1,12 @@
-import { formatUnregisteredActionHint } from './action-feedback-hints.js'
+import { formatUnregisteredActionHint } from './action-feedback-hints-basic.js'
 import {
   REGISTERED_MANAGER_ACTIONS,
   validateRegisteredManagerAction,
 } from './action-registry-definitions.js'
 
 import type { FeedbackContext } from './action-validation.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { ManagerActionFeedback } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 const UNREGISTERED_ACTION_HINT = formatUnregisteredActionHint(
   [...REGISTERED_MANAGER_ACTIONS].map((name) => `M:${name}`),

@@ -9,6 +9,7 @@ import { resolveManagerPacketMode } from '../prompts/manager-context-packet.js'
 import { resolveManagerContextBudgetDecision } from './context-budget.js'
 import { runManager } from './runner.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
   ManagerActionFeedback,
   ManagerEnv,
@@ -20,7 +21,6 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 const buildManagerEnv = (
   runtime: ManagerRuntime,

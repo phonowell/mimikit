@@ -2,8 +2,8 @@ import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 
 import type { ApplyResult } from './action-registry-shared.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { ManagerActionFeedback } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 export type ActionLifecycleStage =
   | 'dispatch'

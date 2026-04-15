@@ -25,9 +25,9 @@ import {
   resolveWorkerPromptFromDraft,
 } from './task-contract.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { WorkerProfile } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 export type ApplyTaskActionsOptions = {
   suppressRunTask?: boolean

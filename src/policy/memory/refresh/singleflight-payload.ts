@@ -1,7 +1,7 @@
 import { truncateText } from '../../../foundation/shared/text.js'
 import { type HistoryMessage } from '../../../foundation/types/index.js'
+import { readTextFileIfExists } from '../../../persistence/fs/read-text.js'
 import { readHistory } from '../../../persistence/history/store.js'
-import { readMemoryMarkdown } from '../../../work/memory/store.js'
 import { type MemoryScoreContext } from '../entry-score.js'
 
 import type { MemoryRefreshPayload } from './types.js'
@@ -49,7 +49,7 @@ export const buildMemoryRefreshPayload = async (
   const visible = history
     .filter((item) => isMemoryRefreshSignal(item))
     .slice(-MAX_SIGNALS)
-  const memoryMarkdown = await readMemoryMarkdown(runtime.paths.memoryFile)
+  const memoryMarkdown = await readTextFileIfExists(runtime.paths.memoryFile)
   return {
     workDir: runtime.config.workDir,
     model: runtime.config.manager.model,

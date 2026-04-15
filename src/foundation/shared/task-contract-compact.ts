@@ -1,3 +1,9 @@
+import {
+  clampNormalizedTextList,
+  normalizeTextLine,
+  splitNormalizedClauses,
+} from './normalized-text.js'
+
 import type { TaskContract } from '../types/index.js'
 
 type ContractCompactLimits = {
@@ -7,24 +13,8 @@ type ContractCompactLimits = {
   contextRefs: number
 }
 
-const clausePattern = /\s*(?:\r?\n|；|;)\s*/u
-
-const normalizeLine = (value: string): string => value.trim()
-
-const normalizeList = (values: readonly string[]): string[] => {
-  const seen = new Set<string>()
-  const normalized: string[] = []
-  for (const item of values) {
-    const trimmed = normalizeLine(item)
-    if (!trimmed || seen.has(trimmed)) continue
-    seen.add(trimmed)
-    normalized.push(trimmed)
-  }
-  return normalized
-}
-
 const splitClauses = (value: string | undefined): string[] =>
-  !value ? [] : normalizeList(value.split(clausePattern))
+  splitNormalizedClauses(value)
 
 const joinClauses = (
   value: string | undefined,
@@ -35,17 +25,17 @@ const joinClauses = (
 }
 
 const clampList = (values: readonly string[], max: number): string[] =>
-  normalizeList(values).slice(0, max)
+  clampNormalizedTextList(values, max)
 
 const compactTaskContract = (
   contract: TaskContract,
   limits: ContractCompactLimits,
 ): TaskContract => {
   const compacted: TaskContract = {
-    goal: normalizeLine(contract.goal),
+    goal: normalizeTextLine(contract.goal),
     scope:
       joinClauses(contract.scope, limits.scopeClauses) ??
-      normalizeLine(contract.scope),
+      normalizeTextLine(contract.scope),
     acceptance: clampList(contract.acceptance, limits.acceptanceItems),
   }
   const outOfScope = joinClauses(contract.outOfScope, limits.outOfScopeClauses)

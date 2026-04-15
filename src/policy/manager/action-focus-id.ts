@@ -2,7 +2,7 @@ import {
   ensureFocus,
   resolveDefaultFocusId,
   touchFocus,
-} from '../../work/focus/index.js'
+} from '../../work/focus/state.js'
 
 import type { FocusId } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'

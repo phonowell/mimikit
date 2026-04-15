@@ -1,7 +1,7 @@
+import { asRecord, asString } from '../../foundation/shared/json.js'
 import { normalizeUsage } from '../../foundation/shared/utils.js'
 
 import { normalizeCodexOutputSchema } from './codex-sdk-provider-helpers.js'
-import { asRecord, asString } from './provider-payload.js'
 
 import type { CodexSdkProviderRequest } from './types.js'
 

@@ -6,7 +6,7 @@ import {
   createSystemEventRecord,
   type SystemEventName,
 } from '../../surface/shared/system-event.js'
-import { GLOBAL_FOCUS_ID } from '../../work/focus/index.js'
+import { GLOBAL_FOCUS_ID } from '../../work/focus/constants.js'
 
 import type {
   FocusId,

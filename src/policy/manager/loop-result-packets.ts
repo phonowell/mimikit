@@ -1,6 +1,6 @@
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import { taskResultSchema } from '../../persistence/storage/runtime-snapshot-schema.js'
+import { taskResultSchema } from '../../persistence/storage/runtime-snapshot-task-schemas.js'
 
 import type { TaskResult } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'

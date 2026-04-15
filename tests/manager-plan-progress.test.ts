@@ -6,58 +6,26 @@ import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 import { applyPlanCompletionState } from '../src/policy/manager/plan-progress.js'
 import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 
-import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
-
-const buildScheduledTask = (cwd: string) => ({
-  title: 'scheduled title',
-  cwd,
-  mode: 'write' as const,
-  goal: 'Deliver requested outcome',
-  in_scope: ['Single runnable worker task'],
-  out_of_scope: [],
-  done_when: ['Return concrete output'],
-  context_refs: [],
-  instructions: ['deliver scheduled work'],
-})
-
-const createRuntime = async (): Promise<RuntimeState> => {
-  const runtime = await createTestRuntimeState({ pausedQueue: true })
-  runtime.config.codex.enabled = true
-  return runtime
-}
+import {
+  buildScheduledTask,
+  createPlanProgressRuntime,
+  createTriggeredEnqueuePlan,
+} from './helpers/manager-plan-progress.js'
 
 test('enqueue_task auto-links a triggered plan to the created task', async () => {
-  const runtime = await createRuntime()
+  const runtime = await createPlanProgressRuntime()
   const taskCwd = `${runtime.config.workDir}/manager-plan-progress-task`
   await mkdir(taskCwd, { recursive: true })
-  runtime.domain.taskPlans.push({
-    id: 'plan-triggered',
-    title: 'scheduled title',
-    focusId: GLOBAL_FOCUS_ID,
-    priority: 'normal',
-    status: 'active',
-    trigger: {
-      mode: 'scheduled_at',
-      scheduledAt: '2026-02-13T00:00:00.000Z',
-    },
-    effect: {
-      kind: 'enqueue_task',
+  runtime.domain.taskPlans.push(
+    createTriggeredEnqueuePlan({
+      id: 'plan-triggered',
+      title: 'scheduled title',
+      cwd: taskCwd,
+      focusId: GLOBAL_FOCUS_ID,
       taskKey: 'task-key-triggered',
-      taskTemplate: {
-        title: 'scheduled title',
-        executionSpecId: 'spec-triggered',
-        cwd: taskCwd,
-        resourceMode: 'write',
-      },
-    },
-    createdAt: '2026-02-13T00:00:00.000Z',
-    updatedAt: '2026-02-13T00:00:00.000Z',
-    runtime: {
-      runCount: 1,
-    },
-  })
+      executionSpecId: 'spec-triggered',
+    }),
+  )
 
   await applyTaskActions(
     runtime,
@@ -79,33 +47,26 @@ test('enqueue_task auto-links a triggered plan to the created task', async () =>
 })
 
 test('applyPlanCompletionState writes stage digest from the latest anchored task result', async () => {
-  const runtime = await createRuntime()
-  runtime.domain.taskPlans.push({
-    id: 'plan-stage-digest',
-    title: 'auth guard stage digest',
-    focusId: GLOBAL_FOCUS_ID,
-    priority: 'normal',
-    status: 'active',
-    trigger: {
-      mode: 'on_worker_slot_freed',
-    },
-    effect: {
-      kind: 'enqueue_task',
+  const runtime = await createPlanProgressRuntime()
+  runtime.domain.taskPlans.push(
+    createTriggeredEnqueuePlan({
+      id: 'plan-stage-digest',
+      title: 'auth guard stage digest',
+      cwd: '/repo/auth-guard',
+      focusId: GLOBAL_FOCUS_ID,
       taskKey: 'task-key-stage-digest',
-      taskTemplate: {
-        title: 'auth guard stage digest task',
-        executionSpecId: 'spec-stage-digest',
-        cwd: '/repo/auth-guard',
-        resourceMode: 'write',
+      executionSpecId: 'spec-stage-digest',
+      taskTemplateTitle: 'auth guard stage digest task',
+      trigger: {
+        mode: 'on_worker_slot_freed',
       },
-    },
-    createdAt: '2026-04-02T00:00:00.000Z',
-    updatedAt: '2026-04-02T00:00:00.000Z',
-    runtime: {
-      runCount: 1,
-      lastTaskId: 'task-stage-digest',
-    },
-  })
+      createdAt: '2026-04-02T00:00:00.000Z',
+      runtime: {
+        runCount: 1,
+        lastTaskId: 'task-stage-digest',
+      },
+    }),
+  )
 
   applyPlanCompletionState(runtime, [
     {
@@ -133,40 +94,33 @@ test('applyPlanCompletionState writes stage digest from the latest anchored task
 })
 
 test('applyPlanCompletionState refreshes stage digest even when the latest anchored result has no handoff summary or risk text', async () => {
-  const runtime = await createRuntime()
-  runtime.domain.taskPlans.push({
-    id: 'plan-stage-digest-fallback',
-    title: 'auth guard stage digest fallback',
-    focusId: GLOBAL_FOCUS_ID,
-    priority: 'normal',
-    status: 'active',
-    trigger: {
-      mode: 'on_worker_slot_freed',
-    },
-    effect: {
-      kind: 'enqueue_task',
+  const runtime = await createPlanProgressRuntime()
+  runtime.domain.taskPlans.push(
+    createTriggeredEnqueuePlan({
+      id: 'plan-stage-digest-fallback',
+      title: 'auth guard stage digest fallback',
+      cwd: '/repo/auth-guard',
+      focusId: GLOBAL_FOCUS_ID,
       taskKey: 'task-key-stage-digest-fallback',
-      taskTemplate: {
-        title: 'auth guard stage digest fallback task',
-        executionSpecId: 'spec-stage-digest-fallback',
-        cwd: '/repo/auth-guard',
-        resourceMode: 'write',
+      executionSpecId: 'spec-stage-digest-fallback',
+      taskTemplateTitle: 'auth guard stage digest fallback task',
+      trigger: {
+        mode: 'on_worker_slot_freed',
       },
-    },
-    createdAt: '2026-04-02T00:00:00.000Z',
-    updatedAt: '2026-04-02T00:00:00.000Z',
-    runtime: {
-      runCount: 1,
-      lastTaskId: 'task-stage-digest-fallback',
-      stage: {
-        summary: '旧阶段摘要',
-        risk: '旧风险',
-        needsDecision: false,
-        sourceTaskId: 'task-stage-digest-old',
-        updatedAt: '2026-04-02T00:05:00.000Z',
+      createdAt: '2026-04-02T00:00:00.000Z',
+      runtime: {
+        runCount: 1,
+        lastTaskId: 'task-stage-digest-fallback',
+        stage: {
+          summary: '旧阶段摘要',
+          risk: '旧风险',
+          needsDecision: false,
+          sourceTaskId: 'task-stage-digest-old',
+          updatedAt: '2026-04-02T00:05:00.000Z',
+        },
       },
-    },
-  })
+    }),
+  )
 
   applyPlanCompletionState(runtime, [
     {

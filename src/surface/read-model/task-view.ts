@@ -1,11 +1,8 @@
 import { compareIsoDesc } from '../../foundation/shared/time.js'
+import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 import { resolveTaskChangeAt } from '../../work/shared/task-state.js'
 
-import {
-  deriveTaskGitClosure,
-  type TaskGitClosureView,
-} from './task-git-closure.js'
 import {
   resolveDispatchLockDetail,
   type TaskDispatchLockDetail,
@@ -13,6 +10,7 @@ import {
 
 import type {
   Task,
+  TaskGitLifecycle,
   TaskResourceMode,
   TaskResultStopReason,
   TaskStatus,
@@ -36,7 +34,7 @@ export type TaskView = {
   title: string
   resourceMode: TaskResourceMode
   git?: Task['git']
-  gitClosure?: TaskGitClosureView
+  gitClosure?: TaskGitLifecycle
   createdAt: string
   changeAt: string
   startedAt?: string
@@ -110,7 +108,7 @@ const taskToView = (
     status === 'running'
       ? snapshot?.liveOutputByTaskId?.get(task.id)?.trim()
       : undefined
-  const gitClosure = deriveTaskGitClosure(task)
+  const gitClosure = resolveTaskGitLifecycle(task)
   return {
     id: task.id,
     kind: 'task',

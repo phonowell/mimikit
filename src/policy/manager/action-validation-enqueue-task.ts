@@ -1,10 +1,10 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 
-import { formatEnqueueTaskBatchConflictHint } from './action-feedback-hints.js'
+import { formatEnqueueTaskBatchConflictHint } from './action-feedback-hints-basic.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
-import type { Parsed } from '../actions/model/spec.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 
 const normalizePath = (value: string): string => resolve(value.trim())
 

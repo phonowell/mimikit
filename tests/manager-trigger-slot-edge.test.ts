@@ -1,12 +1,13 @@
-import { mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
-
 import PQueue from 'p-queue'
 import { beforeEach, expect, test, vi } from 'vitest'
 
 import { safeProcessLoopTriggers } from '../src/policy/manager/loop-triggers.js'
 import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 
+import {
+  createCapacityPlan,
+  waitForCondition,
+} from './helpers/manager-trigger-capacity.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
 
 import type { WorkerLlmResult } from '../src/execution/worker/run-retry.js'
@@ -20,18 +21,6 @@ vi.mock('../src/execution/worker/run-retry.js', () => ({
   runTaskWithRetry: runTaskWithRetryMock,
 }))
 
-const buildTaskDraft = (title: string, cwd: string) => ({
-  title,
-  cwd,
-  mode: 'write' as const,
-  goal: `Deliver ${title}`,
-  in_scope: [`Only handle ${title}`],
-  out_of_scope: [],
-  done_when: [`${title} finished`],
-  context_refs: [],
-  instructions: [],
-})
-
 const createRuntime = async (): Promise<RuntimeState> => {
   const runtime = await createTestRuntimeState({ maxConcurrent: 2 })
   runtime.config.codex.enabled = true
@@ -41,58 +30,28 @@ const createRuntime = async (): Promise<RuntimeState> => {
   return runtime
 }
 
-const createEnqueuePlan = async (
-  id: string,
-  title: string,
-  runtime: RuntimeState,
-) => {
-  const now = new Date().toISOString()
-  const taskCwd = join(runtime.config.workDir, title)
-  await mkdir(taskCwd, { recursive: true })
-  const task = buildTaskDraft(title, taskCwd)
-  await import('../src/policy/manager/action-plan-effect-enqueue.js').then(
-    async ({ buildPlanEnqueueTaskEffect }) => {
-      const effect = await buildPlanEnqueueTaskEffect({
-        stateDir: runtime.config.workDir,
-        focusId: GLOBAL_FOCUS_ID,
-        task,
-      })
-      runtime.domain.taskPlans.push({
-        id,
-        title,
-        focusId: GLOBAL_FOCUS_ID,
-        priority: 'normal',
-        status: 'active',
-        trigger: { mode: 'on_worker_slot_freed' },
-        effect,
-        createdAt: now,
-        updatedAt: now,
-        runtime: { runCount: 0 },
-      })
-    },
-  )
-}
-
-const waitForCondition = async (
-  check: () => boolean,
-  timeoutMs = 3_000,
-): Promise<void> => {
-  const startedAt = Date.now()
-  while (!check()) {
-    if (Date.now() - startedAt > timeoutMs)
-      throw new Error(`wait_timeout_${timeoutMs}ms`)
-    await new Promise<void>((resolve) => setTimeout(resolve, 10))
-  }
-}
-
 beforeEach(() => {
   runTaskWithRetryMock.mockReset()
 })
 
 test('safeProcessLoopTriggers preserves release-edge detection after a plan consumes the freed slot', async () => {
   const runtime = await createRuntime()
-  await createEnqueuePlan('plan-edge-1', 'task-one', runtime)
-  await createEnqueuePlan('plan-edge-2', 'task-two', runtime)
+  const firstPlan = await createCapacityPlan(
+    runtime,
+    'task-one',
+    { mode: 'on_worker_slot_freed' },
+    GLOBAL_FOCUS_ID,
+  )
+  firstPlan.id = 'plan-edge-1'
+  runtime.domain.taskPlans.push(firstPlan)
+  const secondPlan = await createCapacityPlan(
+    runtime,
+    'task-two',
+    { mode: 'on_worker_slot_freed' },
+    GLOBAL_FOCUS_ID,
+  )
+  secondPlan.id = 'plan-edge-2'
+  runtime.domain.taskPlans.push(secondPlan)
 
   let resolveFirstRun: (() => void) | undefined
   const firstRunDone = new Promise<void>((resolve) => {

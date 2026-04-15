@@ -5,7 +5,7 @@ import {
 import {
   formatRememberMemoryNotStableHint,
   formatStableDigestIssueHint,
-} from './action-feedback-hints.js'
+} from './action-feedback-hints-basic.js'
 import { validateRememberProjectProfileIntentEvidence } from './action-intent-evidence-dialog-memory.js'
 import {
   suppressed,
@@ -13,8 +13,8 @@ import {
 } from './action-validation-helpers.js'
 import { rememberProjectProfileActionSchema } from './manager-turn-schema.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { UserInput } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 type RememberProjectProfileValidationContext = {
   inputs?: UserInput[]

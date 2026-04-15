@@ -11,7 +11,7 @@ import type {
   ManagerActionDefinition,
 } from './action-registry-shared.js'
 import type { FeedbackContext, ValidationIssue } from './action-validation.js'
-import type { Parsed } from '../actions/model/spec.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 
 export const ACTION_DEFINITIONS = [
   ...TASK_ACTION_DEFINITIONS,

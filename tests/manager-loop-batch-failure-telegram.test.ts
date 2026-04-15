@@ -1,17 +1,12 @@
-import { mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-
 import { afterEach, expect, test, vi } from 'vitest'
 
 import { publishUserInput } from '../src/kernel/streams/queues.js'
 import { readHistory } from '../src/persistence/history/store.js'
 import { recoverManagerBatchFailure } from '../src/policy/manager/loop-batch-flow.js'
 
-import { createTestRuntimeState } from './helpers/runtime-state.js'
+import { createManagerBatchFailureRuntimeKit } from './helpers/manager-batch-failure.js'
 
 import type { UserInput } from '../src/foundation/types/index.js'
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
 
 const mockedSendTelegramTextMessage = vi.fn(() =>
   Promise.resolve({ messageId: 'tg-1' }),
@@ -22,41 +17,18 @@ vi.mock('../src/surface/channels/telegram/client.js', () => ({
     mockedSendTelegramTextMessage(...args),
 }))
 
-const tempDirs: string[] = []
-
-const createTmpDir = async (): Promise<string> => {
-  const dir = await mkdtemp(join(tmpdir(), 'mimikit-manager-failure-tg-'))
-  tempDirs.push(dir)
-  return dir
-}
-
-const createRuntime = async (): Promise<RuntimeState> => {
-  const workDir = await createTmpDir()
-  const runtime = await createTestRuntimeState({
-    workDir,
-    runtimeId: 'runtime-manager-failure-telegram-test',
-    pausedQueue: true,
-  })
-  const now = new Date().toISOString()
-  runtime.domain.focuses.push({
-    id: 'focus-main',
-    title: 'Main',
-    status: 'active',
-    createdAt: now,
-    updatedAt: now,
-    lastActivityAt: now,
-  })
-  return runtime
-}
+const runtimeKit = createManagerBatchFailureRuntimeKit()
 
 afterEach(async () => {
   mockedSendTelegramTextMessage.mockClear()
-  for (const dir of tempDirs.splice(0, tempDirs.length))
-    await rm(dir, { recursive: true, force: true })
+  await runtimeKit.cleanup()
 })
 
 test('recoverManagerBatchFailure dispatches fallback reply to telegram source input', async () => {
-  const runtime = await createRuntime()
+  const runtime = await runtimeKit.createRuntime({
+    runtimeId: 'runtime-manager-failure-telegram-test',
+    tempDirPrefix: 'mimikit-manager-failure-tg-',
+  })
   runtime.config.telegram.enabled = true
   runtime.config.telegram.botToken = 'bot-token'
   runtime.config.telegram.chatId = 'telegram-fallback-chat'

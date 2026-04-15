@@ -2,7 +2,7 @@ import { renderPromptTemplate } from '../../foundation/prompting/format.js'
 import { loadPromptTemplate } from '../../foundation/prompting/prompt-loader.js'
 import { nowIso } from '../../foundation/shared/utils.js'
 import { createSystemEventRecord } from '../../surface/shared/system-event.js'
-import { GLOBAL_FOCUS_ID } from '../../work/focus/index.js'
+import { GLOBAL_FOCUS_ID } from '../../work/focus/constants.js'
 
 import { appendHistory } from './store.js'
 

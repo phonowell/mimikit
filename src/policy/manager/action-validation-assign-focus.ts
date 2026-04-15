@@ -6,7 +6,7 @@ import {
 import { assignFocusActionSchema } from './manager-turn-schema.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
-import type { Parsed } from '../actions/model/spec.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 
 const ASSIGN_FOCUS_TARGET_UNAVAILABLE_HINT =
   'assign_focus target not available in current runtime snapshot'

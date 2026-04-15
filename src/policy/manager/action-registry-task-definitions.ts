@@ -10,7 +10,7 @@ import {
   formatTaskControlAlreadyPausedHint,
   formatTaskControlNotFoundHint,
   formatTaskControlNotPausedHint,
-} from './action-feedback-hints.js'
+} from './action-feedback-hints-basic.js'
 import { ACTION_PROMPT_SPECS } from './action-prompt-spec.js'
 import {
   createContinueAction,
@@ -18,7 +18,7 @@ import {
 } from './action-registry-shared.js'
 import { validateRunTask, validateTaskControl } from './action-validation.js'
 
-import type { Parsed } from '../actions/model/spec.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 
 const rejectApply = (action: 'task_control', hint: string): never => {
   throw new ActionApplyFeedbackError({

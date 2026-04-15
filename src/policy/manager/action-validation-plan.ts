@@ -1,8 +1,8 @@
+import { renderActionFeedbackHint } from './action-feedback-hint-renderer.js'
 import {
-  formatEnqueueTaskContractMissingHint,
   formatPlanNotFoundHint,
   formatSetPlanDoneForbiddenHint,
-} from './action-feedback-hints.js'
+} from './action-feedback-hints-basic.js'
 import {
   rejected,
   validateScheduledAtNotPast,
@@ -23,7 +23,10 @@ import {
 } from './task-contract.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
-import type { Parsed } from '../actions/model/spec.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
+
+const formatEnqueueTaskContractMissingHint = (): string =>
+  renderActionFeedbackHint('enqueue_task_contract_missing')
 
 export const validateSetPlan = (
   item: Parsed,

@@ -2,9 +2,9 @@ import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persisten
 import { readHistory, rewriteHistory } from '../../persistence/history/store.js'
 import {
   findRuntimePlan,
-  patchRuntimeTask,
   updateRuntimePlan,
-} from '../orchestrator/runtime-domain-write.js'
+} from '../orchestrator/plan-state-write.js'
+import { patchRuntimeTask } from '../orchestrator/task-state-write.js'
 
 import { ensureFocus, touchFocus } from './state.js'
 

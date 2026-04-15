@@ -1,11 +1,11 @@
+import { renderActionFeedbackHint } from './action-feedback-hint-renderer.js'
 import {
-  formatEnqueueTaskContractMissingHint,
   formatTaskControlAlreadyCanceledHint,
   formatTaskControlAlreadyDoneHint,
   formatTaskControlAlreadyPausedHint,
   formatTaskControlNotFoundHint,
   formatTaskControlNotPausedHint,
-} from './action-feedback-hints.js'
+} from './action-feedback-hints-basic.js'
 import { validateEnqueueTaskManagerRules } from './action-validation-enqueue-task.js'
 import { rejected, type ValidationIssue } from './action-validation-helpers.js'
 import {
@@ -30,11 +30,14 @@ import {
 } from './task-contract.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
-import type { Parsed } from '../actions/model/spec.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 
 export type { FeedbackContext } from './action-validation-context.js'
 export type { ValidationIssue } from './action-validation-helpers.js'
 export { validateDeletePlan, validateSetPlan, validateWithSchema }
+
+const formatEnqueueTaskContractMissingHint = (): string =>
+  renderActionFeedbackHint('enqueue_task_contract_missing')
 
 export const validateRunTask = (
   item: Parsed,

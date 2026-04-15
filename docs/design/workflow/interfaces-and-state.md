@@ -10,6 +10,7 @@
 ## HTTP API（`src/surface/http/*`）
 
 - `GET /api/events`
+- `GET /api/repo-quality`
 - `GET /api/status`
 - `POST /api/input`
 - `DELETE /api/messages/:id`
@@ -21,11 +22,9 @@
 - `POST /api/restart`
 - `POST /api/reset`
 
-`GET /api/status` 当前除基础运行状态外，还会返回：
+`GET /api/status` 当前除基础运行状态外，还会返回 `managerLastUsage`、`managerUsageTotal`、`workerUsageTotal`。
 
-- `managerLastUsage`
-- `managerUsageTotal`
-- `workerUsageTotal`
+`GET /api/repo-quality` 返回当前仓库的静态质量快照，字段包括 `generatedAt`、`sourceFileCount`、`sourceLineCount`、`sourceLineTarget`、`sourceLineOverage`、`maxSourceFileLines`、`webUiFileCount`、`webUiLineCount`、`testFileCount`、`testLineCount`、`promptFileCount`。
 
 任务变更接口（pause/resume/cancel/delete）统一返回：
 
@@ -57,11 +56,7 @@
 - `error`：SSE 连接内错误反馈。
 - 心跳周期：`15s`（`SSE_HEARTBEAT_MS=15000`）。
 
-消息快照模式：
-
-- `messages.mode=full`：完整消息列表。
-- `messages.mode=delta`：相对上次游标增量。
-- `messages.mode=reset`：游标失效后重置为完整列表。
+消息快照模式：`messages.mode=full` 为完整消息列表，`messages.mode=delta` 为相对上次游标增量，`messages.mode=reset` 为游标失效后的完整重置。
 
 补充：
 
@@ -71,6 +66,7 @@
 - `tasks.tasks[*].traceRef` 会在 task result 已归档 trace 时暴露 `.mimikit/traces/...` 相对路径，供 WebUI 直接跳转。
 - `plans.items[*].stage` 会暴露当前 plan 的极简推进态：`summary`、可选 `risk`、`needsDecision`、`sourceTaskId`、`updatedAt`；它只服务复盘和在线控制，不是第二块任务板。
 - `GET /api/tasks/:id/archive` 在最终 archive 尚不可用时，会回退到运行态快照；临时 `=== RESULT ===` 只使用 `task.result.output`、当前进程内 `liveOutput` 摘要，或当前运行轮次最近一次落盘的 `task-progress.worker_live_output` 摘要，不再拼接 `task-progress.worker_activity` 原始活动文本。返回体 frontmatter 现会显式标记 `archive_kind: live_fallback|final`，避免调用方把运行态兜底误认成最终 archive。
+- WebUI header 会额外请求 `/api/repo-quality`，把仓库级质量摘要压缩成一行副标题，直接暴露 `src/test/webui` 体量与 `src<20k` 目标偏差，减少“质量信号只存在于离线脚本”的黑箱。
 
 ## System 气泡可见性规则（WebUI 会话流）
 

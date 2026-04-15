@@ -11,7 +11,7 @@ import { logSafeError } from '../log/safe.js'
 import { RUNTIME_SNAPSHOT_SCHEMA_VERSION } from './runtime-schema-version.js'
 import { parseRuntimeSnapshot } from './runtime-snapshot-parse.js'
 
-import type { RuntimeSnapshot } from './runtime-snapshot-schema.js'
+import type { RuntimeSnapshot } from './runtime-snapshot-state-schemas.js'
 import type { Task } from '../../foundation/types/index.js'
 
 type RuntimeSnapshotWritable = Omit<RuntimeSnapshot, 'schemaVersion'> & {

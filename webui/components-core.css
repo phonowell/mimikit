@@ -11,6 +11,19 @@
   text-transform: uppercase;
 }
 
+.status-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.status-subtext {
+  color: var(--muted-contrast, var(--muted));
+  font-size: 11px;
+  line-height: 1.35;
+  text-transform: none;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;

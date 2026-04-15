@@ -1,7 +1,7 @@
 import { normalizeInlineWhitespace } from '../../foundation/shared/text.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { TaskPlan } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 type SetPlanItem = Extract<Parsed, { type: 'set_plan' }>
 

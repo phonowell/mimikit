@@ -1,10 +1,9 @@
 import { appendLog } from '../../persistence/log/append.js'
 import {
   enforceActiveFocusLimit,
-  ensureFocus,
   pruneArchivedFocuses,
-  resolveDefaultFocusId,
-} from '../../work/focus/index.js'
+} from '../../work/focus/capacity.js'
+import { ensureFocus, resolveDefaultFocusId } from '../../work/focus/state.js'
 
 import { isActionApplyFeedbackError } from './action-apply-feedback-error.js'
 import { managerActionCliLogger } from './action-cli-log.js'
@@ -13,12 +12,9 @@ import {
   type ApplyContext,
   type ApplyTaskActionsOptions,
 } from './action-registry-shared.js'
-import { collectTaskResultSummaries } from './action-task-result-summary.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
-
-export { collectTaskResultSummaries }
 
 export const applyTaskActions = async (
   runtime: ManagerRuntime,
@@ -30,30 +26,29 @@ export const applyTaskActions = async (
     ...(options !== undefined ? { options } : {}),
   }
   const total = items.length
+  const lifecycleMeta = {
+    ...(options?.batchId ? { batchId: options.batchId } : {}),
+    ...(options?.roundId ? { roundId: options.roundId } : {}),
+    ...(runtime.process.manager.threadId
+      ? { traceId: runtime.process.manager.threadId }
+      : {}),
+  }
   for (const [index, item] of items.entries()) {
     const order = index + 1
     const startedAt = Date.now()
-    await managerActionCliLogger.logLifecycle({
-      stage: 'dispatch',
+    const lifecycleBase = {
       item,
       index: order,
       total,
-      ...(options?.batchId ? { batchId: options.batchId } : {}),
-      ...(options?.roundId ? { roundId: options.roundId } : {}),
-      ...(runtime.process.manager.threadId
-        ? { traceId: runtime.process.manager.threadId }
-        : {}),
+      ...lifecycleMeta,
+    }
+    await managerActionCliLogger.logLifecycle({
+      stage: 'dispatch',
+      ...lifecycleBase,
     })
     await managerActionCliLogger.logLifecycle({
       stage: 'running',
-      item,
-      index: order,
-      total,
-      ...(options?.batchId ? { batchId: options.batchId } : {}),
-      ...(options?.roundId ? { roundId: options.roundId } : {}),
-      ...(runtime.process.manager.threadId
-        ? { traceId: runtime.process.manager.threadId }
-        : {}),
+      ...lifecycleBase,
     })
     let result
     try {
@@ -61,16 +56,9 @@ export const applyTaskActions = async (
     } catch (error) {
       await managerActionCliLogger.logLifecycle({
         stage: 'failed',
-        item,
-        index: order,
-        total,
+        ...lifecycleBase,
         error,
         elapsedMs: Math.max(0, Date.now() - startedAt),
-        ...(options?.batchId ? { batchId: options.batchId } : {}),
-        ...(options?.roundId ? { roundId: options.roundId } : {}),
-        ...(runtime.process.manager.threadId
-          ? { traceId: runtime.process.manager.threadId }
-          : {}),
       })
       if (isActionApplyFeedbackError(error)) {
         await appendLog(runtime.paths.log, {
@@ -78,11 +66,7 @@ export const applyTaskActions = async (
           action: error.feedback.action,
           error: error.feedback.error,
           hint: error.feedback.hint,
-          ...(runtime.process.manager.threadId
-            ? { traceId: runtime.process.manager.threadId }
-            : {}),
-          ...(options?.batchId ? { batchId: options.batchId } : {}),
-          ...(options?.roundId ? { roundId: options.roundId } : {}),
+          ...lifecycleMeta,
         })
         continue
       }
@@ -90,16 +74,9 @@ export const applyTaskActions = async (
     }
     await managerActionCliLogger.logLifecycle({
       stage: result === 'stop' ? 'stopped' : 'applied',
-      item,
-      index: order,
-      total,
+      ...lifecycleBase,
       result,
       elapsedMs: Math.max(0, Date.now() - startedAt),
-      ...(options?.batchId ? { batchId: options.batchId } : {}),
-      ...(options?.roundId ? { roundId: options.roundId } : {}),
-      ...(runtime.process.manager.threadId
-        ? { traceId: runtime.process.manager.threadId }
-        : {}),
     })
     if (result === 'stop') return
   }

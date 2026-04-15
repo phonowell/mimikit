@@ -18,6 +18,7 @@ import {
   updateManagerRoundDiagnostics,
 } from './loop-batch-run-rounds-diagnostics.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
   FocusId,
   Task,
@@ -27,7 +28,6 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 export const runManagerCorrectionRounds = async (params: {
   runtime: ManagerRuntime

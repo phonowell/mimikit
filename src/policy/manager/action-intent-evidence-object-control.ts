@@ -1,11 +1,11 @@
 import {
   buildMissingIntentEvidenceHint,
   isSupportedByInputs,
+  type SupplementalEvidenceSource,
 } from './action-intent-evidence-match.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { Task, TaskPlan } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 export const resolveTaskControlIntentEvidenceHint = (params: {
   item: Extract<Parsed, { type: 'task_control' }>

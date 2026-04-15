@@ -1,3 +1,9 @@
+import {
+  clampNormalizedTextList,
+  normalizeTextLine,
+  splitNormalizedClauses,
+} from './normalized-text.js'
+
 type TaskDraftLike = {
   title: string
   goal: string
@@ -20,29 +26,13 @@ const MAX_TASK_INSTRUCTION_CHARS = 120
 const MAX_TASK_INSTRUCTION_BYTES = 360
 const TASK_DRAFT_MAX_TOTAL_CHARS = 900
 const TASK_DRAFT_MAX_TOTAL_BYTES = 2_700
-const clausePattern = /\s*(?:\r?\n|；|;)\s*/u
 
 const byteLength = (value: string): number => Buffer.byteLength(value, 'utf8')
 
-const normalizeLine = (value: string): string => value.trim()
-
-const normalizeList = (values: readonly string[]): string[] => {
-  const seen = new Set<string>()
-  const normalized: string[] = []
-  for (const item of values) {
-    const trimmed = normalizeLine(item)
-    if (!trimmed || seen.has(trimmed)) continue
-    seen.add(trimmed)
-    normalized.push(trimmed)
-  }
-  return normalized
-}
-
-const splitClauses = (value: string): string[] =>
-  normalizeList(value.split(clausePattern))
+const splitClauses = (value: string): string[] => splitNormalizedClauses(value)
 
 const clampList = (values: readonly string[], max: number): string[] =>
-  normalizeList(values).slice(0, max)
+  clampNormalizedTextList(values, max)
 
 const withinStringBudget = (
   value: string,
@@ -55,7 +45,7 @@ const compactClauseHeavyString = (
   maxChars: number,
   maxBytes: number,
 ): string => {
-  const normalized = normalizeLine(value)
+  const normalized = normalizeTextLine(value)
   if (withinStringBudget(normalized, maxChars, maxBytes)) return normalized
   const clauses = splitClauses(normalized)
   if (clauses.length <= 1) return normalized

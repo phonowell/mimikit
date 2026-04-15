@@ -6,9 +6,9 @@ import { managerLoop } from '../../policy/manager/loop.js'
 import { appendStartupSystemMessage } from '../../surface/orchestrator/orchestrator-input-ingress.js'
 import {
   enforceActiveFocusLimit,
-  ensureGlobalFocus,
   pruneArchivedFocuses,
-} from '../../work/focus/index.js'
+} from '../../work/focus/capacity.js'
+import { ensureGlobalFocus } from '../../work/focus/state.js'
 
 import {
   hydrateRuntimeState,

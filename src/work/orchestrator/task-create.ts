@@ -3,7 +3,7 @@ import {
   nowIso,
   titleFromCandidates,
 } from '../../foundation/shared/utils.js'
-import { GLOBAL_FOCUS_ID } from '../focus/index.js'
+import { GLOBAL_FOCUS_ID } from '../focus/constants.js'
 import { resolveTaskResourceMode } from '../shared/task-resource-mode.js'
 import { persistTaskExecutionSpec } from '../spec/store.js'
 

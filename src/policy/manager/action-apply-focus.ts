@@ -1,12 +1,12 @@
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
+import { assignFocusByTargetId } from '../../work/focus/assign.js'
 import {
-  assignFocusByTargetId,
   enforceActiveFocusLimit,
   pruneArchivedFocuses,
-} from '../../work/focus/index.js'
+} from '../../work/focus/capacity.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 export const applyAssignFocusAction = async (
   runtime: ManagerRuntime,

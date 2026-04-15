@@ -39,6 +39,32 @@ export const updateManagerRoundDiagnostics = (params: {
   ...(params.threadId ? { threadId: params.threadId } : {}),
 })
 
+const buildManagerCorrectionLogPayload = (params: {
+  batchId: string
+  round: number
+  actionFeedback: NonNullable<ManagerRoundExtra['actionFeedback']>
+  diagnostics: ManagerRoundDiagnostics
+  threadId?: string
+}): {
+  traceId?: string
+  batchId: string
+  roundId?: string
+  round: number
+  feedbackCount: number
+  errors: string[]
+  names: string[]
+} => ({
+  ...(params.threadId ? { traceId: params.threadId } : {}),
+  batchId: params.batchId,
+  ...(params.diagnostics.roundId
+    ? { roundId: params.diagnostics.roundId }
+    : {}),
+  round: params.round,
+  feedbackCount: params.actionFeedback.length,
+  errors: params.actionFeedback.map((item) => item.error),
+  names: params.actionFeedback.map((item) => item.action),
+})
+
 export const resolveSelfRepairRoundContinuation = async (params: {
   runtime: ManagerRuntime
   batchId: string
@@ -58,15 +84,7 @@ export const resolveSelfRepairRoundContinuation = async (params: {
     const fallbackReply = buildCorrectionFallbackReply(params.actionFeedback)
     await appendLog(params.runtime.paths.log, {
       event: 'manager_correction_structured_clarify',
-      ...(params.threadId ? { traceId: params.threadId } : {}),
-      batchId: params.batchId,
-      ...(params.diagnostics.roundId
-        ? { roundId: params.diagnostics.roundId }
-        : {}),
-      round: params.round,
-      feedbackCount: params.actionFeedback.length,
-      errors: params.actionFeedback.map((item) => item.error),
-      names: params.actionFeedback.map((item) => item.action),
+      ...buildManagerCorrectionLogPayload(params),
     })
     return buildRoundLimitResult({
       text: fallbackReply,
@@ -78,15 +96,7 @@ export const resolveSelfRepairRoundContinuation = async (params: {
 
   await appendLog(params.runtime.paths.log, {
     event: 'manager_action_feedback_self_repair_retry',
-    ...(params.threadId ? { traceId: params.threadId } : {}),
-    batchId: params.batchId,
-    ...(params.diagnostics.roundId
-      ? { roundId: params.diagnostics.roundId }
-      : {}),
-    round: params.round,
-    feedbackCount: params.actionFeedback.length,
-    errors: params.actionFeedback.map((item) => item.error),
-    names: params.actionFeedback.map((item) => item.action),
+    ...buildManagerCorrectionLogPayload(params),
   })
   return { continueRound: true }
 }

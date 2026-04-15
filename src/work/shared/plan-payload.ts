@@ -1,29 +1,10 @@
-import { compactTaskContractForPrompt } from '../../foundation/shared/task-contract-compact.js'
+import { buildTaskContractPromptPayload } from '../../foundation/prompting/task-contract-prompt-payload.js'
 
 import type {
-  TaskContract,
   TaskPlan,
   TaskPlanEffect,
   TaskPlanTrigger,
 } from '../../foundation/types/index.js'
-
-const buildTaskContractPayload = (
-  contract?: TaskContract,
-): Record<string, unknown> | undefined => {
-  const compactContract = compactTaskContractForPrompt(contract)
-  if (!compactContract) return undefined
-  return {
-    goal: compactContract.goal,
-    scope: compactContract.scope,
-    acceptance: compactContract.acceptance,
-    ...(compactContract.outOfScope
-      ? { out_of_scope: compactContract.outOfScope }
-      : {}),
-    ...(compactContract.contextRefs
-      ? { context_refs: compactContract.contextRefs }
-      : {}),
-  }
-}
 
 export const buildPlanTriggerPayload = (
   trigger: TaskPlanTrigger,
@@ -65,18 +46,19 @@ export const buildPlanProgressPayload = (
 
 export const buildPlanEffectPayload = (
   effect: TaskPlanEffect,
-): Record<string, unknown> => ({
-  effect_kind: effect.kind,
-  task_title: effect.taskTemplate.title,
-  ...(buildTaskContractPayload(effect.taskContract)
-    ? { task_contract: buildTaskContractPayload(effect.taskContract) }
-    : {}),
-  task_cwd: effect.taskTemplate.cwd,
-  ...(effect.taskTemplate.resourceMode
-    ? { task_resource_mode: effect.taskTemplate.resourceMode }
-    : {}),
-  ...(effect.taskTemplate.useWorktree ? { task_use_worktree: true } : {}),
-  ...(effect.taskTemplate.branch
-    ? { task_branch: effect.taskTemplate.branch }
-    : {}),
-})
+): Record<string, unknown> => {
+  const taskContract = buildTaskContractPromptPayload(effect.taskContract)
+  return {
+    effect_kind: effect.kind,
+    task_title: effect.taskTemplate.title,
+    ...(taskContract ? { task_contract: taskContract } : {}),
+    task_cwd: effect.taskTemplate.cwd,
+    ...(effect.taskTemplate.resourceMode
+      ? { task_resource_mode: effect.taskTemplate.resourceMode }
+      : {}),
+    ...(effect.taskTemplate.useWorktree ? { task_use_worktree: true } : {}),
+    ...(effect.taskTemplate.branch
+      ? { task_branch: effect.taskTemplate.branch }
+      : {}),
+  }
+}

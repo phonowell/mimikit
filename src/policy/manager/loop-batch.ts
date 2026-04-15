@@ -4,9 +4,9 @@ import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
 import { appendManagerCorrectionLimitSystemMessage } from '../../persistence/history/manager-events.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { isVisibleToAgent } from '../../surface/shared/message-visibility.js'
-import { resolveDefaultFocusId } from '../../work/focus/index.js'
+import { resolveDefaultFocusId } from '../../work/focus/state.js'
 
-import { applyTaskActions, collectTaskResultSummaries } from './action-apply.js'
+import { applyTaskActions } from './action-apply.js'
 import { completeSuccessfulManagerBatch } from './batch-success-finalize.js'
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
 import {
@@ -81,7 +81,6 @@ export const processManagerBatch = async (params: {
     }
     const resolvedUsage: TokenUsage | undefined = managerRun.usage
     const { parsed } = managerRun
-    const summaries = collectTaskResultSummaries(parsed.actions)
     const hasManualCanceledResult = results.some(
       (result) =>
         result.status === 'canceled' && result.cancel?.source === 'user',
@@ -90,7 +89,6 @@ export const processManagerBatch = async (params: {
       runtime,
       inputs,
       results,
-      summaries,
     })
     if (!consumed.ok) throw new Error(consumed.reason)
     await applyTaskActions(runtime, parsed.actions, {

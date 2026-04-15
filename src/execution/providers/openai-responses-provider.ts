@@ -8,9 +8,9 @@ import {
   trimNonEmptyString,
 } from './openai-responses-provider-config.js'
 import {
-  buildHttpErrorMessage,
-  isRetryableInvalidApiKey401,
-} from './openai-responses-provider-http.js'
+  buildResponsesHttpErrorMessage,
+  mapOpenAiResponsesError,
+} from './openai-responses-provider-errors.js'
 import { appendOpenAiResponsesLog } from './openai-responses-provider-log.js'
 import {
   buildResponsesInput,
@@ -21,14 +21,7 @@ import {
   buildStructuredOutputTextFormat,
   parseStructuredOutputJson,
 } from './openai-responses-provider-structured.js'
-import {
-  buildProviderAbortedError,
-  buildProviderSdkError,
-  buildProviderTimeoutError,
-  isTransientProviderMessage,
-  ProviderError,
-  readProviderErrorCode,
-} from './provider-error.js'
+import { ProviderError, readProviderErrorCode } from './provider-error.js'
 import {
   bindExternalAbort,
   buildProviderResult,
@@ -129,7 +122,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     const raw = await response.text()
     resetIdle()
     if (!response.ok)
-      throw new Error(buildHttpErrorMessage(response.status, raw))
+      throw new Error(buildResponsesHttpErrorMessage(response.status, raw))
     const { output, usage } = parseResponsesPayload(raw)
     const outputJson = request.outputSchema
       ? parseStructuredOutputJson(output)
@@ -150,31 +143,15 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
       ...(usage ? { usage } : {}),
     })
   } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error))
-    let mapped: ProviderError
-    if (err instanceof ProviderError) mapped = err
-    else if (lifecycle.timedOut) {
-      mapped = buildProviderTimeoutError(
-        OPENAI_RESPONSES_PROVIDER_ID,
-        request.timeoutMs,
-      )
-    } else if (
-      lifecycle.externallyAborted ||
-      err.name === 'AbortError' ||
-      /aborted|canceled|cancelled/i.test(err.message)
-    )
-      mapped = buildProviderAbortedError(OPENAI_RESPONSES_PROVIDER_ID)
-    else {
-      const transient =
-        /responses_http_(429|5\d\d):/i.test(err.message) ||
-        isRetryableInvalidApiKey401(err.message) ||
-        isTransientProviderMessage(err.message)
-      mapped = buildProviderSdkError({
-        providerId: OPENAI_RESPONSES_PROVIDER_ID,
-        message: err.message,
-        transient,
-      })
-    }
+    const mapped: ProviderError =
+      error instanceof ProviderError
+        ? error
+        : mapOpenAiResponsesError({
+            error,
+            externallyAborted: lifecycle.externallyAborted,
+            timedOut: lifecycle.timedOut,
+            timeoutMs: request.timeoutMs,
+          })
     const code = readProviderErrorCode(mapped)
     await appendOpenAiResponsesLog(request, {
       event: 'llm_call_failed',

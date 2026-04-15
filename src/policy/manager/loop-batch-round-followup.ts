@@ -9,12 +9,12 @@ import {
   type ManagerRoundExtra,
 } from './loop-batch-run-helpers.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
   ManagerWakeProfile,
   TaskResult,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 const appendRoundActionFeedback = async (params: {
   runtime: ManagerRuntime

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { taskContractSchema } from '../../foundation/shared/task-contract-schema.js'
 import {
   TASK_CANCEL_SOURCE_VALUES,
   TASK_RESULT_OUTCOME_VALUES,
@@ -29,16 +30,6 @@ export const taskCancelSchema = z
   .object({
     source: taskCancelSourceSchema,
     reason: z.string().optional(),
-  })
-  .strict()
-
-export const taskContractSchema = z
-  .object({
-    goal: z.string().trim().min(1),
-    scope: z.string().trim().min(1),
-    acceptance: z.array(z.string().trim().min(1)).min(1),
-    outOfScope: z.string().trim().min(1).optional(),
-    contextRefs: z.array(z.string().trim().min(1)).optional(),
   })
   .strict()
 

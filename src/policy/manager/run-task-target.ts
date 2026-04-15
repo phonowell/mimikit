@@ -15,7 +15,7 @@ import { ActionApplyFeedbackError } from './action-apply-feedback-error.js'
 import {
   formatEnqueueTaskCwdInvalidHint,
   formatEnqueueTaskWorktreePrepareFailedHint,
-} from './action-feedback-hints.js'
+} from './action-feedback-hints-basic.js'
 
 import type {
   TaskContract,

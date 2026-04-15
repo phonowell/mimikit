@@ -1,4 +1,3 @@
-import { newId, nowIso } from '../../foundation/shared/utils.js'
 import {
   createSystemEventRecord,
   type SystemEventRecord,
@@ -6,8 +5,9 @@ import {
 import { safe } from '../log/safe.js'
 
 import { appendHistory } from './store.js'
+import { createSystemHistoryMessage } from './system-message.js'
 
-import type { FocusId, HistoryMessage } from '../../foundation/types/index.js'
+import type { FocusId } from '../../foundation/types/index.js'
 
 export type ProjectProfileRememberedEventPayload = {
   entryId: string
@@ -23,14 +23,12 @@ const appendProjectProfileEvent = (params: {
   entryId: string
   logContext: string
 }): Promise<boolean> => {
-  const message: HistoryMessage = {
-    id: `sys-project-profile-${newId()}`,
-    role: 'system',
+  const message = createSystemHistoryMessage({
+    idPrefix: 'sys-project-profile',
     visibility: 'agent',
-    ...params.eventRecord,
-    createdAt: nowIso(),
     focusId: params.focusId,
-  }
+    eventRecord: params.eventRecord,
+  })
   return safe(
     params.logContext,
     async () => {

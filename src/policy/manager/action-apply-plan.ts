@@ -5,18 +5,18 @@ import {
   appendRuntimePlan,
   findRuntimePlan,
   updateRuntimePlan,
-} from '../../work/orchestrator/runtime-domain-write.js'
+} from '../../work/orchestrator/plan-state-write.js'
 
 import { resolveActionFocusId } from './action-focus-id.js'
-import { buildPlanEffectFromTaskDraft } from './action-plan-effect.js'
+import { buildPlanEnqueueTaskEffect } from './action-plan-effect-enqueue.js'
 import {
   appendPlanSystemMessage,
   normalizePlanKey,
 } from './action-plan-helpers.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { TaskPlan } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 type SetPlanAction = Extract<Parsed, { type: 'set_plan' }>
 
@@ -45,7 +45,7 @@ export const applySetPlan = async (
 
   const focusId = resolveActionFocusId(runtime)
   const trigger = buildTrigger(item.plan.trigger)
-  const effect = await buildPlanEffectFromTaskDraft({
+  const effect = await buildPlanEnqueueTaskEffect({
     stateDir: runtime.config.workDir,
     task: item.plan.task,
     focusId,

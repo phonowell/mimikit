@@ -7,7 +7,7 @@ import {
 import type {
   FocusListEntry,
   WorkingFocusEntry,
-} from '../../work/focus/index.js'
+} from '../../work/focus/prompt.js'
 
 const sortMessagesDesc = <T extends { time: string; id: string }>(
   entries: T[],

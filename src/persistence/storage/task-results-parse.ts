@@ -14,7 +14,7 @@ import {
 import {
   taskEvidenceSchema,
   taskResultHandoffSchema,
-} from './runtime-snapshot-schema.js'
+} from './runtime-snapshot-task-schemas.js'
 import { parseTokenUsageJson } from './token-usage.js'
 
 import type {

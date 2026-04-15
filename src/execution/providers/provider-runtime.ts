@@ -1,5 +1,5 @@
-import type { TokenUsage } from './token-usage.js'
 import type { ProviderResult } from './types.js'
+import type { TokenUsage } from '../../foundation/types/base.js'
 
 export const elapsedMsSince = (startedAt: number): number =>
   Math.max(0, Date.now() - startedAt)

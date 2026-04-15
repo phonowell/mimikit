@@ -1,8 +1,10 @@
-import {
-  compareIsoDesc,
-  parseIsoToMsOrZero,
-} from '../../foundation/shared/time.js'
+import { compareIsoDesc } from '../../foundation/shared/time.js'
 import { resolveSystemEvent } from '../../surface/shared/system-event.js'
+
+import {
+  sortInputsNewestFirst,
+  sortResultsNewestFirst,
+} from './workline-recency.js'
 
 import type {
   FocusId,
@@ -12,22 +14,6 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerContextPacket } from '../types/manager-types.js'
-
-const sortInputsNewestFirst = (inputs: UserInput[]): UserInput[] =>
-  [...inputs].sort((a, b) => {
-    const diff =
-      parseIsoToMsOrZero(b.createdAt) - parseIsoToMsOrZero(a.createdAt)
-    if (diff !== 0) return diff
-    return b.id.localeCompare(a.id)
-  })
-
-const sortResultsNewestFirst = (results: TaskResult[]): TaskResult[] =>
-  [...results].sort((a, b) => {
-    const diff =
-      parseIsoToMsOrZero(b.completedAt) - parseIsoToMsOrZero(a.completedAt)
-    if (diff !== 0) return diff
-    return b.taskId.localeCompare(a.taskId)
-  })
 
 const resolveLatestInputForFocus = (
   focusId: FocusId,

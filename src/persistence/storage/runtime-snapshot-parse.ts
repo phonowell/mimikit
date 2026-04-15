@@ -4,13 +4,13 @@ import {
   isRuntimeSnapshotSchemaVersionSupported,
   RUNTIME_SNAPSHOT_SCHEMA_VERSION,
 } from './runtime-schema-version.js'
+import { type taskPlanSchema } from './runtime-snapshot-plan-schemas.js'
 import {
   type focusMetaSchema,
   type RuntimeSnapshot,
   runtimeSnapshotSchema,
-  type taskPlanSchema,
-  type taskSchema,
-} from './runtime-snapshot-schema.js'
+} from './runtime-snapshot-state-schemas.js'
+import { type taskSchema } from './runtime-snapshot-task-schemas.js'
 import { normalizeTokenUsage } from './token-usage.js'
 
 import type { z } from 'zod'

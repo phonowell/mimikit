@@ -5,13 +5,13 @@ import {
   formatInvalidActionArgsWithIssuesHint,
   formatScheduledAtInvalidHint,
   formatScheduledAtNotFutureHint,
-} from './action-feedback-hints.js'
+} from './action-feedback-hints-basic.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
   ManagerActionFeedbackCode,
   ManagerActionFeedbackRepair,
 } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 import type { ZodError, ZodSchema } from 'zod'
 
 export type ValidationIssue = {

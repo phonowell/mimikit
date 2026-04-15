@@ -1,6 +1,6 @@
 import { truncateText } from '../../foundation/shared/text.js'
 import { newId, nowIso } from '../../foundation/shared/utils.js'
-import { resolvePrimaryWorkline } from '../manager/workline-priority.js'
+import { resolvePrimaryWorkline } from '../manager/workline-primary-summary.js'
 
 import {
   PREVIEW_MAX_CHARS,

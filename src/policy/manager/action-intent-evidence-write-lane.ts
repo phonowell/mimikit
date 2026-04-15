@@ -6,8 +6,8 @@ import {
   matchesTaskToEnqueueDraft,
 } from './authorization-semantics.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { Task, TaskPlan } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 type DraftWriteLane = {
   cwd: string

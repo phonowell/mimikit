@@ -12,12 +12,9 @@ import { buildRuntimeStartupSystemEventPayload } from '../../kernel/shared/runti
 import { publishUserInput } from '../../kernel/streams/queues.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import {
-  GLOBAL_FOCUS_ID,
-  resolveDefaultFocusId,
-  resolveFocusByQuote,
-  touchFocus,
-} from '../../work/focus/index.js'
+import { resolveFocusByQuote } from '../../work/focus/assign.js'
+import { GLOBAL_FOCUS_ID } from '../../work/focus/constants.js'
+import { resolveDefaultFocusId, touchFocus } from '../../work/focus/state.js'
 
 import type {
   RuntimeUserMeta,

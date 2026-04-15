@@ -2,6 +2,16 @@ import { expect, test } from 'vitest'
 
 import { parseManagerTurn } from '../src/policy/manager/manager-turn.js'
 
+const parseRememberProjectProfile = (action: {
+  content: string
+  source_input_id: string
+  source_quote?: string
+}) =>
+  parseManagerTurn({
+    reply: '收到。',
+    actions: [{ type: 'remember_project_profile', ...action }],
+  }).actions
+
 test('parseManagerTurn keeps structured actions as the single execution shape', () => {
   const parsed = parseManagerTurn({
     reply: '开始执行',
@@ -97,19 +107,13 @@ test('parseManagerTurn rejects legacy top-level fields', () => {
 })
 
 test('parseManagerTurn keeps structured remember_project_profile action as-is', () => {
-  const parsed = parseManagerTurn({
-    reply: '收到。',
-    actions: [
-      {
-        type: 'remember_project_profile',
-        content: '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
-        source_input_id: 'input-user',
-        source_quote: '后续统一用 pnpm + tsx 命令，不再补 npm 兼容脚本',
-      },
-    ],
-  })
-
-  expect(parsed.actions).toEqual([
+  expect(
+    parseRememberProjectProfile({
+      content: '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
+      source_input_id: 'input-user',
+      source_quote: '后续统一用 pnpm + tsx 命令，不再补 npm 兼容脚本',
+    }),
+  ).toEqual([
     {
       type: 'remember_project_profile',
       content: '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
@@ -120,18 +124,12 @@ test('parseManagerTurn keeps structured remember_project_profile action as-is', 
 })
 
 test('parseManagerTurn allows remember_project_profile without source_quote', () => {
-  const parsed = parseManagerTurn({
-    reply: '收到。',
-    actions: [
-      {
-        type: 'remember_project_profile',
-        content: '本仓库默认走 wt 开发闭环。',
-        source_input_id: 'input-user',
-      },
-    ],
-  })
-
-  expect(parsed.actions).toEqual([
+  expect(
+    parseRememberProjectProfile({
+      content: '本仓库默认走 wt 开发闭环。',
+      source_input_id: 'input-user',
+    }),
+  ).toEqual([
     {
       type: 'remember_project_profile',
       content: '本仓库默认走 wt 开发闭环。',

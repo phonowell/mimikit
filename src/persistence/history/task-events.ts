@@ -1,12 +1,11 @@
-import { newId, nowIso } from '../../foundation/shared/utils.js'
 import { createSystemEventRecord } from '../../surface/shared/system-event.js'
 import { resolveTaskLabel } from '../../work/shared/task-state.js'
 import { safe } from '../log/safe.js'
 
 import { appendHistory } from './store.js'
+import { createSystemHistoryMessage } from './system-message.js'
 
 import type {
-  HistoryMessage,
   Task,
   TaskCancelMeta,
   TaskResultStatus,
@@ -151,14 +150,13 @@ export const appendTaskSystemMessage = (
       options?.resumeInstructionPresent,
     ),
   })
-  const message: HistoryMessage = {
-    id: `sys-task-${newId()}`,
-    role: 'system',
+  const message = createSystemHistoryMessage({
+    idPrefix: 'sys-task',
     visibility: 'user',
-    ...eventRecord,
-    createdAt: options?.createdAt ?? nowIso(),
     focusId: task.focusId,
-  }
+    eventRecord,
+    ...(options?.createdAt ? { createdAt: options.createdAt } : {}),
+  })
   return safe(
     'appendHistory: task_system_message',
     async () => {

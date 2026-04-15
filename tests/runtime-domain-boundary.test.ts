@@ -11,10 +11,11 @@ const readSource = (pathFromSrcRoot: string): string =>
 const KEY_MANAGER_AND_FOCUS_FILES = [
   'policy/manager/action-apply-plan.ts',
   'policy/manager/plan-progress.ts',
-  'work/focus/state.ts',
   'work/focus/assign.ts',
   'work/focus/capacity.ts',
 ]
+
+const RUNTIME_DOMAIN_MUTATORS = ['work/focus/state.ts']
 
 test('key manager and focus modules no longer use root-level runtime state fields', () => {
   const violations = KEY_MANAGER_AND_FOCUS_FILES.flatMap((pathFromSrcRoot) => {
@@ -38,6 +39,24 @@ test('key manager and focus modules do not directly mutate runtime domain collec
       ...content.matchAll(/runtime\.domain\.(tasks|taskPlans|focuses)\s*=\s*/g),
     ]
     return matches.map((match) => `${pathFromSrcRoot}: ${match[0]}`)
+  })
+
+  expect(violations).toEqual([])
+})
+
+test('runtime domain collection mutation stays in dedicated mutator modules', () => {
+  const violations = RUNTIME_DOMAIN_MUTATORS.flatMap((pathFromSrcRoot) => {
+    const content = readSource(pathFromSrcRoot)
+    const matches = [
+      ...content.matchAll(
+        /runtime\.domain\.(tasks|taskPlans|focuses)\.(push|splice|sort)\b/g,
+      ),
+      ...content.matchAll(/runtime\.domain\.(tasks|taskPlans|focuses)\s*=\s*/g),
+    ]
+    return matches
+      .map((match) => match[0])
+      .filter((entry) => !entry.startsWith('runtime.domain.focuses ='))
+      .map((match) => `${pathFromSrcRoot}: ${match}`)
   })
 
   expect(violations).toEqual([])

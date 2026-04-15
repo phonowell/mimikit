@@ -1,7 +1,7 @@
 import type { ApplyTaskActionsOptions } from './action-apply-create.js'
 import type { FeedbackContext, ValidationIssue } from './action-validation.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 export type { ApplyTaskActionsOptions }
 

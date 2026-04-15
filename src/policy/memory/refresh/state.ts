@@ -1,4 +1,4 @@
-import type { RuntimeSnapshot } from '../../../persistence/storage/runtime-snapshot-schema.js'
+import type { RuntimeSnapshot } from '../../../persistence/storage/runtime-snapshot-state-schemas.js'
 
 export type RuntimeMemoryRefreshState = {
   lastCompletedTurn: number

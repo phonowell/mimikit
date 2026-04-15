@@ -6,7 +6,7 @@ import type {
   RuntimeFocusCollection,
   RuntimePersistState,
 } from './runtime-interfaces.js'
-import type { RuntimeSnapshot } from '../../persistence/storage/runtime-snapshot-schema.js'
+import type { RuntimeSnapshot } from '../../persistence/storage/runtime-snapshot-state-schemas.js'
 
 export type RuntimeSnapshotPersistSlice = RuntimePersistState
 

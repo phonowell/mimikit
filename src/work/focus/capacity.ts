@@ -1,9 +1,8 @@
 import { compareIsoAsc } from '../../foundation/shared/time.js'
 import { readHistory } from '../../persistence/history/store.js'
-import { removeRuntimeFocus } from '../orchestrator/runtime-domain-write.js'
 
 import { isDefaultActiveFocusCandidate } from './reserved.js'
-import { setFocusStatus } from './state.js'
+import { removeRuntimeFocus, setFocusStatus } from './state.js'
 
 import type { FocusId, FocusMeta } from '../../foundation/types/index.js'
 import type { FocusRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'

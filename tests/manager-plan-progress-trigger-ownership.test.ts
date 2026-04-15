@@ -4,58 +4,26 @@ import { expect, test } from 'vitest'
 
 import { applyTaskActions } from '../src/policy/manager/action-apply.js'
 
-import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
-
-const buildScheduledTask = (cwd: string) => ({
-  title: 'scheduled title',
-  cwd,
-  mode: 'write' as const,
-  goal: 'Deliver requested outcome',
-  in_scope: ['Single runnable worker task'],
-  out_of_scope: [],
-  done_when: ['Return concrete output'],
-  context_refs: [],
-  instructions: ['deliver scheduled work'],
-})
-
-const createRuntime = async (): Promise<RuntimeState> => {
-  const runtime = await createTestRuntimeState({ pausedQueue: true })
-  runtime.config.codex.enabled = true
-  return runtime
-}
+import {
+  buildScheduledTask,
+  createPlanProgressRuntime,
+  createTriggeredEnqueuePlan,
+} from './helpers/manager-plan-progress.js'
 
 test('enqueue_task does not auto-link the sole triggered plan when the created task belongs to a different focus and semantics', async () => {
-  const runtime = await createRuntime()
+  const runtime = await createPlanProgressRuntime()
   const taskCwd = `${runtime.config.workDir}/manager-plan-progress-task-mismatch`
   await mkdir(taskCwd, { recursive: true })
-  runtime.domain.taskPlans.push({
-    id: 'plan-triggered-mismatch',
-    title: 'auth guard follow-up',
-    focusId: 'focus-auth',
-    priority: 'normal',
-    status: 'active',
-    trigger: {
-      mode: 'scheduled_at',
-      scheduledAt: '2026-02-13T00:00:00.000Z',
-    },
-    effect: {
-      kind: 'enqueue_task',
+  runtime.domain.taskPlans.push(
+    createTriggeredEnqueuePlan({
+      id: 'plan-triggered-mismatch',
+      title: 'auth guard follow-up',
+      cwd: taskCwd,
+      focusId: 'focus-auth',
       taskKey: 'task-key-triggered-mismatch',
-      taskTemplate: {
-        title: 'auth guard follow-up',
-        executionSpecId: 'spec-triggered-mismatch',
-        cwd: taskCwd,
-        resourceMode: 'write',
-      },
-    },
-    createdAt: '2026-02-13T00:00:00.000Z',
-    updatedAt: '2026-02-13T00:00:00.000Z',
-    runtime: {
-      runCount: 1,
-    },
-  })
+      executionSpecId: 'spec-triggered-mismatch',
+    }),
+  )
 
   await applyTaskActions(
     runtime,
@@ -81,62 +49,25 @@ test('enqueue_task does not auto-link the sole triggered plan when the created t
 })
 
 test('enqueue_task does not auto-link a same-focus triggered plan when multiple triggered plans exist but only weak focus ownership matches', async () => {
-  const runtime = await createRuntime()
+  const runtime = await createPlanProgressRuntime()
   const taskCwd = `${runtime.config.workDir}/manager-plan-progress-same-focus-mismatch`
   await mkdir(taskCwd, { recursive: true })
   runtime.domain.taskPlans.push(
-    {
+    createTriggeredEnqueuePlan({
       id: 'plan-triggered-same-focus-mismatch',
       title: 'billing retry overhaul',
-      focusId: 'focus-inbox',
-      priority: 'normal',
-      status: 'active',
-      trigger: {
-        mode: 'scheduled_at',
-        scheduledAt: '2026-02-13T00:00:00.000Z',
-      },
-      effect: {
-        kind: 'enqueue_task',
-        taskKey: 'task-key-triggered-same-focus-mismatch',
-        taskTemplate: {
-          title: 'billing retry overhaul',
-          executionSpecId: 'spec-triggered-same-focus-mismatch',
-          cwd: taskCwd,
-          resourceMode: 'write',
-        },
-      },
-      createdAt: '2026-02-13T00:00:00.000Z',
-      updatedAt: '2026-02-13T00:00:00.000Z',
-      runtime: {
-        runCount: 1,
-      },
-    },
-    {
+      cwd: taskCwd,
+      taskKey: 'task-key-triggered-same-focus-mismatch',
+      executionSpecId: 'spec-triggered-same-focus-mismatch',
+    }),
+    createTriggeredEnqueuePlan({
       id: 'plan-triggered-other-focus',
       title: 'auth guard follow-up',
+      cwd: taskCwd,
       focusId: 'focus-auth',
-      priority: 'normal',
-      status: 'active',
-      trigger: {
-        mode: 'scheduled_at',
-        scheduledAt: '2026-02-13T00:00:00.000Z',
-      },
-      effect: {
-        kind: 'enqueue_task',
-        taskKey: 'task-key-triggered-other-focus',
-        taskTemplate: {
-          title: 'auth guard follow-up',
-          executionSpecId: 'spec-triggered-other-focus',
-          cwd: taskCwd,
-          resourceMode: 'write',
-        },
-      },
-      createdAt: '2026-02-13T00:00:00.000Z',
-      updatedAt: '2026-02-13T00:00:00.000Z',
-      runtime: {
-        runCount: 1,
-      },
-    },
+      taskKey: 'task-key-triggered-other-focus',
+      executionSpecId: 'spec-triggered-other-focus',
+    }),
   )
 
   await applyTaskActions(

@@ -1,24 +1,10 @@
-import { mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
-
 import { expect, test } from 'vitest'
 
 import { triggerOnWorkerSlotFreedPlans } from '../src/policy/manager/loop-trigger-plans.js'
 import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 
+import { createCapacityPlan } from './helpers/manager-trigger-capacity.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-const buildTaskDraft = (title: string, cwd: string) => ({
-  title,
-  cwd,
-  mode: 'write' as const,
-  goal: `Deliver ${title}`,
-  in_scope: [`Only handle ${title}`],
-  out_of_scope: [],
-  done_when: [`${title} finished`],
-  context_refs: [],
-  instructions: [],
-})
 
 const createRuntime = async () => {
   const runtime = await createTestRuntimeState({ pausedQueue: true })
@@ -26,44 +12,25 @@ const createRuntime = async () => {
   return runtime
 }
 
-const createEnqueuePlan = async (
-  id: string,
-  priority: 'high' | 'normal' | 'low',
-  title: string,
-  runtime: Awaited<ReturnType<typeof createRuntime>>,
-) => {
-  const now = new Date().toISOString()
-  const taskCwd = join(runtime.config.workDir, title)
-  await mkdir(taskCwd, { recursive: true })
-  const task = buildTaskDraft(title, taskCwd)
-  await import('../src/policy/manager/action-plan-effect-enqueue.js').then(
-    async ({ buildPlanEnqueueTaskEffect }) => {
-      const effect = await buildPlanEnqueueTaskEffect({
-        stateDir: runtime.config.workDir,
-        focusId: GLOBAL_FOCUS_ID,
-        task,
-      })
-      runtime.domain.taskPlans.push({
-        id,
-        title,
-        focusId: GLOBAL_FOCUS_ID,
-        priority,
-        status: 'active',
-        trigger: { mode: 'on_worker_slot_freed' },
-        effect,
-        createdAt: now,
-        updatedAt: now,
-        runtime: { runCount: 0 },
-      })
-    },
-  )
-  return runtime.domain.taskPlans[runtime.domain.taskPlans.length - 1]
-}
-
 test('on_worker_slot_freed enqueue plans respect available slot budget', async () => {
   const runtime = await createRuntime()
-  await createEnqueuePlan('plan-enqueue-1', 'high', 'task-one', runtime)
-  await createEnqueuePlan('plan-enqueue-2', 'normal', 'task-two', runtime)
+  const highPlan = await createCapacityPlan(
+    runtime,
+    'task-one',
+    { mode: 'on_worker_slot_freed' },
+    GLOBAL_FOCUS_ID,
+  )
+  highPlan.id = 'plan-enqueue-1'
+  highPlan.priority = 'high'
+  runtime.domain.taskPlans.push(highPlan)
+  const normalPlan = await createCapacityPlan(
+    runtime,
+    'task-two',
+    { mode: 'on_worker_slot_freed' },
+    GLOBAL_FOCUS_ID,
+  )
+  normalPlan.id = 'plan-enqueue-2'
+  runtime.domain.taskPlans.push(normalPlan)
 
   const triggered = await triggerOnWorkerSlotFreedPlans(runtime, Date.now(), 1)
 
@@ -76,7 +43,15 @@ test('on_worker_slot_freed enqueue plans respect available slot budget', async (
 
 test('on_worker_slot_freed plans do not run when no slot is available', async () => {
   const runtime = await createRuntime()
-  await createEnqueuePlan('plan-enqueue-1', 'high', 'task-one', runtime)
+  const plan = await createCapacityPlan(
+    runtime,
+    'task-one',
+    { mode: 'on_worker_slot_freed' },
+    GLOBAL_FOCUS_ID,
+  )
+  plan.id = 'plan-enqueue-1'
+  plan.priority = 'high'
+  runtime.domain.taskPlans.push(plan)
 
   const triggered = await triggerOnWorkerSlotFreedPlans(runtime, Date.now(), 0)
 

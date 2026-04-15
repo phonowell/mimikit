@@ -2,8 +2,8 @@ import { mergeTaskResults } from '../../foundation/prompting/build-prompts-helpe
 import { buildQuoteReferenceLookup } from '../../foundation/prompting/format.js'
 import { buildPaths } from '../../persistence/fs/paths.js'
 import { readHistory } from '../../persistence/history/store.js'
-import { buildFocusPromptPayload } from '../../work/focus/index.js'
-import { readMemoryEntries } from '../../work/memory/store.js'
+import { buildFocusPromptPayload } from '../../work/focus/prompt.js'
+import { readMemoryEntries } from '../../work/memory/entry-codec.js'
 import {
   formatProjectProfilePrompt,
   readProjectProfileEntries,

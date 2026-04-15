@@ -3,81 +3,58 @@ import { expect, test } from 'vitest'
 import { applyPlanCompletionState } from '../src/policy/manager/plan-progress.js'
 import { GLOBAL_FOCUS_ID } from '../src/work/focus/constants.js'
 
-import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-import type { RuntimeState } from '../src/kernel/orchestrator/runtime-state.js'
-
-const createRuntime = async (): Promise<RuntimeState> => {
-  const runtime = await createTestRuntimeState({ pausedQueue: true })
-  runtime.config.codex.enabled = true
-  return runtime
-}
+import {
+  createPlanProgressRuntime,
+  createTriggeredEnqueuePlan,
+} from './helpers/manager-plan-progress.js'
 
 test('applyPlanCompletionState does not copy a stage digest into an unrelated plan that only shares lastTaskId', async () => {
-  const runtime = await createRuntime()
+  const runtime = await createPlanProgressRuntime()
   runtime.domain.taskPlans.push(
-    {
+    createTriggeredEnqueuePlan({
       id: 'plan-stage-digest-owned',
       title: 'auth guard stage digest',
+      cwd: '/repo/mimikit',
       focusId: GLOBAL_FOCUS_ID,
-      priority: 'normal',
-      status: 'active',
+      taskKey: 'task-key-stage-digest-owned',
+      executionSpecId: 'spec-stage-digest-owned',
+      taskTemplateTitle: 'auth guard stage digest task',
+      taskContract: {
+        goal: 'Continue auth guard',
+        scope: 'Only auth guard',
+        acceptance: ['Auth guard finished'],
+      },
       trigger: {
         mode: 'on_worker_slot_freed',
       },
-      effect: {
-        kind: 'enqueue_task',
-        taskKey: 'task-key-stage-digest-owned',
-        taskContract: {
-          goal: 'Continue auth guard',
-          scope: 'Only auth guard',
-          acceptance: ['Auth guard finished'],
-        },
-        taskTemplate: {
-          title: 'auth guard stage digest task',
-          executionSpecId: 'spec-stage-digest-owned',
-          cwd: '/repo/mimikit',
-          resourceMode: 'write',
-        },
-      },
       createdAt: '2026-04-02T00:00:00.000Z',
-      updatedAt: '2026-04-02T00:00:00.000Z',
       runtime: {
         runCount: 1,
         lastTaskId: 'task-stage-shared',
       },
-    },
-    {
+    }),
+    createTriggeredEnqueuePlan({
       id: 'plan-stage-digest-unrelated',
       title: 'billing retry digest',
+      cwd: '/repo/billing',
       focusId: 'focus-billing',
-      priority: 'normal',
-      status: 'active',
+      taskKey: 'task-key-stage-digest-unrelated',
+      executionSpecId: 'spec-stage-digest-unrelated',
+      taskTemplateTitle: 'billing retry digest task',
+      taskContract: {
+        goal: 'Rebuild billing retry pipeline',
+        scope: 'Only billing retry pipeline',
+        acceptance: ['Billing retry finished'],
+      },
       trigger: {
         mode: 'on_worker_slot_freed',
       },
-      effect: {
-        kind: 'enqueue_task',
-        taskKey: 'task-key-stage-digest-unrelated',
-        taskContract: {
-          goal: 'Rebuild billing retry pipeline',
-          scope: 'Only billing retry pipeline',
-          acceptance: ['Billing retry finished'],
-        },
-        taskTemplate: {
-          title: 'billing retry digest task',
-          executionSpecId: 'spec-stage-digest-unrelated',
-          cwd: '/repo/billing',
-          resourceMode: 'write',
-        },
-      },
       createdAt: '2026-04-02T00:00:00.000Z',
-      updatedAt: '2026-04-02T00:00:00.000Z',
       runtime: {
         runCount: 1,
         lastTaskId: 'task-stage-shared',
       },
-    },
+    }),
   )
 
   applyPlanCompletionState(runtime, [
@@ -108,38 +85,31 @@ test('applyPlanCompletionState does not copy a stage digest into an unrelated pl
 })
 
 test('applyPlanCompletionState does not copy a stage digest into a sole matched plan when result semantics disagree', async () => {
-  const runtime = await createRuntime()
-  runtime.domain.taskPlans.push({
-    id: 'plan-stage-digest-sole-unrelated',
-    title: 'billing retry digest',
-    focusId: 'focus-billing',
-    priority: 'normal',
-    status: 'active',
-    trigger: {
-      mode: 'on_worker_slot_freed',
-    },
-    effect: {
-      kind: 'enqueue_task',
+  const runtime = await createPlanProgressRuntime()
+  runtime.domain.taskPlans.push(
+    createTriggeredEnqueuePlan({
+      id: 'plan-stage-digest-sole-unrelated',
+      title: 'billing retry digest',
+      cwd: '/repo/billing',
+      focusId: 'focus-billing',
       taskKey: 'task-key-stage-digest-sole-unrelated',
+      executionSpecId: 'spec-stage-digest-sole-unrelated',
+      taskTemplateTitle: 'billing retry digest task',
       taskContract: {
         goal: 'Rebuild billing retry pipeline',
         scope: 'Only billing retry pipeline',
         acceptance: ['Billing retry finished'],
       },
-      taskTemplate: {
-        title: 'billing retry digest task',
-        executionSpecId: 'spec-stage-digest-sole-unrelated',
-        cwd: '/repo/billing',
-        resourceMode: 'write',
+      trigger: {
+        mode: 'on_worker_slot_freed',
       },
-    },
-    createdAt: '2026-04-02T00:00:00.000Z',
-    updatedAt: '2026-04-02T00:00:00.000Z',
-    runtime: {
-      runCount: 1,
-      lastTaskId: 'task-stage-sole-shared',
-    },
-  })
+      createdAt: '2026-04-02T00:00:00.000Z',
+      runtime: {
+        runCount: 1,
+        lastTaskId: 'task-stage-sole-shared',
+      },
+    }),
+  )
 
   applyPlanCompletionState(runtime, [
     {

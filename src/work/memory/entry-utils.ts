@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto'
 
+import {
+  normalizeEntryInline,
+  normalizeEntryText,
+  parseEntryMetaAndContent,
+} from '../../foundation/shared/markdown-entry.js'
 import { parseIsoMs } from '../../foundation/shared/time.js'
 
 import {
@@ -14,16 +19,11 @@ export const HEADING_RE = /^##\s+(.+)$/
 export const CANONICAL_HEADING_RE =
   /^\[memory-entry\]\s+\(id:(memory-[a-z0-9._-]+)\)$/i
 
-const META_LINE_RE = /^([a-z_]+):\s*(.*)$/i
-
 export const normalizeInline = (value: string): string =>
-  value.replace(/\s+/g, ' ').trim()
+  normalizeEntryInline(value)
 
 export const normalizeText = (value: string): string =>
-  value
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+  normalizeEntryText(value)
 
 export const truncateTitle = (value: string): string =>
   value.length <= MEMORY_ENTRY_MAX_TITLE_CHARS
@@ -67,27 +67,7 @@ export const parseMetaAndContent = (
 ): {
   meta: Map<string, string>
   content: string
-} => {
-  const trimmed = normalizeText(body)
-  if (!trimmed) return { meta: new Map(), content: '' }
-  const sections = trimmed.split(/\n{2,}/)
-  const first = sections[0]
-  if (!first) return { meta: new Map(), content: trimmed }
-  const lines = first.split('\n').map((line) => line.trim())
-  if (lines.length === 0 || lines.some((line) => !META_LINE_RE.test(line)))
-    return { meta: new Map(), content: trimmed }
-  const meta = new Map<string, string>()
-  for (const line of lines) {
-    const matched = line.match(META_LINE_RE)
-    const key = matched?.[1]?.toLowerCase()
-    if (!key) continue
-    meta.set(key, matched?.[2]?.trim() ?? '')
-  }
-  return {
-    meta,
-    content: normalizeText(sections.slice(1).join('\n\n')),
-  }
-}
+} => parseEntryMetaAndContent(body)
 
 export const normalizeUpdatedAt = (value: string | undefined): string => {
   const raw = value?.trim()

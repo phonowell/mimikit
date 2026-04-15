@@ -11,13 +11,13 @@ import {
   scoreSemanticAlignment as scoreSemanticAlignmentBase,
 } from './authorization-semantic-score.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
   Task,
   TaskContract,
   TaskPlan,
   TaskResult,
 } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 const SEMANTIC_MATCH_THRESHOLD = 0.35
 

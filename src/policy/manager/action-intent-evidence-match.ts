@@ -12,9 +12,10 @@ import {
 } from './action-evidence-hints.js'
 import { scoreSemanticAlignment } from './authorization-semantics.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { UserInput } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
+
+export type SupplementalEvidenceSource = 'task_result'
 
 const toEvidenceLabel = (source: SupplementalEvidenceSource): string => source
 const SHORT_CANDIDATE_THRESHOLD = 0.8

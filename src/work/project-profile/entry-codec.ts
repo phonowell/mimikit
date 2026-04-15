@@ -1,6 +1,11 @@
 import { writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
+import {
+  normalizeEntryInline,
+  normalizeEntryText,
+  parseEntryMetaAndContent,
+} from '../../foundation/shared/markdown-entry.js'
 import { ensureDir } from '../../persistence/fs/paths.js'
 import { readTextFileIfExists } from '../../persistence/fs/read-text.js'
 
@@ -11,43 +16,17 @@ import {
 
 const HEADING_RE =
   /^##\s+\[project-profile-entry\]\s+\(id:(project-profile-[a-z0-9._-]+)\)$/i
-const META_LINE_RE = /^([a-z_]+):\s*(.*)$/i
 
-const normalizeInline = (value: string): string =>
-  value.replace(/\s+/g, ' ').trim()
+const normalizeInline = (value: string): string => normalizeEntryInline(value)
 
-const normalizeText = (value: string): string =>
-  value
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+const normalizeText = (value: string): string => normalizeEntryText(value)
 
 const parseMetaAndContent = (
   body: string,
 ): {
   meta: Map<string, string>
   content: string
-} => {
-  const trimmed = normalizeText(body)
-  if (!trimmed) return { meta: new Map(), content: '' }
-  const sections = trimmed.split(/\n{2,}/)
-  const first = sections[0]
-  if (!first) return { meta: new Map(), content: trimmed }
-  const lines = first.split('\n').map((line) => line.trim())
-  if (lines.length === 0 || lines.some((line) => !META_LINE_RE.test(line)))
-    return { meta: new Map(), content: trimmed }
-  const meta = new Map<string, string>()
-  for (const line of lines) {
-    const matched = line.match(META_LINE_RE)
-    const key = matched?.[1]?.toLowerCase()
-    if (!key) continue
-    meta.set(key, matched?.[2]?.trim() ?? '')
-  }
-  return {
-    meta,
-    content: normalizeText(sections.slice(1).join('\n\n')),
-  }
-}
+} => parseEntryMetaAndContent(body)
 
 const formatEntry = (entry: ProjectProfileEntry): string =>
   [

@@ -6,7 +6,7 @@ import {
 } from './action-validation-helpers.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
-import type { Parsed } from '../actions/model/spec.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { ZodSchema } from 'zod'
 
 export const resolveScheduleNowOption = (

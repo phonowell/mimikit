@@ -5,17 +5,17 @@ import {
 } from '../../surface/read-model/plan-select.js'
 
 import { collectTriggeredPlanIds } from './loop-batch-context.js'
-import { resolveBatchWorkingFocusIds } from './loop-batch-primary-focus.js'
 import { logManagerBatchStart } from './loop-batch-run-helpers.js'
 import { runManagerCorrectionRounds } from './loop-batch-run-rounds.js'
+import { resolveBatchWorkingFocusIds } from './workline-focus-order.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
   TaskResult,
   TokenUsage,
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 type ManagerParsedTurn = {
   text: string

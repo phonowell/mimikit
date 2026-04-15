@@ -1,9 +1,9 @@
 import { appendLog } from '../../persistence/log/append.js'
-import { resolveDefaultFocusId } from '../../work/focus/index.js'
+import { resolveDefaultFocusId } from '../../work/focus/state.js'
 
 import { canScheduleManagerRestart } from './restart-runtime.js'
 
-import type { SupplementalEvidenceSource } from './action-intent-evidence-source.js'
+import type { SupplementalEvidenceSource } from './action-intent-evidence-match.js'
 import type {
   ManagerActionFeedback,
   ManagerWakeProfile,

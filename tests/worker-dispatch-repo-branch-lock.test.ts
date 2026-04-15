@@ -70,6 +70,49 @@ const createTask = (
     },
   })
 
+const runDispatchScenario = async (params: {
+  branches: string[]
+  expectedMaxRunning: number
+  rounds: number
+  resourceMode?: Task['resourceMode']
+}): Promise<void> => {
+  const runtime = await createRuntime()
+  for (const [index, branch] of params.branches.entries()) {
+    runtime.domain.tasks.push(
+      await createTask(
+        runtime.config.workDir,
+        `task-${index + 1}`,
+        branch,
+        params.resourceMode,
+      ),
+    )
+  }
+
+  let running = 0
+  let maxRunning = 0
+  runTaskWithRetryMock.mockImplementation(
+    async (): Promise<WorkerLlmResult> => {
+      running += 1
+      maxRunning = Math.max(maxRunning, running)
+      await sleep(40)
+      running = Math.max(0, running - 1)
+      return { output: 'done', elapsedMs: 40 }
+    },
+  )
+
+  for (let round = 0; round < params.rounds; round += 1) {
+    enqueuePendingWorkerTasks(runtime)
+    await runtime.process.worker.queue.onIdle()
+    if (runtime.domain.tasks.every((task) => task.status === 'succeeded')) break
+  }
+
+  expect(runtime.domain.tasks.map((task) => task.status)).toEqual([
+    'succeeded',
+    'succeeded',
+  ])
+  expect(maxRunning).toBe(params.expectedMaxRunning)
+}
+
 beforeEach(() => {
   runTaskWithRetryMock.mockReset()
 })
@@ -80,97 +123,26 @@ afterEach(async () => {
 })
 
 test('worker dispatch serializes tasks on the same repo and branch', async () => {
-  const runtime = await createRuntime()
-  runtime.domain.tasks.push(
-    await createTask(runtime.config.workDir, 'task-main-a', 'main'),
-    await createTask(runtime.config.workDir, 'task-main-b', 'main'),
-  )
-
-  let running = 0
-  let maxRunning = 0
-  runTaskWithRetryMock.mockImplementation(
-    async (): Promise<WorkerLlmResult> => {
-      running += 1
-      maxRunning = Math.max(maxRunning, running)
-      await sleep(40)
-      running = Math.max(0, running - 1)
-      return { output: 'done', elapsedMs: 40 }
-    },
-  )
-
-  for (let round = 0; round < 6; round += 1) {
-    enqueuePendingWorkerTasks(runtime)
-    await runtime.process.worker.queue.onIdle()
-    if (runtime.domain.tasks.every((task) => task.status === 'succeeded')) break
-  }
-
-  expect(runtime.domain.tasks.map((task) => task.status)).toEqual([
-    'succeeded',
-    'succeeded',
-  ])
-  expect(maxRunning).toBe(1)
+  await runDispatchScenario({
+    branches: ['main', 'main'],
+    expectedMaxRunning: 1,
+    rounds: 6,
+  })
 })
 
 test('worker dispatch keeps different branches parallel when slots are free', async () => {
-  const runtime = await createRuntime()
-  runtime.domain.tasks.push(
-    await createTask(runtime.config.workDir, 'task-worktree-1', 'worktree-1'),
-    await createTask(runtime.config.workDir, 'task-worktree-2', 'worktree-2'),
-  )
-
-  let running = 0
-  let maxRunning = 0
-  runTaskWithRetryMock.mockImplementation(
-    async (): Promise<WorkerLlmResult> => {
-      running += 1
-      maxRunning = Math.max(maxRunning, running)
-      await sleep(40)
-      running = Math.max(0, running - 1)
-      return { output: 'done', elapsedMs: 40 }
-    },
-  )
-
-  for (let round = 0; round < 4; round += 1) {
-    enqueuePendingWorkerTasks(runtime)
-    await runtime.process.worker.queue.onIdle()
-    if (runtime.domain.tasks.every((task) => task.status === 'succeeded')) break
-  }
-
-  expect(runtime.domain.tasks.map((task) => task.status)).toEqual([
-    'succeeded',
-    'succeeded',
-  ])
-  expect(maxRunning).toBe(2)
+  await runDispatchScenario({
+    branches: ['worktree-1', 'worktree-2'],
+    expectedMaxRunning: 2,
+    rounds: 4,
+  })
 })
 
 test('worker dispatch does not serialize read tasks behind the same repo branch lock', async () => {
-  const runtime = await createRuntime()
-  runtime.domain.tasks.push(
-    await createTask(runtime.config.workDir, 'task-read-a', 'main', 'read'),
-    await createTask(runtime.config.workDir, 'task-read-b', 'main', 'read'),
-  )
-
-  let running = 0
-  let maxRunning = 0
-  runTaskWithRetryMock.mockImplementation(
-    async (): Promise<WorkerLlmResult> => {
-      running += 1
-      maxRunning = Math.max(maxRunning, running)
-      await sleep(40)
-      running = Math.max(0, running - 1)
-      return { output: 'done', elapsedMs: 40 }
-    },
-  )
-
-  for (let round = 0; round < 4; round += 1) {
-    enqueuePendingWorkerTasks(runtime)
-    await runtime.process.worker.queue.onIdle()
-    if (runtime.domain.tasks.every((task) => task.status === 'succeeded')) break
-  }
-
-  expect(runtime.domain.tasks.map((task) => task.status)).toEqual([
-    'succeeded',
-    'succeeded',
-  ])
-  expect(maxRunning).toBe(2)
+  await runDispatchScenario({
+    branches: ['main', 'main'],
+    expectedMaxRunning: 2,
+    rounds: 4,
+    resourceMode: 'read',
+  })
 })

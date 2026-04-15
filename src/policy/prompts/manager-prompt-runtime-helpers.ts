@@ -4,7 +4,7 @@ import { type MemoryScoreContext } from '../memory/entry-score.js'
 import type { BuildManagerPromptParams } from './manager-prompt-types.js'
 import type { buildQuoteReferenceLookup } from '../../foundation/prompting/format.js'
 import type { FocusId, Task, UserInput } from '../../foundation/types/index.js'
-import type { buildFocusPromptPayload } from '../../work/focus/index.js'
+import type { buildFocusPromptPayload } from '../../work/focus/prompt.js'
 
 const MAX_MEMORY_QUERY_CHARS = 4_000
 const MAX_MEMORY_MENTION_ITEMS = 128

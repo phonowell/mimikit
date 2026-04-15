@@ -1,9 +1,5 @@
 import { compareIsoDesc } from '../../foundation/shared/time.js'
 import { nowIso } from '../../foundation/shared/utils.js'
-import {
-  appendRuntimeFocus,
-  findRuntimeFocus,
-} from '../orchestrator/runtime-domain-write.js'
 
 import { GLOBAL_FOCUS_ID, INBOX_FOCUS_ID } from './constants.js'
 import {
@@ -31,10 +27,45 @@ import type {
 
 export { normalizeFocusSummary } from './meta.js'
 
+const findFocusIndex = (
+  focuses: RuntimeFocusCollection,
+  focusId: FocusId,
+): number => focuses.findIndex((focus) => focus.id === focusId)
+
 type FocusCollectionRuntime = {
   domain: {
     focuses: RuntimeFocusCollection
   }
+}
+
+export const findRuntimeFocus = (
+  runtime: FocusCollectionRuntime,
+  focusId: FocusId,
+): FocusMeta | undefined =>
+  runtime.domain.focuses.find((focus) => focus.id === focusId)
+
+export const appendRuntimeFocus = (params: {
+  runtime: FocusCollectionRuntime
+  focus: FocusMeta
+}): FocusMeta => {
+  params.runtime.domain.focuses = [
+    ...params.runtime.domain.focuses,
+    params.focus,
+  ]
+  return params.focus
+}
+
+export const removeRuntimeFocus = (params: {
+  runtime: FocusCollectionRuntime
+  focusId: FocusId
+}): FocusMeta | undefined => {
+  const index = findFocusIndex(params.runtime.domain.focuses, params.focusId)
+  if (index < 0) return undefined
+  const focus = params.runtime.domain.focuses[index]
+  params.runtime.domain.focuses = params.runtime.domain.focuses.filter(
+    (item) => item.id !== params.focusId,
+  )
+  return focus
 }
 
 export const resolveDefaultFocusId = (runtime: FocusRuntime): FocusId => {

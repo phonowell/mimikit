@@ -2,20 +2,11 @@ import { join } from 'node:path'
 
 import { z } from 'zod'
 
+import { taskContractSchema } from '../../foundation/shared/task-contract-schema.js'
 import { newId, nowIso } from '../../foundation/shared/utils.js'
 import { readJson, writeJson } from '../../persistence/fs/json.js'
 
 import type { TaskContract } from '../../foundation/types/index.js'
-
-const taskContractSchema = z
-  .object({
-    goal: z.string().trim().min(1),
-    scope: z.string().trim().min(1),
-    acceptance: z.array(z.string().trim().min(1)).min(1),
-    outOfScope: z.string().trim().min(1).optional(),
-    contextRefs: z.array(z.string().trim().min(1)).optional(),
-  })
-  .strict()
 
 const taskExecutionSpecSchema = z
   .object({

@@ -1,3 +1,4 @@
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
   ManagerWakeProfile,
   Task,
@@ -6,7 +7,6 @@ import type {
   TaskStatus,
   UserInput,
 } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 export type FeedbackContext = {
   stateDir?: string

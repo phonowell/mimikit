@@ -16,7 +16,7 @@ import {
 } from './action-intent-evidence-write-actions.js'
 
 import type { FeedbackContext } from './action-validation-context.js'
-import type { Parsed } from '../actions/model/spec.js'
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 
 const requiresIntentEvidence = (item: Parsed): boolean => {
   if (item.type === 'delete_plan') return true

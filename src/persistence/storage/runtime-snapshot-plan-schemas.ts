@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
+import { taskContractSchema } from '../../foundation/shared/task-contract-schema.js'
 import { TASK_PLAN_STATUS_VALUES } from '../../foundation/types/runtime-domain.js'
 import { TASK_RESOURCE_MODE_VALUES } from '../../work/types/task-runtime-types.js'
 
 import { taskPlanRuntimeSchema } from './runtime-snapshot-task-schema-parts.js'
-import { taskContractSchema } from './runtime-snapshot-task-schemas.js'
 const taskPlanStatusSchema = z.enum(TASK_PLAN_STATUS_VALUES)
 const taskResourceModeSchema = z.enum(TASK_RESOURCE_MODE_VALUES)
 

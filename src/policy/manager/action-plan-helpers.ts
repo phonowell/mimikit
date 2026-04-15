@@ -7,8 +7,6 @@ import {
   buildPlanTriggerPayload,
 } from '../../work/shared/plan-payload.js'
 
-import { buildPlanEffectKey } from './action-plan-effect-key.js'
-
 import type {
   TaskPlan,
   TaskPlanEffect,
@@ -18,6 +16,9 @@ import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interface
 
 const resolvePlanLabel = (item: TaskPlan): string =>
   item.title.trim() || item.id
+
+const buildPlanEffectKey = (params: { effect: TaskPlanEffect }): string =>
+  ['enqueue_task', params.effect.taskKey].join('\n')
 
 export const appendPlanSystemMessage = async (
   runtime: ManagerRuntime,

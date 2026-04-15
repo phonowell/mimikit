@@ -1,22 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { resolveBatchWorkingFocusIds } from '../src/policy/manager/loop-batch-primary-focus.js'
+import { resolveBatchWorkingFocusIds } from '../src/policy/manager/workline-focus-order.js'
 
+import { createActiveFocus } from './helpers/manager-batch-primary-focus.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
-
-const createActiveFocus = (params: {
-  id: string
-  title: string
-  updatedAt: string
-  lastActivityAt: string
-}) => ({
-  id: params.id,
-  title: params.title,
-  status: 'active' as const,
-  createdAt: '2026-03-20T00:00:00.000Z',
-  updatedAt: params.updatedAt,
-  lastActivityAt: params.lastActivityAt,
-})
 
 test('returns ordered working focus ids for independent active worklines', async () => {
   const runtime = await createTestRuntimeState({

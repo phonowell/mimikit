@@ -8,13 +8,14 @@ import {
 } from '../../foundation/prompting/prompt-template-loader.js'
 import { canonicalizeTaskDraft } from '../../foundation/shared/task-draft-canonicalize.js'
 
-import { formatEnqueueTaskContractMissingHint } from './action-feedback-hints.js'
+import { renderActionFeedbackHint } from './action-feedback-hint-renderer.js'
 
 import type { ManagerTaskDraft } from './manager-turn-schema.js'
 import type { TaskContract } from '../../foundation/types/index.js'
 
-export const TASK_CONTRACT_REQUIRED_HINT =
-  formatEnqueueTaskContractMissingHint()
+export const TASK_CONTRACT_REQUIRED_HINT = renderActionFeedbackHint(
+  'enqueue_task_contract_missing',
+)
 
 const taskContractWorkerPromptTemplateSchema = z
   .object({

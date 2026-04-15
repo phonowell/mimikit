@@ -1,6 +1,7 @@
 type Props = {
   statusText: string
   statusState: string
+  qualitySummary: string
   workerStates: string[]
   hasPlans: boolean
   toolsMenuOpen: boolean
@@ -18,6 +19,7 @@ type Props = {
 export const Header = ({
   statusText,
   statusState,
+  qualitySummary,
   workerStates,
   hasPlans,
   toolsMenuOpen,
@@ -36,8 +38,13 @@ export const Header = ({
       <div className="status-group" aria-label="Status">
         <p className="status-item">
           <span className="status-dot" data-state={statusState}></span>
-          <span className="status-text" aria-live="polite">
-            {statusText}
+          <span className="status-copy">
+            <span className="status-text" aria-live="polite">
+              {statusText}
+            </span>
+            {qualitySummary ? (
+              <span className="status-subtext">{qualitySummary}</span>
+            ) : null}
           </span>
         </p>
       </div>

@@ -6,8 +6,8 @@ import {
   rememberProjectProfileActionSchema,
 } from './manager-turn-schema.js'
 
+import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type { UserInput } from '../../foundation/types/index.js'
-import type { Parsed } from '../actions/model/spec.js'
 
 type DialogEvidenceActionName = 'remember_memory' | 'remember_project_profile'
 

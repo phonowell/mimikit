@@ -6,7 +6,7 @@ import { appendHistory } from '../../persistence/history/store.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { readLogDiagnostics } from '../../persistence/log/diagnostics.js'
 import { bestEffort, logSafeError } from '../../persistence/log/safe.js'
-import { resolveDefaultFocusId, touchFocus } from '../../work/focus/index.js'
+import { resolveDefaultFocusId, touchFocus } from '../../work/focus/state.js'
 
 import { appendAndDispatchManagerFailureReply } from './loop-batch-failure-reply.js'
 import {

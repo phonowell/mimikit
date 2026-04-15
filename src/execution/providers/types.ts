@@ -1,4 +1,4 @@
-import type { TokenUsage } from './token-usage.js'
+import type { TokenUsage } from '../../foundation/types/base.js'
 import type { TaskResourceMode } from '../../work/types/task-runtime-types.js'
 import type { ModelReasoningEffort } from '@openai/codex-sdk'
 
