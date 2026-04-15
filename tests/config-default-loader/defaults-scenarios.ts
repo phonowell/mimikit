@@ -10,7 +10,7 @@ test('fills defaults when optional fields are omitted', async () => {
   const config = loadDefaultConfigFromToml(path)
 
   expect(config.manager.model).toBe('gpt-5')
-  expect(config.manager.modelReasoningEffort).toBe('medium')
+  expect(config.manager.modelReasoningEffort).toBe('high')
   expect(config.codex.model).toBe('gpt-5.4')
   expect(config.codex.enabled).toBe(true)
   expect(config.codex.modelReasoningEffort).toBe('high')

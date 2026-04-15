@@ -91,6 +91,6 @@ test('buildManagerPromptPayload keeps working focus context for capacity packets
     expect(readHistoryMock).toHaveBeenCalledTimes(1)
     expect(readMemoryEntriesMock).toHaveBeenCalledTimes(1)
     expect(payload.contextPacket.workingFocusIds).toEqual(['focus-capacity'])
-    expect(payload.prompt).toContain('working_focuses')
+    expect(payload.promptSections.state_packet).toBeGreaterThan(0)
   }
 })

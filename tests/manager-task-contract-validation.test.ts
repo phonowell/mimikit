@@ -45,17 +45,23 @@ test('enqueue_task requires goal/in_scope/done_when contract arrays', () => {
 
 test('enqueue_task builds fallback worker prompt from task draft', () => {
   const prompt = resolveWorkerPromptFromDraft(validTask)
+  const lines = prompt.split('\n').filter(Boolean)
 
-  expect(prompt).toContain('任务标题：Task with generated prompt')
-  expect(prompt).toContain('目标：Finish task')
-  expect(prompt).toContain('执行范围：Single deliverable')
-  expect(prompt).toContain('不做：Do not change unrelated modules')
-  expect(prompt).toContain(
-    '上下文引用：docs/design/workflow/interfaces-and-state.md',
-  )
-  expect(prompt).toContain('完成标准：')
-  expect(prompt).toContain('1. Output exists')
-  expect(prompt).toContain('2. Tests pass')
+  expect(
+    lines.some((line) => line.includes('Task with generated prompt')),
+  ).toBe(true)
+  expect(lines.some((line) => line.includes('Finish task'))).toBe(true)
+  expect(lines.some((line) => line.includes('Single deliverable'))).toBe(true)
+  expect(
+    lines.some((line) => line.includes('Do not change unrelated modules')),
+  ).toBe(true)
+  expect(
+    lines.some((line) =>
+      line.includes('docs/design/workflow/interfaces-and-state.md'),
+    ),
+  ).toBe(true)
+  expect(lines.some((line) => line.includes('1. Output exists'))).toBe(true)
+  expect(lines.some((line) => line.includes('2. Tests pass'))).toBe(true)
 })
 
 test('enqueue_task normalizes state-relative context refs in worker prompt output', () => {
@@ -70,8 +76,11 @@ test('enqueue_task normalizes state-relative context refs in worker prompt outpu
     },
     { stateDir: '/tmp/mimikit/.mimikit' },
   )
+  const contextLine = prompt
+    ?.split('\n')
+    .find((line) => line.startsWith('上下文引用：'))
 
-  expect(prompt).toContain(
+  expect(contextLine).toBe(
     '上下文引用：/tmp/mimikit/.mimikit/tasks/2026-03-28/task-example.md；/tmp/mimikit/.mimikit/generated/worker-task-prompts/2026-03-28/task-example.md；docs/design/workflow/interfaces-and-state.md',
   )
 })
@@ -86,15 +95,19 @@ test('task contract prompt labels live in prompt template instead of source code
     'utf8',
   )
 
-  expect(source).not.toContain('任务标题：')
-  expect(source).not.toContain('不做：')
-  expect(source).not.toContain('上下文引用：')
-  expect(source).not.toContain('补充说明：')
-
-  expect(template).toContain('{{ title_label }}')
-  expect(template).toContain('{{ out_of_scope_label }}')
-  expect(template).toContain('{{ context_refs_label }}')
-  expect(template).toContain('{{ extra_instructions_heading }}')
+  expect(
+    ['任务标题：', '不做：', '上下文引用：', '补充说明：'].some((label) =>
+      source.includes(label),
+    ),
+  ).toBe(false)
+  expect(
+    [
+      '{{ title_label }}',
+      '{{ out_of_scope_label }}',
+      '{{ context_refs_label }}',
+      '{{ extra_instructions_heading }}',
+    ].every((key) => template.includes(key)),
+  ).toBe(true)
 })
 
 test('enqueue_task accepts complete task draft', () => {

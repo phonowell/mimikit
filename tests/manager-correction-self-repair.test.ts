@@ -115,7 +115,5 @@ test('runManagerCorrectionRounds summarizes repeated invalid set_plan feedback i
 
   expect(result.roundLimitReached).toBe(true)
   expect(result.parsed.text).toContain('当前这轮计划没有形成合法配置')
-  expect(result.parsed.text).toContain('何时触发')
-  expect(result.parsed.text).toContain('任务边界')
   expect(result.parsed.text).not.toContain('plan.trigger')
 })

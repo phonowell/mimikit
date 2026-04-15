@@ -44,14 +44,18 @@ test('processManagerBatch flushes pending restart on no-reply fast path', async 
 })
 
 test('normalizeManagerReplyText strips internal action tags from user-visible replies', () => {
-  const reply = normalizeManagerReplyText(`<M:enqueue_task title="继续推进 schema 收尾" />
+  const reply = normalizeManagerReplyText(
+    `<M:enqueue_task title="继续推进 schema 收尾" />
 当前进展不清楚。
-下一步由 intent-evidence guard 和 schema 决定。`)
+下一步由 intent-evidence guard 和 schema 决定。`,
+  )
+  const lines = reply.split('\n')
+  const leakedFragments = ['<M:', 'enqueue_task', 'intent-evidence', 'schema']
 
-  expect(reply).toContain('当前进展')
-  expect(reply).toContain('下一步')
-  expect(reply).not.toContain('<M:')
-  expect(reply).not.toContain('enqueue_task')
-  expect(reply).not.toContain('intent-evidence')
-  expect(reply).not.toContain('schema')
+  expect(lines).toHaveLength(2)
+  expect(lines[0]?.startsWith('当前进展')).toBe(true)
+  expect(lines[1]?.startsWith('下一步')).toBe(true)
+  expect(leakedFragments.some((fragment) => reply.includes(fragment))).toBe(
+    false,
+  )
 })

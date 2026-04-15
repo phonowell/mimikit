@@ -69,7 +69,14 @@ test('reports removed runtime-only keys as unknown', async () => {
 
 test('ignores unknown keys and reports them via callback', async () => {
   const path = await writeTempConfig(
-    ['qq = true', '', '[manager]', 'model = "gpt-5.2"', 'unknownManagerKey = true', ''].join('\n'),
+    [
+      'qq = true',
+      '',
+      '[manager]',
+      'model = "gpt-5.2"',
+      'unknownManagerKey = true',
+      '',
+    ].join('\n'),
   )
 
   let unknownKeys: string[] = []
@@ -97,7 +104,8 @@ test('missing config path falls back to template without creating file', async (
 
   const config = loadDefaultConfigFromToml(missingPath)
 
-  expect(config.manager.model).toBe('gpt-5.2')
+  expect(config.manager.model).toBe('gpt-5.4')
+  expect(config.manager.modelReasoningEffort).toBe('high')
   expect(config.webui.port).toBe(8787)
   await expect(readFile(missingPath)).rejects.toMatchObject({ code: 'ENOENT' })
 })

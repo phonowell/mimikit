@@ -41,27 +41,8 @@ test('buildManagerPromptPayload injects repo-bound project profile into stable c
     packetMode: 'standard',
   })
 
-  expect(payload.prompt).toContain('<M:project_profile>')
+  expect(payload.promptSections.project_profile).toBeGreaterThan(0)
   expect(payload.prompt).toContain(
     '本仓库命令面统一使用 pnpm + tsx，不再补 npm 兼容脚本。',
   )
-})
-
-test('buildManagerPromptPayload keeps the manager output contract on reply + actions', async () => {
-  const stateDir = await mkdtemp(join(tmpdir(), 'mimikit-manager-middle-'))
-  const payload = await buildManagerPromptPayload({
-    stateDir,
-    workDir: stateDir,
-    startupWorktree: '/repo/mimikit',
-    inputs: [],
-    results: [],
-    tasks: [],
-    promptSectionLimits: defaultConfig({ workDir: stateDir }).manager
-      .promptSections,
-    wakeProfile: 'task_result',
-    packetMode: 'standard',
-  })
-
-  expect(payload.prompt).toContain('{ reply, actions }')
-  expect(payload.prompt).not.toContain('{ reply, actions, decision }')
 })

@@ -146,9 +146,14 @@ test('buildMemoryPromptScoreContext excludes task outputs and plan titles from m
     workingFocusIds: ['focus-a'],
   })
 
-  expect(context.queryText).toContain('Keep replies concise.')
-  expect(context.queryText).toContain('Consolidate manager prompt')
+  expect(context.mentionTexts).toEqual([
+    'Keep replies concise.',
+    'Consolidate manager prompt',
+    'Prompt alignment',
+    'Keep manager context compact.',
+    'Preserve only orchestration state',
+  ])
+  expect(context.workingFocusIds).toEqual(['focus-a'])
   expect(context.queryText).not.toContain('Temporary rollout checklist')
   expect(context.queryText).not.toContain('Nightly backlog sweep')
-  expect(context.mentionTexts).not.toContain('Temporary rollout checklist')
 })

@@ -13,9 +13,9 @@ vi.mock('../src/policy/manager/loop-batch-run-manager.js', () => ({
   runManagerBatch: hoistedMocks.runManagerBatchMock,
 }))
 
-import { formatManagerVisibleTaskResultReply } from '../src/policy/manager/task-result-visible-reply.js'
 import { readHistory } from '../src/persistence/history/store.js'
 import { processManagerBatch } from '../src/policy/manager/loop-batch.js'
+import { formatManagerVisibleTaskResultReply } from '../src/policy/manager/task-result-visible-reply.js'
 
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
 import { createTestRuntimeState } from './helpers/runtime-state.js'
@@ -85,8 +85,7 @@ test('processManagerBatch routes single task_result batches through manager foll
   const history = await readHistory(runtime.paths.history)
   expect(history.at(-1)).toMatchObject({
     role: 'agent',
-    text:
-      '当前进展：我会继续按当前工作线推进并同步阶段结论。\n下一步：我会继续推进当前目标；如遇高风险或证据冲突，再抬给你决策。',
+    text: '当前进展：我会继续按当前工作线推进并同步阶段结论。\n下一步：我会继续推进当前目标；如遇高风险或证据冲突，再抬给你决策。',
     usage: {
       input: 13,
       output: 8,
@@ -145,8 +144,7 @@ test('formatManagerVisibleTaskResultReply reports result progress naturally with
   const task = createTaskFixture({
     id: 'task-natural-reply',
     title: '收敛 manager 用户回复',
-    archivePath:
-      '/tmp/mimikit/.mimikit/tasks/2026-04-14/task-natural-reply.md',
+    archivePath: '/tmp/mimikit/.mimikit/tasks/2026-04-14/task-natural-reply.md',
   })
 
   const reply = formatManagerVisibleTaskResultReply({
@@ -168,10 +166,17 @@ test('formatManagerVisibleTaskResultReply reports result progress naturally with
     detail: 'schema 对齐已经完成，结果可继续进入后续收尾。',
     workDir: '/tmp/mimikit',
   })
+  const lines = reply.split('\n')
+  const leakedFragments = [
+    'raw output should stay hidden',
+    'enqueue_task',
+    'intent-evidence',
+  ]
 
-  expect(reply).toContain('当前进展')
-  expect(reply).toContain('下一步')
-  expect(reply).not.toContain('enqueue_task')
-  expect(reply).not.toContain('intent-evidence')
-  expect(reply).not.toContain('schema')
+  expect(lines.some((line) => line.startsWith('当前进展：'))).toBe(true)
+  expect(lines.some((line) => line.startsWith('下一步：'))).toBe(true)
+  expect(reply).toContain('[任务归档](')
+  expect(leakedFragments.some((fragment) => reply.includes(fragment))).toBe(
+    false,
+  )
 })
