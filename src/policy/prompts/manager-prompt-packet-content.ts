@@ -81,6 +81,7 @@ export const buildStatePacketPayload = (params: {
         ...(params.latestResultTaskId
           ? { latestResultTaskId: params.latestResultTaskId }
           : {}),
+        detail: 'card',
       })
     : {
         payload: undefined,
@@ -92,6 +93,7 @@ export const buildStatePacketPayload = (params: {
         ...(params.latestResultTaskId
           ? { latestResultTaskId: params.latestResultTaskId }
           : {}),
+        detail: 'card',
       })
     : {
         payload: undefined,

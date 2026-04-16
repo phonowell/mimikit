@@ -1,10 +1,6 @@
-import { toDisplayPath } from '../../surface/shared/path-display.js'
-import { resolveTaskLabel } from '../../work/shared/task-state.js'
-
 import {
   escapeCdata,
   parseIsoToMs,
-  resolveTaskChangedAt,
   sortTasksByChangedAt,
   stringifyPromptJson,
 } from './format-base.js'
@@ -12,14 +8,14 @@ import {
   buildResultPromptPayload,
   pickArchivePath,
 } from './format-task-result-payload.js'
-import { buildTaskContractPromptPayload } from './task-contract-prompt-payload.js'
+import {
+  formatTaskPromptEntry,
+  type TaskPromptEntryOptions,
+} from './task-prompt-entry.js'
 
-import type { Task, TaskCancelMeta, TaskResult } from '../types/index.js'
+import type { Task, TaskResult } from '../types/index.js'
 
-export type TaskPromptPayloadOptions = {
-  workingFocusIds?: string[] | undefined
-  latestResultTaskId?: string | undefined
-}
+export type TaskPromptPayloadOptions = TaskPromptEntryOptions
 
 export type ResultPromptPayloadOptions = {
   includeOutputTaskIds?: readonly string[] | undefined
@@ -34,59 +30,11 @@ export type PromptSelectionSummary = {
 export const selectTasksForPrompt = (tasks: Task[]): Task[] =>
   sortTasksByChangedAt(tasks)
 
-const toCancelMeta = (
-  cancel?: TaskCancelMeta,
-): Record<string, unknown> | undefined =>
-  cancel
-    ? {
-        source: cancel.source,
-        ...(cancel.reason ? { reason: cancel.reason } : {}),
-      }
-    : undefined
-
-const formatTaskEntry = (
-  task: Task,
-  result: TaskResult | undefined,
-  workDir?: string,
-): Record<string, unknown> => {
-  const archivePath = pickArchivePath(
-    result?.archivePath,
-    task.archivePath,
-    workDir,
-  )
-  return {
-    ...(archivePath ? { archive_path: archivePath } : {}),
-    id: task.id,
-    status: task.status,
-    ...(buildTaskContractPromptPayload(task.contract)
-      ? { contract: buildTaskContractPromptPayload(task.contract) }
-      : {}),
-    resource_mode: task.resourceMode ?? 'write',
-    provider: task.provider,
-    cwd: toDisplayPath(task.cwd, workDir),
-    ...(task.repoKey ? { repo_key: task.repoKey } : {}),
-    ...(task.branch ? { branch: task.branch } : {}),
-    ...(task.git
-      ? {
-          git: {
-            worktree_path: toDisplayPath(task.git.worktreePath, workDir),
-            branch: task.git.branch,
-          },
-        }
-      : {}),
-    title: resolveTaskLabel(task),
-    changed_at: resolveTaskChangedAt(task),
-    ...(task.status === 'canceled' && task.cancel
-      ? { cancel: toCancelMeta(task.cancel) }
-      : {}),
-  }
-}
-
 export const buildTasksPromptPayloadSection = (
   tasks: Task[],
   results: TaskResult[],
   workDir?: string,
-  _options?: TaskPromptPayloadOptions,
+  options?: TaskPromptPayloadOptions,
 ): {
   payload?: { tasks: Record<string, unknown>[] } | undefined
   selection: PromptSelectionSummary
@@ -97,12 +45,15 @@ export const buildTasksPromptPayloadSection = (
   const resultById = new Map(results.map((result) => [result.taskId, result]))
   const orderedTasks = selectTasksForPrompt(tasks)
   const entries = orderedTasks.map((task) =>
-    formatTaskEntry(task, resultById.get(task.id), workDir),
+    formatTaskPromptEntry(task, resultById.get(task.id), workDir, options),
   )
 
   return {
     payload: entries.length === 0 ? undefined : { tasks: entries },
-    selection: { selected: entries.length, full: entries.length, card: 0 },
+    selection:
+      options?.detail === 'card'
+        ? { selected: entries.length, full: 0, card: entries.length }
+        : { selected: entries.length, full: entries.length, card: 0 },
   }
 }
 
