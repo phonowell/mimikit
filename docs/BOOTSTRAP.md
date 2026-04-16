@@ -102,7 +102,7 @@ curl -sS -N http://127.0.0.1:8787/api/events | head -n 2
 
 建议优先查看：
 
-- `.mimikit/log.jsonl`：统一 JSONL 日志；manager / worker / provider 共用同一 schema。排障优先看 `batchId/roundId/providerCallId/taskId/traceRef`；manager action / followup / suppressed / failure 收口也都挂在同一组键上。
+- `.mimikit/log.jsonl`：统一 JSONL 日志；manager / worker / provider / HTTP 共用同一 schema。排障优先看 `batchId/roundId/providerCallId/taskId/traceRef/requestId`；HTTP access 会补 `http_request_completed`，控制面会补 `http_control_requested` / `http_runtime_exit_*`。
 - `.mimikit/runtime-snapshot.json`：当前 runtime 持久化快照。
 - `.mimikit/tasks/tasks.jsonl`：任务视图快照。
 - `.mimikit/results/packets.jsonl`：worker 回写结果。

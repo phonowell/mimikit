@@ -6,8 +6,13 @@ import fastifyStatic from '@fastify/static'
 import fastify from 'fastify'
 import { FastifySSEPlugin } from 'fastify-sse-v2'
 
-import { logSafeError } from '../../persistence/log/safe.js'
+import { toErrorInfo } from '../../foundation/shared/error-info.js'
 
+import {
+  appendHttpLog,
+  buildHttpRequestContext,
+  registerHttpObservability,
+} from './observability.js'
 import { registerApiRoutes, registerNotFoundHandler } from './routes-api.js'
 import { ensureWebUiGenerated, resolveRoots } from './webui-build.js'
 
@@ -54,8 +59,8 @@ const resolveErrorCode = (error: unknown): string | undefined => {
   return typeof code === 'string' ? code : undefined
 }
 
-const registerErrorHandler = (app: FastifyInstance): void => {
-  app.setErrorHandler(async (error, _request, reply) => {
+const registerErrorHandler = (app: FastifyInstance, stateDir: string): void => {
+  app.setErrorHandler(async (error, request, reply) => {
     const statusCode = resolveStatusCode(error)
     const code = resolveErrorCode(error)
     if (code === 'FST_ERR_CTP_INVALID_JSON_BODY') {
@@ -67,8 +72,16 @@ const registerErrorHandler = (app: FastifyInstance): void => {
       reply.code(statusCode).send({ error: message })
       return
     }
-    await logSafeError('http: request', error)
-    reply.code(500).send({ error: message })
+    const info = toErrorInfo(error)
+    reply.code(500)
+    await appendHttpLog(stateDir, {
+      event: 'http_request_failed',
+      ...buildHttpRequestContext(request, reply),
+      error: info.message,
+      ...(info.name ? { errorName: info.name } : {}),
+      ...(info.stack ? { errorStack: info.stack } : {}),
+    })
+    reply.send({ error: message })
   })
 }
 
@@ -118,21 +131,23 @@ export const createHttpServer = async (
   config: AppConfig,
   port: number,
 ) => {
-  console.log('[http] ensureWebUiGenerated begin')
   await ensureWebUiGenerated()
-  console.log('[http] ensureWebUiGenerated done')
   const app = fastify({ bodyLimit: MAX_BODY_BYTES })
   await app.register(fastifyEtag)
   await app.register(FastifySSEPlugin, { retryDelay: 1500 })
 
-  registerErrorHandler(app)
+  registerHttpObservability(app, config.workDir)
+  registerErrorHandler(app, config.workDir)
   registerApiRoutes(app, orchestrator, config)
   registerStaticAssets(app, config)
   registerNotFoundHandler(app)
 
-  console.log(`[http] app.listen begin: port=${port}`)
   const address = await app.listen({ port, host: '0.0.0.0' })
-  console.log(`[http] listening on ${address}`)
+  await appendHttpLog(config.workDir, {
+    event: 'http_server_listening',
+    port,
+    address,
+  })
 
   return app
 }
