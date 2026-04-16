@@ -102,8 +102,10 @@
 
 | Function | Location | Does What |
 |---|---|---|
-| `createHttpServer()` | `src/surface/http/index.ts:108` | Fastify server bootstrap |
-| `registerApiRoutes()` | `src/surface/http/routes-api.ts:14` | Registers REST endpoints, task mutation routes, and recoverable resume API |
+| `createHttpServer()` | `src/surface/http/index.ts:131` | Fastify server bootstrap |
+| `registerHttpObservability()/appendHttpLog()/buildHttpRequestContext()` | `src/surface/http/observability.ts:98` | Shared HTTP access/control/lifecycle logging helpers |
+| `registerApiRoutes()` | `src/surface/http/routes-api.ts:13` | Registers REST endpoints, task mutation routes, and recoverable resume API |
+| `registerRuntimeControlRoutes()` | `src/surface/http/routes-api-runtime-control.ts:90` | Registers restart/reset routes with idle gating and structured control logs |
 | `registerEventsRoute()` | `src/surface/http/routes-api-events.ts:18` | Registers SSE event stream route |
 | `buildDeltaSnapshot()` | `src/surface/http/routes-api-events-shared.ts:81` | Builds SSE delta snapshot |
 | `sendSseEvent()` | `src/surface/http/routes-api-events-shared.ts:96` | Writes SSE frame |

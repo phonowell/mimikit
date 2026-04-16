@@ -85,6 +85,7 @@
 - 必填：`text`
 - 可选：`quote`、`language`
 - 可选客户端上下文：`clientLocale`、`clientTimeZone`、`clientOffsetMinutes`、`clientNowIso`
+- 服务端会把当前 HTTP `requestId` 注入 `meta.requestId`，用于把 `user_input` 事件回链到对应 access log
 - 限制：当前仅支持纯文本输入，不支持图片/附件直传。
 
 请求体错误语义：
@@ -153,8 +154,9 @@
 - `task-progress/YYYY-MM-DD/{taskId}.jsonl` 当前会记录 `worker_start`、运行中的 `worker_activity`、脱敏后的 `worker_live_output` 摘要以及结束态事件；这些事件属于运行态进度记录，不构成最终 archive 协议。
 - worker task archive frontmatter 当前会额外写入 `trace_path`，并补充 `provider_call_id/attempt`，用于从 archive 稳定反链回对应 trace 与最终 provider 调用；失败或取消收口也会优先继承异常上携带的同组诊断字段。
 - worker task archive frontmatter 当前会显式写入 `archive_kind: final`；`/api/tasks/:id/archive` 的运行态兜底文档会写 `archive_kind: live_fallback`。
-- `log.jsonl` 现在由 manager / worker / provider 共用同一 logger 与 schema。关键事件默认带 `traceId`，并在适用时附带 `batchId`、`roundId`、`providerCallId`、`taskId`、`traceRef`。manager 的 `manager_action`、`manager_action_feedback`、`manager_action_suppressed`、`manager_action_apply_feedback` 现在也统一挂这组 round 诊断键。
+- `log.jsonl` 现在由 manager / worker / provider / HTTP 共用同一 logger 与 schema。关键事件默认带 `traceId`，并在适用时附带 `batchId`、`roundId`、`providerCallId`、`taskId`、`traceRef`。manager 的 `manager_action`、`manager_action_feedback`、`manager_action_suppressed`、`manager_action_apply_feedback` 现在也统一挂这组 round 诊断键。
 - `log.jsonl` 中 manager 每轮会写 `manager_context_budget_resolved`，显式记录 `policy=fixed`、`wakeProfile` 与最终 `promptSectionLimits`；这条日志现在也会携带 `batchId/roundId`。每次启动还会先写入 `runtime_startup` 事件，至少包含 `runtimeId`、`startedAt`、`worktree`，并在可用时附带 `commit`、`dirty`。
+- HTTP 层会为每个请求写 `http_request_completed`，至少包含 `requestId/method/url/pathname/routeKind/statusCode/durationMs`；5xx 还会额外写 `http_request_failed`，控制面会补 `http_control_requested/http_runtime_exit_scheduled/http_runtime_exit_requested`。
 - `manager_end` 在成功和失败路径都会尽量带回 `batchId`，并在可用时带 `roundId/providerCallId/traceRef/threadId`，用于从批次收口日志直接跳回具体 manager trace。
 - `traces/YYYY-MM-DD/*.txt` frontmatter 现在会补充 `batch_id/round_id/provider_call_id/attempt_number/thread_id` 一类诊断字段。
 - 异常退出（如被 kill）时，reaper 依据 `runtime/lease.json + runtime/children.json` 回收残留子进程。

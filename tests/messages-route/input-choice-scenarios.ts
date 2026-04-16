@@ -36,6 +36,7 @@ test('input route forwards normalized payload to orchestrator', async () => {
     text: 'hello',
     quote: 'q-1',
     meta: {
+      requestId: 'req-1',
       source: 'webui',
       platform: 'webui',
       remote: '127.0.0.1',

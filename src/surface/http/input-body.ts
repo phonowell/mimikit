@@ -22,6 +22,7 @@ const inputBodySchema = z
   .strict()
 
 export type InputMeta = {
+  requestId?: string
   source: string
   platform?: string
   remote?: string
@@ -37,6 +38,7 @@ export const parseInputBody = (
   body: unknown,
   request: {
     remoteAddress?: string | undefined
+    requestId?: string | undefined
     userAgent?: string | undefined
     acceptLanguage?: string | undefined
   },
@@ -59,6 +61,7 @@ export const parseInputBody = (
   } = parsed.data
 
   const meta: InputMeta = { source: 'webui', platform: 'webui' }
+  if (request.requestId) meta.requestId = request.requestId
   if (request.remoteAddress) meta.remote = request.remoteAddress
   if (request.userAgent) meta.userAgent = request.userAgent
   const language = bodyLanguage ?? request.acceptLanguage

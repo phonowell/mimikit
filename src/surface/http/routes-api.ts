@@ -1,16 +1,14 @@
-import { logSafeError } from '../../persistence/log/safe.js'
-
 import { parseInputBody } from './input-body.js'
 import { resolveRouteId } from './route-params.js'
 import { registerEventsRoute } from './routes-api-events.js'
+import { registerRuntimeControlRoutes } from './routes-api-runtime-control.js'
 import { registerTaskArchiveRoute } from './routes-api-task-archive.js'
 import { registerTaskMutationRoute } from './routes-api-task-mutation.js'
 import { registerWorkspaceFileRoute } from './routes-api-workspace-file.js'
-import { clearStateDir } from './state-dir.js'
 
 import type { AppConfig } from '../../bootstrap/config.js'
 import type { Orchestrator } from '../../kernel/orchestrator/orchestrator-service.js'
-import type { FastifyInstance, FastifyReply } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 
 export const registerApiRoutes = (
   app: FastifyInstance,
@@ -26,6 +24,7 @@ export const registerApiRoutes = (
   app.post('/api/input', async (request, reply) => {
     const result = parseInputBody(request.body, {
       remoteAddress: request.raw.socket.remoteAddress ?? undefined,
+      requestId: request.id,
       userAgent:
         typeof request.headers['user-agent'] === 'string'
           ? request.headers['user-agent']
@@ -92,74 +91,7 @@ export const registerApiRoutes = (
       orchestrator.mutateTask(route.action, taskId, { source: 'user' }),
     )
   }
-
-  const scheduleExit = (params?: {
-    afterPersist?: () => Promise<void>
-    exitReason?: string
-  }): void => {
-    console.log(
-      `[http] scheduleExit requested: reason=${params?.exitReason ?? 'http_api_restart'}`,
-    )
-    setTimeout(() => {
-      void (async () => {
-        console.log('[http] stopAndPersist begin')
-        await orchestrator.stopAndPersist()
-        console.log('[http] stopAndPersist done')
-        if (params?.afterPersist) await params.afterPersist()
-        console.log(
-          `[http] requestExit: reason=${params?.exitReason ?? 'http_api_restart'}`,
-        )
-        orchestrator.requestExit(75, params?.exitReason ?? 'http_api_restart', {
-          skipPersist: true,
-        })
-      })()
-    }, 100)
-  }
-
-  const isRuntimeIdleForControlAction = (): boolean => {
-    const status = orchestrator.getStatus()
-    return (
-      status.managerRunning === false &&
-      status.activeTasks === 0 &&
-      status.pendingTasks === 0
-    )
-  }
-
-  const rejectWhenBusy = (
-    reply: FastifyReply,
-    action: 'restart' | 'reset',
-  ): boolean => {
-    if (isRuntimeIdleForControlAction()) return false
-    reply.code(409).send({
-      error: `${action} requires clear slots: wait for manager to stop and pending/running tasks to clear`,
-    })
-    return true
-  }
-
-  const clearStateDirSafely = async (reason: string): Promise<void> => {
-    try {
-      await clearStateDir(config.workDir)
-    } catch (error) {
-      await logSafeError(reason, error)
-    }
-  }
-
-  app.post('/api/restart', (_request, reply) => {
-    if (rejectWhenBusy(reply, 'restart')) return
-    console.log('[http] POST /api/restart accepted')
-    reply.send({ ok: true })
-    scheduleExit()
-  })
-
-  app.post('/api/reset', (_request, reply) => {
-    if (rejectWhenBusy(reply, 'reset')) return
-    console.log('[http] POST /api/reset accepted')
-    reply.send({ ok: true })
-    scheduleExit({
-      exitReason: 'http_api_reset',
-      afterPersist: () => clearStateDirSafely('http: reset'),
-    })
-  })
+  registerRuntimeControlRoutes(app, orchestrator, config)
 }
 
 export const registerNotFoundHandler = (app: FastifyInstance): void => {

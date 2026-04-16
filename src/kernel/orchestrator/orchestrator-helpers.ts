@@ -18,6 +18,7 @@ export type OrchestratorStatus = {
 }
 
 const USER_META_STRING_KEYS = [
+  'requestId',
   'source',
   'platform',
   'channel',

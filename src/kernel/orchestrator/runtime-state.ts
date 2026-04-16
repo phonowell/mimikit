@@ -17,6 +17,7 @@ import type { RuntimeStartupInfo } from '../shared/runtime-startup.js'
 export type PendingUserInput = UserInput
 
 export type UserMeta = {
+  requestId?: string
   source?: string
   platform?: string
   channel?: string
