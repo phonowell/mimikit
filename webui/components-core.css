@@ -1,11 +1,8 @@
 .status-item {
-  display: grid;
+  display: inline-grid;
   grid-template-columns: auto minmax(0, auto);
-  grid-template-areas:
-    'dot text'
-    'dot subtext';
+  grid-template-areas: 'dot text';
   column-gap: 8px;
-  row-gap: 2px;
   align-items: center;
   margin: 0;
   color: var(--muted-contrast, var(--muted));
@@ -15,14 +12,6 @@
 .status-text {
   grid-area: text;
   text-transform: uppercase;
-}
-
-.status-subtext {
-  grid-area: subtext;
-  color: var(--muted-contrast, var(--muted));
-  font-size: 11px;
-  line-height: 1.35;
-  text-transform: none;
 }
 
 .status-dot {

@@ -1,7 +1,6 @@
 type Props = {
   statusText: string
   statusState: string
-  qualitySummary: string
   workerStates: string[]
   hasPlans: boolean
   toolsMenuOpen: boolean
@@ -19,7 +18,6 @@ type Props = {
 export const Header = ({
   statusText,
   statusState,
-  qualitySummary,
   workerStates,
   hasPlans,
   toolsMenuOpen,
@@ -41,9 +39,6 @@ export const Header = ({
           <span className="status-text" aria-live="polite">
             {statusText}
           </span>
-          {qualitySummary ? (
-            <span className="status-subtext">{qualitySummary}</span>
-          ) : null}
         </p>
       </div>
       <div className="app-actions" role="toolbar" aria-label="Controls">

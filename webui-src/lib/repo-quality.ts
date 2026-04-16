@@ -1,5 +1,3 @@
-import { fetchWithTimeout } from './fetch-with-timeout.js'
-
 export type RepoQualitySnapshot = {
   generatedAt: string
   sourceFileCount: number
@@ -83,15 +81,4 @@ export const formatRepoQualitySummary = (
       `max file ${snapshot.maxSourceFileLines}`,
     ].join(' · ') + overage
   )
-}
-
-export const loadRepoQualitySummary = async (): Promise<string> => {
-  try {
-    const response = await fetchWithTimeout('/api/repo-quality', {}, 6000)
-    if (!response.ok) return ''
-    const parsed = parseRepoQualitySnapshot(await response.json())
-    return formatRepoQualitySummary(parsed)
-  } catch {
-    return ''
-  }
 }

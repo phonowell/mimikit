@@ -18,14 +18,12 @@ export const useAppSurfaces = ({
   actions,
   appState,
   composerValue,
-  qualitySummary,
   scroll,
   ui,
 }: {
   actions: ReturnType<typeof useAppActions>
   appState: AppState
   composerValue: string
-  qualitySummary: string
   scroll: ReturnType<typeof useMessageScroll>
   ui: ReturnType<typeof useAppUiState>
 }) => {
@@ -49,7 +47,6 @@ export const useAppSurfaces = ({
   const headerSurface = {
     statusText: displayText,
     statusState: displayState,
-    qualitySummary,
     workerStates,
     hasPlans: appState.plans.length > 0,
     toolsMenuOpen: ui.toolsMenuOpen,

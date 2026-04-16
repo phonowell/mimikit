@@ -10,7 +10,6 @@ import { useAppRuntimeEffects } from '../hooks/use-app-runtime-effects.js'
 import { useAppUiState } from '../hooks/use-app-ui-state.js'
 import { useComposerDraft } from '../hooks/use-composer-draft.js'
 import { useMessageScroll } from '../hooks/use-message-scroll.js'
-import { useRepoQuality } from '../hooks/use-repo-quality.js'
 import { createInitialAppState } from '../lib/messages.js'
 
 import { useAppSurfaces } from './use-app-surfaces.js'
@@ -97,7 +96,6 @@ export const AppRuntime = () => {
   const [appState, setAppState] = useState(createInitialAppState)
   const [composerValue, setComposerValue] = useComposerDraft()
   const ui = useAppUiState()
-  const qualitySummary = useRepoQuality()
   const scroll = useMessageScroll([
     appState.messages,
     appState.awaitingReply,
@@ -145,7 +143,6 @@ export const AppRuntime = () => {
     actions,
     appState,
     composerValue,
-    qualitySummary,
     scroll,
     ui,
   })

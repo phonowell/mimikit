@@ -1,4 +1,3 @@
-import { getCachedRepoQualitySnapshot } from '../../foundation/repo-health/summary.js'
 import { logSafeError } from '../../persistence/log/safe.js'
 
 import { parseInputBody } from './input-body.js'
@@ -22,10 +21,6 @@ export const registerApiRoutes = (
 
   app.get('/api/status', (_request, reply) =>
     reply.send(orchestrator.getStatus()),
-  )
-
-  app.get('/api/repo-quality', async (_request, reply) =>
-    reply.send(await getCachedRepoQualitySnapshot()),
   )
 
   app.post('/api/input', async (request, reply) => {
