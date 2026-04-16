@@ -29,6 +29,7 @@ export const MessageItem = ({
   const canQuote = !deleteMode && !isSystem && !!message.id
   const canDelete = deleteMode && !isSystem && !!message.id
   const isAgent = message.role === 'agent'
+  const artifacts = message.artifacts ?? []
 
   return (
     <li
@@ -77,11 +78,35 @@ export const MessageItem = ({
           {...(isAgent
             ? {
                 dangerouslySetInnerHTML: {
-                  __html: renderMarkdownHtml(message.text ?? ''),
+                  __html: renderMarkdownHtml(message.text ?? '', {
+                    linkifyLocalPaths: artifacts.length === 0,
+                  }),
                 },
               }
             : { children: message.text ?? '' })}
         ></div>
+        {artifacts.length > 0 ? (
+          <div className="message-artifacts" aria-label="Local files">
+            {artifacts.map((artifact) => (
+              <a
+                key={`${artifact.href}:${artifact.label}`}
+                className="message-artifact"
+                href={artifact.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={
+                  artifact.note
+                    ? `${artifact.note}: ${artifact.path}`
+                    : artifact.path
+                }
+              >
+                {artifact.note
+                  ? `${artifact.note}: ${artifact.label}`
+                  : artifact.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
         <MessageMeta message={message} />
       </article>
       {canQuote ? (

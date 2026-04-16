@@ -6,6 +6,11 @@ import {
   resolveFromRoot,
 } from '../../persistence/fs/path-safety.js'
 import { readTextFile } from '../../persistence/fs/read-text.js'
+import {
+  isMarkdownPath,
+  isSupportedWorkspaceFilePath,
+  WORKSPACE_FILE_ROUTE,
+} from '../shared/workspace-file-contract.js'
 
 import { resolveWorkspaceRootFromStateDir } from './state-dir.js'
 
@@ -14,32 +19,6 @@ import type { FastifyInstance, FastifyReply } from 'fastify'
 
 const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8'
 const TEXT_CONTENT_TYPE = 'text/plain; charset=utf-8'
-const WORKSPACE_FILE_ROUTE = '/api/workspace-file'
-const SUPPORTED_WORKSPACE_FILE_EXTENSIONS = [
-  '.cjs',
-  '.css',
-  '.html',
-  '.js',
-  '.json',
-  '.markdown',
-  '.md',
-  '.mjs',
-  '.sh',
-  '.toml',
-  '.ts',
-  '.tsx',
-  '.txt',
-  '.yaml',
-  '.yml',
-] as const
-
-const isMarkdownPath = (value: string): boolean =>
-  /\.(md|markdown)$/i.test(value)
-
-const isSupportedWorkspaceFilePath = (value: string): boolean =>
-  SUPPORTED_WORKSPACE_FILE_EXTENSIONS.some((extension) =>
-    value.toLowerCase().endsWith(extension),
-  )
 
 const resolveWorkspaceFilePath = (
   query: unknown,

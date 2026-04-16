@@ -1,4 +1,5 @@
 import { createSystemEventRecord } from '../../surface/shared/system-event.js'
+import { buildTaskResultSurfaceArtifacts } from '../../surface/shared/task-result-artifacts.js'
 import { resolveTaskLabel } from '../../work/shared/task-state.js'
 import { safe } from '../log/safe.js'
 
@@ -8,6 +9,7 @@ import { createSystemHistoryMessage } from './system-message.js'
 import type {
   Task,
   TaskCancelMeta,
+  TaskResult,
   TaskResultStatus,
   TaskStatus,
 } from '../../foundation/types/index.js'
@@ -88,26 +90,36 @@ const buildTaskPayload = (
   cancel?: TaskCancelMeta,
   slotStatus?: WorkerSlotPayload,
   resumeInstructionPresent?: boolean,
-): Record<string, unknown> => ({
-  task_id: task.id,
-  provider: task.provider,
-  label,
-  ...(task.title.trim() ? { title: task.title.trim() } : {}),
-  ...(event === 'created' ? { status: 'pending' } : {}),
-  ...(event === 'paused' ? { status: 'paused' } : {}),
-  ...(event === 'resumed' ? { status: 'pending' } : {}),
-  ...(event === 'resumed' && resumeInstructionPresent
-    ? { resume_instruction_present: true }
-    : {}),
-  ...(event === 'completed' ? { status: status ?? 'completed' } : {}),
-  ...(taskStatus ? { task_status: taskStatus } : {}),
-  ...(outcome ? { outcome } : {}),
-  ...(stopReason ? { stop_reason: stopReason } : {}),
-  ...(event === 'canceled' ? { status: 'canceled' } : {}),
-  ...(cancel?.source ? { cancel_source: cancel.source } : {}),
-  ...(cancel?.reason ? { cancel_reason: cancel.reason } : {}),
-  ...(slotStatus ? { slots: slotStatus } : {}),
-})
+  result?: TaskResult,
+): Record<string, unknown> => {
+  const artifacts = result
+    ? buildTaskResultSurfaceArtifacts({
+        task,
+        result,
+      })
+    : undefined
+  return {
+    task_id: task.id,
+    provider: task.provider,
+    label,
+    ...(task.title.trim() ? { title: task.title.trim() } : {}),
+    ...(event === 'created' ? { status: 'pending' } : {}),
+    ...(event === 'paused' ? { status: 'paused' } : {}),
+    ...(event === 'resumed' ? { status: 'pending' } : {}),
+    ...(event === 'resumed' && resumeInstructionPresent
+      ? { resume_instruction_present: true }
+      : {}),
+    ...(event === 'completed' ? { status: status ?? 'completed' } : {}),
+    ...(taskStatus ? { task_status: taskStatus } : {}),
+    ...(outcome ? { outcome } : {}),
+    ...(stopReason ? { stop_reason: stopReason } : {}),
+    ...(event === 'canceled' ? { status: 'canceled' } : {}),
+    ...(cancel?.source ? { cancel_source: cancel.source } : {}),
+    ...(cancel?.reason ? { cancel_reason: cancel.reason } : {}),
+    ...(slotStatus ? { slots: slotStatus } : {}),
+    ...(artifacts ? { artifacts } : {}),
+  }
+}
 
 export const appendTaskSystemMessage = (
   historyPath: string,
@@ -122,6 +134,7 @@ export const appendTaskSystemMessage = (
     cancel?: TaskCancelMeta
     slotStatus?: WorkerSlotPayload
     resumeInstructionPresent?: boolean
+    result?: TaskResult
   },
 ): Promise<boolean> => {
   const label = resolveTaskLabel(task)
@@ -148,6 +161,7 @@ export const appendTaskSystemMessage = (
       options?.cancel,
       options?.slotStatus,
       options?.resumeInstructionPresent,
+      options?.result,
     ),
   })
   const message = createSystemHistoryMessage({

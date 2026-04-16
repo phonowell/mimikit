@@ -1,9 +1,10 @@
-import { toArtifactUrl } from './artifact-url.js'
-
-const PATH_TOKEN =
-  /(^|[\s:：\[(（【])((?:file:\/\/\S+|(?:\/|[a-zA-Z]:[\\/]|\.mimikit(?:\/|\\)|[a-zA-Z0-9._-]+[\\/])\S+))(?=$|[\s,，.。;；!！?？)\]）】>》])/g
-const TRAILING_PATH_PUNCTUATION = /[.,，。;；!！?？)\]）】>》]+$/
-const INLINE_CODE_SEGMENT = /(`[^`\n]*`)/g
+import {
+  INLINE_CODE_SEGMENT,
+  PATH_TOKEN,
+  isMarkdownLinkDestination,
+  splitTrailingPunctuation,
+  toArtifactUrl,
+} from '../../src/surface/shared/artifact-link.js'
 
 const normalizeOrderedListLine = (line: string): string => {
   const flattenedBulletParen = line.replace(
@@ -20,25 +21,6 @@ const normalizeOrderedListLine = (line: string): string => {
   )
   const normalizedParen = flattenedBullet.replace(/^(\s{0,3}\d+)\)\s*/, '$1. ')
   return normalizedParen.replace(/^(\s{0,3}\d+)\.(?=[^\s\d])/, '$1. ')
-}
-
-const splitTrailingPunctuation = (
-  value: string,
-): { path: string; trailing: string } => {
-  const match = TRAILING_PATH_PUNCTUATION.exec(value)
-  if (!match) return { path: value, trailing: '' }
-  return { path: value.slice(0, -match[0].length), trailing: match[0] }
-}
-
-const isMarkdownLinkDestination = (
-  source: string,
-  prefixOffset: number,
-  prefixLength: number,
-): boolean => {
-  let cursor = prefixOffset + prefixLength
-  while (cursor > 0 && /\s/u.test(source.slice(cursor - 1, cursor))) cursor -= 1
-  if (source.slice(cursor - 1, cursor) !== '(') return false
-  return source.slice(cursor - 2, cursor - 1) === ']'
 }
 
 const linkifyPathSegment = (segment: string): string =>

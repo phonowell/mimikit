@@ -10,13 +10,17 @@ import {
 } from '../../persistence/history/result-events.js'
 import { updateJsonl } from '../../persistence/storage/jsonl.js'
 
-import { formatManagerVisibleTaskResultReply } from './task-result-visible-reply.js'
+import {
+  buildManagerVisibleTaskResultArtifacts,
+  formatManagerVisibleTaskResultReply,
+} from './task-result-visible-reply.js'
 
 import type { TaskResult, UserInput } from '../../foundation/types/index.js'
 import type {
   ManagerRuntime,
   RuntimeTaskCollection,
 } from '../../kernel/orchestrator/runtime-interfaces.js'
+import type { SurfaceArtifactLink } from '../../surface/shared/artifact-link.js'
 
 const QUEUE_COMPACT_MIN_PACKETS = 100
 const TASK_SNAPSHOT_MAX_COUNT = 100
@@ -43,24 +47,35 @@ const buildFallbackResultReply = (params: {
   results: TaskResult[]
   tasks: RuntimeTaskCollection
   workDir: string
-}): string | undefined => {
+}):
+  | { text: string; artifacts?: SurfaceArtifactLink[] | undefined }
+  | undefined => {
   const latestResult = resolveLatestResult(params.results)
   if (!latestResult) return undefined
   const task = params.tasks.find((item) => item.id === latestResult.taskId)
   const detail = resolveFallbackResultDetail(latestResult)
-  return formatManagerVisibleTaskResultReply({
+  const text = formatManagerVisibleTaskResultReply({
     result: latestResult,
     workDir: params.workDir,
     ...(task ? { task } : {}),
     ...(detail ? { detail } : {}),
   })
+  const artifacts = buildManagerVisibleTaskResultArtifacts({
+    result: latestResult,
+    workDir: params.workDir,
+    ...(task ? { task } : {}),
+  })
+  return artifacts ? { text, artifacts } : { text }
 }
 
 export const buildFallbackReply = async (params: {
   results: TaskResult[]
   tasks: RuntimeTaskCollection
   workDir: string
-}): Promise<string> => {
+}): Promise<{
+  text: string
+  artifacts?: SurfaceArtifactLink[] | undefined
+}> => {
   const resultReply = buildFallbackResultReply({
     results: params.results,
     tasks: params.tasks,
@@ -72,7 +87,7 @@ export const buildFallbackReply = async (params: {
   ).trim()
   if (!fallback)
     throw new Error('missing_prompt_template:manager/fallback-reply.md')
-  return fallback
+  return { text: fallback }
 }
 
 export const finalizeBatchProgress = async (params: {

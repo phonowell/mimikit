@@ -43,22 +43,23 @@ export const appendManagerBatchReply = async (params: {
   )
     return false
 
-  const responseText =
-    params.normalizedReplyText ||
-    normalizeManagerReplyText(
-      await buildFallbackReply({
+  const fallback = params.normalizedReplyText
+    ? undefined
+    : await buildFallbackReply({
         results: params.results,
         tasks: params.runtime.domain.tasks,
         workDir: params.runtime.config.workDir,
-      }),
-      {
-        mode: params.results.length > 0 ? 'structured' : 'natural',
-      },
-    )
+      })
+  const responseText =
+    params.normalizedReplyText ||
+    normalizeManagerReplyText(fallback?.text ?? '', {
+      mode: params.results.length > 0 ? 'structured' : 'natural',
+    })
   await appendManagerReply({
     runtime: params.runtime,
     text: responseText,
     nextInputsCursor: params.nextInputsCursor,
+    ...(fallback?.artifacts ? { artifacts: fallback.artifacts } : {}),
     ...(params.usage ? { usage: params.usage } : {}),
     ...(params.elapsedMs !== undefined && params.elapsedMs >= 0
       ? { elapsedMs: params.elapsedMs }

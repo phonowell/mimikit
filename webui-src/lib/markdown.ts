@@ -100,8 +100,16 @@ const getPurify = () => {
   return purify
 }
 
-export const renderMarkdownHtml = (text: string): string => {
-  const source = normalizeMarkdownForRender(text)
+export const renderMarkdownHtml = (
+  text: string,
+  options?: {
+    linkifyLocalPaths?: boolean
+  },
+): string => {
+  const source =
+    options?.linkifyLocalPaths === false
+      ? text
+      : normalizeMarkdownForRender(text)
   if (!source.trim()) return ''
   const cached = markdownCache.get(source)
   if (cached) return cached

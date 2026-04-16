@@ -60,6 +60,8 @@ test('normalizeManagerReplyText keeps task-result replies structured in structur
   expect(normalized).toContain('当前风险：')
   expect(normalized).toContain('下一步：')
   expect(normalized).toContain('收敛回复语气')
+  expect(visibleReply).toContain('任务归档：task-natural-reply.md')
+  expect(visibleReply).not.toContain('[任务归档](')
 })
 
 test('normalizeManagerReplyText structured mode only upgrades explicit labels', () => {

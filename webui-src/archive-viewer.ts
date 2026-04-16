@@ -1,9 +1,10 @@
+import { WORKSPACE_FILE_ROUTE } from '../src/surface/shared/workspace-file-contract.js'
+
 import { buildArchiveViewerUrlFromSource } from './lib/archive-viewer-url.js'
 import { renderMarkdownHtml } from './lib/markdown.js'
 
 const ROOT = window.location.origin
 const TASK_ARCHIVE_API_PATTERN = /^\/api\/tasks\/[^/]+\/archive$/
-const WORKSPACE_FILE_API_PATH = '/api/workspace-file'
 const NUMBER_FORMAT = new Intl.NumberFormat('en-US')
 const MARKDOWN_PATH_PATTERN = /\.(md|markdown)$/i
 const RAW_PARAM = 'raw'
@@ -74,11 +75,11 @@ const showError = (text: string) => {
 const isAllowedPath = (pathname: string) =>
   pathname.startsWith('/state-files/') ||
   TASK_ARCHIVE_API_PATTERN.test(pathname) ||
-  pathname === WORKSPACE_FILE_API_PATH
+  pathname === WORKSPACE_FILE_ROUTE
 
 const isMarkdownSourceUrl = (url: URL): boolean => {
   if (MARKDOWN_PATH_PATTERN.test(url.pathname)) return true
-  if (url.pathname !== WORKSPACE_FILE_API_PATH) return false
+  if (url.pathname !== WORKSPACE_FILE_ROUTE) return false
   const path = url.searchParams.get('path')?.trim() ?? ''
   return MARKDOWN_PATH_PATTERN.test(path.split(/[?#]/, 1)[0] ?? '')
 }
@@ -151,7 +152,7 @@ const resolveSourceTarget = () => {
   return {
     pageTitle: 'Markdown Archive',
     meta: `source: ${url.pathname}`,
-    sourceUrl: `${url.pathname}${url.search}`,
+    sourceUrl: `${url.pathname}${url.search}${url.hash}`,
     contentTag: url.pathname,
   }
 }

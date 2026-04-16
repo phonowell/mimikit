@@ -6,6 +6,7 @@ import type {
   Role,
   TokenUsage,
 } from '../../foundation/types/base.js'
+import type { SurfaceArtifactLink } from '../shared/artifact-link.js'
 
 type NonSystemHistoryMessage = {
   id: Id
@@ -22,6 +23,7 @@ type NonSystemHistoryMessage = {
   usage?: TokenUsage
   elapsedMs?: number
   quote?: Id
+  artifacts?: SurfaceArtifactLink[]
 }
 
 type SystemHistoryMessage = {
@@ -36,6 +38,7 @@ type SystemHistoryMessage = {
   usage?: TokenUsage
   elapsedMs?: number
   quote?: Id
+  artifacts?: SurfaceArtifactLink[]
 }
 
 export type HistoryMessage = NonSystemHistoryMessage | SystemHistoryMessage

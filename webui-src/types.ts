@@ -1,3 +1,5 @@
+import type { SurfaceArtifactLink } from '../src/surface/shared/artifact-link.js'
+
 export type AgentStatus =
   | 'loading'
   | 'idle'
@@ -40,6 +42,7 @@ export type ChatMessage = {
   systemEventName?: string
   usage?: MessageUsage
   elapsedMs?: number
+  artifacts?: SurfaceArtifactLink[]
 }
 
 export type MessageSnapshot = {

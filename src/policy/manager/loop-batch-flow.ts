@@ -6,6 +6,7 @@ import { appendHistory } from '../../persistence/history/store.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { readLogDiagnostics } from '../../persistence/log/diagnostics.js'
 import { bestEffort, logSafeError } from '../../persistence/log/safe.js'
+import { extractArtifactLinksFromText } from '../../surface/shared/artifact-link.js'
 import { resolveDefaultFocusId, touchFocus } from '../../work/focus/state.js'
 
 import { appendAndDispatchManagerFailureReply } from './loop-batch-failure-reply.js'
@@ -63,10 +64,13 @@ export const appendManagerReply = async (params: {
   nextInputsCursor: number
   usage?: TokenUsage
   elapsedMs?: number
+  artifacts?: ReturnType<typeof extractArtifactLinksFromText>
 }): Promise<void> => {
   const replyFocusId = resolveDefaultFocusId(params.runtime)
   touchFocus(params.runtime, replyFocusId)
   const messageId = `agent-${Date.now()}-${params.nextInputsCursor}`
+  const artifacts =
+    params.artifacts ?? extractArtifactLinksFromText(params.text)
   await appendHistory(params.runtime.paths.history, {
     id: messageId,
     role: 'agent',
@@ -77,6 +81,7 @@ export const appendManagerReply = async (params: {
     ...(params.elapsedMs !== undefined && params.elapsedMs >= 0
       ? { elapsedMs: params.elapsedMs }
       : {}),
+    ...(artifacts ? { artifacts } : {}),
   })
   await bestEffort('broadcast:agent_reply', () =>
     broadcastAgentReply({

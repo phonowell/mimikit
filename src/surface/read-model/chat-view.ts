@@ -1,3 +1,7 @@
+import {
+  extractArtifactLinksFromText,
+  normalizeSurfaceArtifacts,
+} from '../shared/artifact-link.js'
 import { isVisibleToUser } from '../shared/message-visibility.js'
 import { resolveSystemEvent } from '../shared/system-event.js'
 
@@ -11,14 +15,20 @@ const toUserVisibleSystemMessage = (message: {
   text: string
   systemEventName?: string
   systemEventPayload?: Record<string, unknown>
+  artifacts?: HistoryMessage['artifacts']
 }) => {
   const visibleText = message.text
   if (!visibleText.trim()) return { text: '' }
   const parsedEvent = resolveSystemEvent(message)
+  const artifacts =
+    message.artifacts ??
+    normalizeSurfaceArtifacts(parsedEvent.payload?.artifacts) ??
+    extractArtifactLinksFromText(visibleText)
   return {
     text: visibleText,
     ...(parsedEvent.name ? { systemEventName: parsedEvent.name } : {}),
     ...(parsedEvent.payload ? { systemEventPayload: parsedEvent.payload } : {}),
+    ...(artifacts ? { artifacts } : {}),
   }
 }
 
@@ -38,9 +48,11 @@ const toInflightChatMessage = (input: UserInput): ChatMessage => {
       ...(visible.systemEventPayload
         ? { systemEventPayload: visible.systemEventPayload }
         : {}),
+      ...(visible.artifacts ? { artifacts: visible.artifacts } : {}),
       ...(input.quote ? { quote: input.quote } : {}),
     }
   }
+  const artifacts = extractArtifactLinksFromText(input.text)
   return {
     id: input.id,
     role: input.role,
@@ -60,6 +72,7 @@ const toInflightChatMessage = (input: UserInput): ChatMessage => {
       ? { telegramTimestamp: input.telegramTimestamp }
       : {}),
     ...(input.quote ? { quote: input.quote } : {}),
+    ...(artifacts ? { artifacts } : {}),
   }
 }
 
@@ -109,7 +122,12 @@ const mergeChatMessagesWithoutLimit = (params: {
   for (const message of params.history) {
     if (!isVisibleToUser(message)) continue
     if (message.role !== 'system') {
-      merged.push(message)
+      const artifacts =
+        message.artifacts ?? extractArtifactLinksFromText(message.text)
+      merged.push({
+        ...message,
+        ...(artifacts ? { artifacts } : {}),
+      })
       continue
     }
     const visible = toUserVisibleSystemMessage(message)
@@ -123,6 +141,7 @@ const mergeChatMessagesWithoutLimit = (params: {
       ...(visible.systemEventPayload
         ? { systemEventPayload: visible.systemEventPayload }
         : {}),
+      ...(visible.artifacts ? { artifacts: visible.artifacts } : {}),
     })
   }
   const seenIds = new Set(merged.map((message) => message.id))

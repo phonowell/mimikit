@@ -1,7 +1,4 @@
-import {
-  toDisplayPath,
-  toStateDisplayPath,
-} from '../../surface/shared/path-display.js'
+import { buildTaskResultSurfaceArtifacts } from '../../surface/shared/task-result-artifacts.js'
 import { resolveTaskLabel } from '../../work/shared/task-state.js'
 
 import { normalizeSentence } from './reply-normalize-terms.js'
@@ -11,6 +8,7 @@ import type {
   TaskResult,
   TaskResultStopReason,
 } from '../../foundation/types/index.js'
+import type { SurfaceArtifactLink } from '../../surface/shared/artifact-link.js'
 
 const TASK_RESULT_STATUS_TEXT: Record<TaskResult['status'], string> = {
   succeeded: '已完成',
@@ -70,18 +68,12 @@ const resolveTaskArchiveLine = (params: {
   result: TaskResult
   workDir: string
 }): string => {
-  const rawArchivePath = [
-    params.result.archivePath,
-    params.task?.archivePath,
-    params.task?.result?.archivePath,
-  ].find((value) => typeof value === 'string' && value.trim().length > 0)
-  const archivePath = rawArchivePath
-    ? (
-        toStateDisplayPath(rawArchivePath) ??
-        toDisplayPath(rawArchivePath, params.workDir)
-      ).trim()
-    : ''
-  return archivePath ? `可回看[任务归档](${archivePath})` : '任务归档暂未生成。'
+  const archiveArtifact = buildTaskResultSurfaceArtifacts(params)?.find(
+    (item) => item.kind === 'task_archive',
+  )
+  return archiveArtifact
+    ? `任务归档：${archiveArtifact.label}`
+    : '任务归档暂未生成。'
 }
 
 const resolveStopReasonRisk = (
@@ -140,3 +132,9 @@ export const formatManagerVisibleTaskResultReply = (params: {
   lines.push(resolveTaskArchiveLine(params))
   return lines.join('\n')
 }
+
+export const buildManagerVisibleTaskResultArtifacts = (params: {
+  task?: Task
+  result: TaskResult
+  workDir: string
+}): SurfaceArtifactLink[] | undefined => buildTaskResultSurfaceArtifacts(params)
