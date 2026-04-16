@@ -104,12 +104,17 @@ export const renderMarkdownHtml = (
   text: string,
   options?: {
     linkifyLocalPaths?: boolean
+    skipLocalPaths?: readonly string[]
   },
 ): string => {
   const source =
     options?.linkifyLocalPaths === false
       ? text
-      : normalizeMarkdownForRender(text)
+      : normalizeMarkdownForRender(text, {
+          ...(options?.skipLocalPaths
+            ? { skipLocalPaths: options.skipLocalPaths }
+            : {}),
+        })
   if (!source.trim()) return ''
   const cached = markdownCache.get(source)
   if (cached) return cached
