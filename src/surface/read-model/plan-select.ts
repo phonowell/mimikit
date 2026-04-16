@@ -4,40 +4,18 @@ import {
   parseIsoToMsOrZero,
 } from '../../foundation/shared/time.js'
 
+import {
+  selectByWorklinePriority,
+  type WindowSelectParams,
+} from './workline-window.js'
+
 import type {
   PlanPriority,
   Task,
   TaskPlan,
 } from '../../foundation/types/index.js'
 
-export type WindowSelectParams = {
-  minCount: number
-  maxCount: number
-  workingFocusIds?: string[] | undefined
-  latestResultTaskId?: string | undefined
-}
-
-const normalizeWindowParams = (
-  params: WindowSelectParams,
-): WindowSelectParams => {
-  const minCount = Math.max(0, params.minCount)
-  const maxCount = Math.max(minCount, params.maxCount)
-  return { minCount, maxCount }
-}
-
-export const selectByWindow = <T>(
-  items: T[],
-  params: WindowSelectParams,
-): T[] => {
-  const normalized = normalizeWindowParams(params)
-  if (items.length === 0 || normalized.maxCount === 0) return []
-  const selected: T[] = []
-  for (const item of items) {
-    selected.push(item)
-    if (selected.length >= normalized.maxCount) break
-  }
-  return selected
-}
+export type { WindowSelectParams } from './workline-window.js'
 
 const PRIORITY_RANK: Record<PlanPriority, number> = {
   high: 0,
@@ -98,7 +76,19 @@ export const selectRecentPlans = (
 ): TaskPlan[] => {
   if (plans.length === 0) return []
   const sorted = sortTaskPlans(plans)
-  return selectByWindow(sorted, params)
+  return selectByWorklinePriority(sorted, params, {
+    isPrimary: (plan, normalized) =>
+      normalized.workingFocusIds.has(plan.focusId) &&
+      (plan.status === 'active' || plan.status === 'blocked'),
+    isAnchor: (plan, normalized) =>
+      Boolean(
+        normalized.latestResultTaskId &&
+        (plan.runtime.lastTaskId === normalized.latestResultTaskId ||
+          plan.runtime.stage?.sourceTaskId === normalized.latestResultTaskId),
+      ),
+    isRelated: (plan, normalized) =>
+      normalized.workingFocusIds.has(plan.focusId),
+  })
 }
 
 export const selectRecentTasks = (
@@ -107,5 +97,12 @@ export const selectRecentTasks = (
 ): Task[] => {
   if (tasks.length === 0) return []
   const sorted = sortTasksByChangedAt(tasks)
-  return selectByWindow(sorted, params)
+  return selectByWorklinePriority(sorted, params, {
+    isPrimary: (task, normalized) =>
+      normalized.workingFocusIds.has(task.focusId) &&
+      (task.status === 'pending' || task.status === 'running'),
+    isAnchor: (task, normalized) => task.id === normalized.latestResultTaskId,
+    isRelated: (task, normalized) =>
+      normalized.workingFocusIds.has(task.focusId),
+  })
 }

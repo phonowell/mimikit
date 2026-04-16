@@ -1,5 +1,5 @@
+import { readProviderErrorCode } from '../../execution/providers/provider-error.js'
 import { mergeUsageAdditive } from '../../execution/shared/token-usage.js'
-import { resolveSlotStatus } from '../../execution/worker/task-state-shared.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { createRoundId } from '../../persistence/log/diagnostics.js'
 import { bestEffort } from '../../persistence/log/safe.js'
@@ -7,12 +7,12 @@ import { appendManagerUsageLedgerEntry } from '../../persistence/storage/usage-l
 import { resolveManagerPacketMode } from '../prompts/manager-context-packet.js'
 
 import { resolveManagerContextBudgetDecision } from './context-budget.js'
-import { runManager } from './runner.js'
+import { runManagerRoundAttempt } from './loop-batch-run-round-attempt.js'
+import { buildManagerEnv } from './manager-env.js'
 
 import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
   ManagerActionFeedback,
-  ManagerEnv,
   ManagerWakeProfile,
   Task,
   TaskPlan,
@@ -21,25 +21,6 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-
-const buildManagerEnv = (
-  runtime: ManagerRuntime,
-  wakeProfile: ManagerWakeProfile,
-): ManagerEnv => {
-  const slots = resolveSlotStatus(runtime)
-  const env: ManagerEnv = {
-    ...(runtime.process.session.lastUserMeta
-      ? { lastUser: runtime.process.session.lastUserMeta }
-      : {}),
-    wakeProfile,
-    workerSlots: {
-      maxSlots: slots.max_slots,
-      occupiedSlots: slots.occupied_slots,
-      availableSlots: slots.available_slots,
-    },
-  }
-  return env
-}
 export const runManagerRoundWithRecovery = async (params: {
   runtime: ManagerRuntime
   round: number
@@ -83,6 +64,7 @@ export const runManagerRoundWithRecovery = async (params: {
   })
   const roundId = createRoundId()
   const { promptSectionLimits } = budgetDecision
+  const baseRetry = params.runtime.config.worker.retry
   void appendLog(params.runtime.paths.log, {
     event: 'manager_context_budget_resolved',
     batchId: params.batchId,
@@ -95,40 +77,78 @@ export const runManagerRoundWithRecovery = async (params: {
     activeFocusCount: budgetDecision.activeFocusCount,
     promptSectionLimits,
   })
-  const result = await runManager({
-    stateDir: params.runtime.config.workDir,
-    workDir: params.runtime.config.workDir,
-    inputs: params.inputs,
-    results: params.results,
-    tasks: params.tasks,
-    promptSectionLimits,
-    startupWorktree: params.runtime.startup.worktree,
-    plans: params.plans,
-    focuses: params.runtime.domain.focuses,
-    workingFocusIds: params.workingFocusIds,
-    ...(params.extra.actionFeedback
-      ? { actionFeedback: params.extra.actionFeedback }
-      : {}),
-    env: managerEnv,
-    model: params.runtime.config.manager.model,
-    ...(params.runtime.config.manager.baseUrl
-      ? { baseUrl: params.runtime.config.manager.baseUrl }
-      : {}),
-    ...(params.runtime.config.manager.apiKey
-      ? { apiKey: params.runtime.config.manager.apiKey }
-      : {}),
-    ...(params.runtime.config.manager.proxy
-      ? { proxy: params.runtime.config.manager.proxy }
-      : {}),
-    modelReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
-    retry: params.runtime.config.worker.retry,
-    ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
-    ...(params.managerThreadId ? { threadId: params.managerThreadId } : {}),
-    packetMode,
-    wakeProfile,
-    batchId: params.batchId,
-    roundId,
-  })
+  let actualPacketMode = packetMode
+  const result = await (async () => {
+    try {
+      return await runManagerRoundAttempt({
+        runtime: params.runtime,
+        inputs: params.inputs,
+        results: params.results,
+        tasks: params.tasks,
+        plans: params.plans,
+        workingFocusIds: params.workingFocusIds,
+        ...(params.extra.actionFeedback
+          ? { actionFeedback: params.extra.actionFeedback }
+          : {}),
+        managerEnv,
+        promptSectionLimits,
+        ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
+        ...(params.managerThreadId
+          ? { managerThreadId: params.managerThreadId }
+          : {}),
+        wakeProfile,
+        batchId: params.batchId,
+        roundId,
+        packetMode,
+        modelReasoningEffort:
+          params.runtime.config.manager.modelReasoningEffort,
+        retryMaxAttempts:
+          wakeProfile === 'user_input' ? 0 : baseRetry.maxAttempts,
+      })
+    } catch (error) {
+      if (
+        wakeProfile !== 'user_input' ||
+        packetMode !== 'standard' ||
+        readProviderErrorCode(error) !== 'provider_timeout'
+      )
+        throw error
+      actualPacketMode = 'minimal'
+      void appendLog(params.runtime.paths.log, {
+        event: 'manager_timeout_degraded_retry',
+        batchId: params.batchId,
+        roundId,
+        wakeProfile,
+        fromPacketMode: packetMode,
+        toPacketMode: actualPacketMode,
+        fromReasoningEffort: params.runtime.config.manager.modelReasoningEffort,
+        toReasoningEffort: 'medium',
+        errorCode: 'provider_timeout',
+      })
+      return runManagerRoundAttempt({
+        runtime: params.runtime,
+        inputs: params.inputs,
+        results: params.results,
+        tasks: params.tasks,
+        plans: params.plans,
+        workingFocusIds: params.workingFocusIds,
+        ...(params.extra.actionFeedback
+          ? { actionFeedback: params.extra.actionFeedback }
+          : {}),
+        managerEnv,
+        promptSectionLimits,
+        ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
+        ...(params.managerThreadId
+          ? { managerThreadId: params.managerThreadId }
+          : {}),
+        wakeProfile,
+        batchId: params.batchId,
+        roundId,
+        packetMode: actualPacketMode,
+        modelReasoningEffort: 'medium',
+        retryMaxAttempts: 0,
+      })
+    }
+  })()
   if (result.usage) {
     params.runtime.process.manager.lastUsage = result.usage
     params.runtime.process.manager.usageTotal =
@@ -141,7 +161,7 @@ export const runManagerRoundWithRecovery = async (params: {
     appendManagerUsageLedgerEntry({
       stateDir: params.runtime.config.workDir,
       wakeProfile,
-      packetMode,
+      packetMode: actualPacketMode,
       contextPacket: result.contextPacket,
       ...(result.usage ? { usage: result.usage } : {}),
       elapsedMs: result.elapsedMs,
