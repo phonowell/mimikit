@@ -70,9 +70,7 @@ const resolveTaskArchiveLine = (params: {
   const archiveArtifact = buildTaskResultSurfaceArtifacts(params)?.find(
     (item) => item.kind === 'task_archive',
   )
-  return archiveArtifact
-    ? `任务归档：${archiveArtifact.label}`
-    : '任务归档暂未生成。'
+  return archiveArtifact ? '任务归档已附上。' : '任务归档暂未生成。'
 }
 
 const resolveStopReasonRisk = (

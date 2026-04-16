@@ -8,6 +8,7 @@ import type {
   StatusSnapshot,
   TasksSnapshot,
 } from '../types.js'
+import type { SurfaceArtifactLink } from '../../src/surface/shared/artifact-link.js'
 
 const MESSAGE_LIMIT = 50
 
@@ -71,6 +72,29 @@ export const applyIncomingPlans = (
 
 export const shouldDisplayMessageTime = (message: ChatMessage): boolean =>
   message.role !== 'system'
+
+export const getMessageArtifacts = (message: {
+  text: string
+  artifacts?: SurfaceArtifactLink[]
+}): SurfaceArtifactLink[] => {
+  return message.artifacts ?? []
+}
+
+export const getMessageLocalPathsToSkip = (message: {
+  text: string
+  artifacts?: SurfaceArtifactLink[]
+}): string[] => {
+  const artifacts = getMessageArtifacts(message)
+  if (artifacts.length === 0) return []
+  const next = new Set<string>()
+  for (const artifact of artifacts) {
+    const path = artifact.path.trim()
+    if (path) next.add(path)
+    const label = artifact.label.trim()
+    if (label) next.add(label)
+  }
+  return [...next]
+}
 
 const findNewAgentMessages = (
   messages: readonly ChatMessage[],

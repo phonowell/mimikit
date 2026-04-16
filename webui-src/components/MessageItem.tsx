@@ -1,5 +1,9 @@
 import { renderMarkdownHtml } from '../lib/markdown.js'
 import {
+  getMessageArtifacts,
+  getMessageLocalPathsToSkip,
+} from '../lib/messages.js'
+import {
   formatQuotePreview,
   formatRoleLabel,
   normalizeRole,
@@ -29,7 +33,8 @@ export const MessageItem = ({
   const canQuote = !deleteMode && !isSystem && !!message.id
   const canDelete = deleteMode && !isSystem && !!message.id
   const isAgent = message.role === 'agent'
-  const artifacts = message.artifacts ?? []
+  const artifacts = getMessageArtifacts(message)
+  const skipLocalPaths = getMessageLocalPathsToSkip(message)
 
   return (
     <li
@@ -79,7 +84,7 @@ export const MessageItem = ({
             ? {
                 dangerouslySetInnerHTML: {
                   __html: renderMarkdownHtml(message.text ?? '', {
-                    linkifyLocalPaths: artifacts.length === 0,
+                    skipLocalPaths,
                   }),
                 },
               }
