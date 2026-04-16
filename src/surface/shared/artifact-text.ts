@@ -6,14 +6,25 @@ export const PATH_TOKEN =
   /(^|[\s:："'“‘\[(（【「『《〈])((?:file:\/\/\S+|(?:\/|[a-zA-Z]:[\\/]|\.mimikit(?:\/|\\)|[^\s:："'“”‘’/\\\[(（【「」『』《》〈〉<>,，.。;；!！?？)\]）】>]+[\\/])\S+))(?=$|[\s,，.。;；!！?？"'”’)\]）】」』》〉>])/g
 
 const TRAILING_PATH_PUNCTUATION = /[.,，。;；!！?？"'”’)\]）】」』》〉>]+$/
+const MARKDOWN_ADJACENT_TEXT =
+  /^(.*\.(?:md|markdown))([^\sA-Za-z0-9./\\?#_-].*)$/iu
 export const INLINE_CODE_SEGMENT = /(`[^`\n]*`)/g
 
 export const splitTrailingPunctuation = (
   value: string,
 ): { path: string; trailing: string } => {
-  const match = TRAILING_PATH_PUNCTUATION.exec(value)
-  if (!match) return { path: value, trailing: '' }
-  return { path: value.slice(0, -match[0].length), trailing: match[0] }
+  const punctuation = TRAILING_PATH_PUNCTUATION.exec(value)
+  const basePath = punctuation ? value.slice(0, -punctuation[0].length) : value
+  const punctuationTrailing = punctuation?.[0] ?? ''
+  const markdownBoundary = MARKDOWN_ADJACENT_TEXT.exec(basePath)
+  if (!markdownBoundary)
+    return { path: basePath, trailing: punctuationTrailing }
+  const path = markdownBoundary[1] ?? basePath
+  const trailing = markdownBoundary[2] ?? ''
+  return {
+    path,
+    trailing: `${trailing}${punctuationTrailing}`,
+  }
 }
 
 export const isMarkdownLinkDestination = (

@@ -1,5 +1,6 @@
 import { mergeIncomingMessages } from './merge-incoming-messages.js'
 
+import type { SurfaceArtifactLink } from '../../src/surface/shared/artifact-link.js'
 import type {
   AppState,
   ChatMessage,
@@ -8,7 +9,6 @@ import type {
   StatusSnapshot,
   TasksSnapshot,
 } from '../types.js'
-import type { SurfaceArtifactLink } from '../../src/surface/shared/artifact-link.js'
 
 const MESSAGE_LIMIT = 50
 
@@ -76,9 +76,7 @@ export const shouldDisplayMessageTime = (message: ChatMessage): boolean =>
 export const getMessageArtifacts = (message: {
   text: string
   artifacts?: SurfaceArtifactLink[]
-}): SurfaceArtifactLink[] => {
-  return message.artifacts ?? []
-}
+}): SurfaceArtifactLink[] => message.artifacts ?? []
 
 export const getMessageLocalPathsToSkip = (message: {
   text: string

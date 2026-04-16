@@ -1,11 +1,12 @@
 import { expect, test } from 'vitest'
 
+import { extractArtifactLinksFromText } from '../src/surface/shared/artifact-link.js'
+import { formatManagerVisibleTaskResultReply } from '../src/policy/manager/task-result-visible-reply.js'
 import { getMessageLocalPathsToSkip } from '../webui-src/lib/messages.js'
 import { normalizeMarkdownForRender } from '../webui-src/lib/markdown-normalize.js'
-import { formatManagerVisibleTaskResultReply } from '../src/policy/manager/task-result-visible-reply.js'
 
-import type { SurfaceArtifactLink } from '../src/surface/shared/artifact-link.js'
 import type { TaskResult } from '../src/foundation/types/index.js'
+import type { SurfaceArtifactLink } from '../src/surface/shared/artifact-link.js'
 
 const TASK_ARCHIVE_ARTIFACT: SurfaceArtifactLink = {
   href: '/archive-viewer.html?src=%2Fstate-files%2Ftasks%2Ftask-1.md',
@@ -44,6 +45,21 @@ test('returns empty skip list when message has no artifacts', () => {
       artifacts: [],
     }),
   ).toEqual([])
+})
+
+test('stops task archive links at .md before adjacent Chinese text', () => {
+  const text = '任务归档：.mimikit/tasks/task-1.md后文说明'
+
+  expect(normalizeMarkdownForRender(text)).toContain(
+    '任务归档：[.mimikit/tasks/task-1.md](/archive-viewer.html?src=%2Fstate-files%2Ftasks%2Ftask-1.md)后文说明',
+  )
+  expect(extractArtifactLinksFromText(text)).toEqual([
+    {
+      href: '/archive-viewer.html?src=%2Fstate-files%2Ftasks%2Ftask-1.md',
+      label: '.mimikit/tasks/task-1.md',
+      path: '.mimikit/tasks/task-1.md',
+    },
+  ])
 })
 
 test('fallback task-result reply keeps archive link out of body text when artifact exists', () => {

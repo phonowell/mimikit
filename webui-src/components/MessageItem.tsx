@@ -1,13 +1,13 @@
 import { renderMarkdownHtml } from '../lib/markdown.js'
 import {
-  getMessageArtifacts,
-  getMessageLocalPathsToSkip,
-} from '../lib/messages.js'
-import {
   formatQuotePreview,
   formatRoleLabel,
   normalizeRole,
 } from '../lib/messages/quote-utils.js'
+import {
+  getMessageArtifacts,
+  getMessageLocalPathsToSkip,
+} from '../lib/messages.js'
 import { UI_TEXT } from '../lib/system-text.js'
 
 import { MessageMeta } from './MessageMeta.js'
