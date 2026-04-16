@@ -6,7 +6,6 @@ export type SystemEventName =
   | 'task_canceled'
   | 'task_completed'
   | 'manager_fallback_reply'
-  | 'manager_round_limit'
   | 'manager_error'
   | 'trigger_fire'
   | 'worker_slot_freed'
@@ -14,7 +13,6 @@ export type SystemEventName =
   | 'plan_updated'
   | 'plan_deleted'
   | 'memory_remembered'
-  | 'project_profile_remembered'
 
 export type ParsedSystemEvent = {
   summary: string

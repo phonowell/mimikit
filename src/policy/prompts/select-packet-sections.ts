@@ -13,7 +13,6 @@ const SELECTABLE_PACKET_SECTIONS: ManagerPacketSection[] = [
   'environment',
   'focus_list',
   'working_focuses',
-  'project_profile',
   'remembered_memory',
   'memory',
   'tasks',
@@ -21,7 +20,6 @@ const SELECTABLE_PACKET_SECTIONS: ManagerPacketSection[] = [
   'inputs',
   'batch_results',
   'recent_history',
-  'action_feedback',
 ]
 
 export const resolvePacketSectionPolicy = (params: {
@@ -32,7 +30,6 @@ export const resolvePacketSectionPolicy = (params: {
     environment: false,
     focus_list: false,
     working_focuses: false,
-    project_profile: false,
     remembered_memory: false,
     memory: false,
     tasks: false,
@@ -40,7 +37,6 @@ export const resolvePacketSectionPolicy = (params: {
     inputs: false,
     batch_results: false,
     recent_history: false,
-    action_feedback: false,
   }
   for (const section of SELECTABLE_PACKET_SECTIONS) {
     policy[section] = shouldIncludePacketSection({

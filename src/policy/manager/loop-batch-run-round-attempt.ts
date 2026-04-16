@@ -2,7 +2,6 @@ import { runManager } from './runner.js'
 
 import type { AppConfig } from '../../bootstrap/config.js'
 import type {
-  ManagerActionFeedback,
   ManagerEnv,
   ManagerPacketMode,
   ManagerWakeProfile,
@@ -21,7 +20,6 @@ export const runManagerRoundAttempt = (params: {
   tasks: Task[]
   plans: TaskPlan[]
   workingFocusIds: string[]
-  actionFeedback?: ManagerActionFeedback[]
   managerEnv: ManagerEnv
   promptSectionLimits: AppConfig['manager']['promptSections']
   abortSignal?: AbortSignal
@@ -44,7 +42,6 @@ export const runManagerRoundAttempt = (params: {
     plans: params.plans,
     focuses: params.runtime.domain.focuses,
     workingFocusIds: params.workingFocusIds,
-    ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
     env: params.managerEnv,
     model: params.runtime.config.manager.model,
     ...(params.runtime.config.manager.baseUrl

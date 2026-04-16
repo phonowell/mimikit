@@ -11,7 +11,7 @@
 ## 核心结论
 
 - `memory/MEMORY.md` 持久化仍是 Markdown，但内部读写按结构化条目（entry）处理。
-- 当前分三层承载：`remember_memory` 负责跨项目长期记忆，`project_profile` 负责 repo 绑定项目档案，`focus/state` 负责执行中状态。
+- 当前分两层承载：`remember_memory` 负责长期稳定记忆，`focus/state` 负责执行中状态。
 - `remember_memory` 仅负责立即写入，不新增 `forget_memory` action。
 - “遗忘”通过记住一条指令（如“xxx 信息应遗忘”）进入 memory refresh，由 LLM 在刷新输出 `delete_entry_ids` 执行删除。
 - prompt 注入 `M:memory` 不再按文件原顺序，改为本地评分排序后按 budget 选择。
@@ -43,7 +43,7 @@
   - `source_quote` 仅作可选审计提示；拿不准原文片段时留空，不再把逐字命中当成硬门槛。
   - checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用会被拒绝，不进入长期 memory。
   - 只有当当前轮用户输入直接给出可跨多轮复用的稳定规则/偏好/约束时，才允许立即写入。
-  - repo 绑定的项目事实、阶段方向不要挤进长期 memory，应改走 `remember_project_profile`。
+  - repo 绑定的稳定项目事实若确有长期价值，也统一收敛为 `remember_memory` 的稳定 digest，不再保留并行 `project_profile` 通道。
   - 执行中 checklist、当前待办、即时状态仍留在 `focus/state`。
   - provenance 不满足时显式拒绝该 action；不再静默 suppress，也不再用中性 `收到。` 覆写原 reply。
 - 回执：写入 `memory_remembered` system event（含 `entry_id/ref/operation`）。
@@ -52,32 +52,9 @@
   - `src/policy/manager/action-apply-memory.ts`
   - `src/persistence/history/memory-events.ts`
 
-## 项目档案（project profile）
-
-- 入口：`remember_project_profile(content, source_input_id, source_quote?)`。
-- 归属边界：
-  - 只保存当前 repo 可跨后续多轮复用的稳定项目事实，或可延续的阶段方向。
-  - `content` 仍要求单行稳定 digest（`<=240 chars`），并复用与 `remember_memory` 相同的 hygiene guard：拒绝 checklist、多行过程文本、协议标签与 runtime 引用。
-  - `source_input_id` 必须命中当前轮真实用户输入；`source_quote` 仅作可选审计提示。
-  - `content` 可基于当前输入做最小归纳；来源锚点仍随条目一起持久化。
-  - provenance 只再强制校验 `source_input_id`；辅助审计信息缺失时不阻塞主链。
-  - repo 绑定的阶段方向可以进入 `project_profile`；执行中的待办、恢复步骤、当前状态仍不得进入。
-- 存储：
-  - 文件路径按 `runtime.startup.worktree` 绑定：`.mimikit/memory/project-profiles/project-profile-<worktree-hash>.md`
-  - 每条记录保存 `id/content/source_input_id/source_quote?/updated_at`
-- prompt 注入：
-  - manager 稳定上下文新增 `M:project_profile`
-  - 注入内容默认展示 digest；若存在 `source_quote` 再附带显示
-- 回执：
-  - 写入 `project_profile_remembered` system event（含 `entry_id/ref/operation`）
-- 代码：
-  - `src/work/project-profile/store.ts`
-  - `src/policy/manager/action-apply-project-profile.ts`
-  - `src/persistence/history/project-profile-events.ts`
-
 ## 稳定偏好对齐边界
 
-- `remember_memory` 与 `project_profile` 承接的是“稳定偏好如何影响编排风格”，不是“替用户重写目标”。
+- `remember_memory` 承接的是“稳定偏好如何影响编排风格”，不是“替用户重写目标”。
 - 当前固化规则只允许稳定偏好影响：
   - 表达方式
   - 推进节奏

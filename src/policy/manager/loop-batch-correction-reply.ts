@@ -3,17 +3,6 @@ import type { ManagerActionFeedback } from '../../foundation/types/index.js'
 const GENERIC_CORRECTION_REPLY =
   '继续执行前还缺 3 个最小信息，每项一句即可：1) 目标：最终要我产出什么；2) 范围与不做项：这次只处理哪里、哪些不要动；3) 验收标准：怎样算完成，至少一条。若一时说不全，请先缩成一个最小可交付结果。'
 
-const isRetryableActionFeedback = (item: ManagerActionFeedback): boolean =>
-  item.error === 'invalid_action_args'
-
-export const shouldRetrySelfRepairRound = (
-  round: number,
-  feedback: ManagerActionFeedback[],
-): boolean =>
-  round === 2 &&
-  feedback.length > 0 &&
-  feedback.every((item) => isRetryableActionFeedback(item))
-
 export const buildCorrectionFallbackReply = (
   feedback: ManagerActionFeedback[],
 ): string => {

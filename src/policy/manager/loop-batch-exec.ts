@@ -12,7 +12,6 @@ import { buildManagerEnv } from './manager-env.js'
 
 import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
-  ManagerActionFeedback,
   ManagerWakeProfile,
   Task,
   TaskPlan,
@@ -31,9 +30,6 @@ export const runManagerRoundWithRecovery = async (params: {
   plans: TaskPlan[]
   workingFocusIds: string[]
   managerThreadId?: string
-  extra: {
-    actionFeedback?: ManagerActionFeedback[]
-  }
   abortSignal?: AbortSignal
 }): Promise<{
   output: string
@@ -55,13 +51,7 @@ export const runManagerRoundWithRecovery = async (params: {
   })
   const { wakeProfile } = budgetDecision
   const managerEnv = buildManagerEnv(params.runtime, wakeProfile)
-  const packetMode = resolveManagerPacketMode({
-    wakeProfile,
-    round: params.round,
-    hasActionFeedback: Boolean(
-      params.extra.actionFeedback && params.extra.actionFeedback.length > 0,
-    ),
-  })
+  const packetMode = resolveManagerPacketMode({ wakeProfile })
   const roundId = createRoundId()
   const { promptSectionLimits } = budgetDecision
   const baseRetry = params.runtime.config.worker.retry
@@ -87,9 +77,6 @@ export const runManagerRoundWithRecovery = async (params: {
         tasks: params.tasks,
         plans: params.plans,
         workingFocusIds: params.workingFocusIds,
-        ...(params.extra.actionFeedback
-          ? { actionFeedback: params.extra.actionFeedback }
-          : {}),
         managerEnv,
         promptSectionLimits,
         ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
@@ -131,9 +118,6 @@ export const runManagerRoundWithRecovery = async (params: {
         tasks: params.tasks,
         plans: params.plans,
         workingFocusIds: params.workingFocusIds,
-        ...(params.extra.actionFeedback
-          ? { actionFeedback: params.extra.actionFeedback }
-          : {}),
         managerEnv,
         promptSectionLimits,
         ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),

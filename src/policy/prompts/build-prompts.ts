@@ -27,7 +27,6 @@ const CONTEXT_EMPTY_VALUES: Record<string, string> = {
   action_surface: '',
   state_packet: '',
   event_packet: '',
-  project_profile: '',
   remembered_memory: '',
   memory: '',
 }
@@ -46,7 +45,6 @@ export const buildManagerPromptPayload = async (
   const runtime = await prepareManagerPromptRuntimeData(params, {
     includeTasks: sectionPolicy.tasks,
     includeInputs: sectionPolicy.inputs,
-    includeProjectProfile: sectionPolicy.project_profile,
     includeRememberedMemory: sectionPolicy.remembered_memory,
     includeMemory: sectionPolicy.memory,
     includeWorkingFocuses: sectionPolicy.working_focuses,
@@ -55,12 +53,7 @@ export const buildManagerPromptPayload = async (
   const systemSource = await loadPromptSource('manager/system.md')
   const contextSource = await loadPromptSource('manager/context.md')
   const actionSurface = formatManagerActionSurfacePrompt(
-    resolveManagerActionSurfacePromptConfig({
-      packetMode,
-      ...(params.actionFeedback
-        ? { actionFeedback: params.actionFeedback }
-        : {}),
-    }),
+    resolveManagerActionSurfacePromptConfig(),
   )
   const packets = buildManagerPromptPackets({
     workDir: params.workDir,
@@ -71,7 +64,6 @@ export const buildManagerPromptPayload = async (
     inputs: params.inputs,
     tasks: params.tasks,
     plans: params.plans,
-    actionFeedback: params.actionFeedback,
     workingFocusIds: params.workingFocusIds,
     env: params.env,
     sectionPolicy,
@@ -90,7 +82,6 @@ export const buildManagerPromptPayload = async (
     {
       ...CONTEXT_EMPTY_VALUES,
       state_packet: packets.statePacket,
-      project_profile: packets.selectedProjectProfile,
       remembered_memory: packets.selectedRememberedMemory,
     },
     contextSource.path,
@@ -137,7 +128,6 @@ export const buildManagerPromptPayload = async (
       action_surface: byteLength(actionSurface),
       state_packet: byteLength(packets.statePacket),
       event_packet: byteLength(packets.eventPacket),
-      project_profile: byteLength(packets.selectedProjectProfile),
       remembered_memory: byteLength(packets.selectedRememberedMemory),
       memory: byteLength(packets.selectedMemory),
     },

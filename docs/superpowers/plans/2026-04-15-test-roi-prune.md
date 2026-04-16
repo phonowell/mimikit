@@ -17,18 +17,18 @@
 - Modify: `vitest.config.ts`
 - Test: `tests/test-cost-guard.test.ts`
 
-- [ ] Add a global Vitest setup file that deletes common real provider env vars before each test and restores them after each test
-- [ ] Block `fetch` calls to non-local hosts unless a test explicitly stubs `globalThis.fetch`
-- [ ] Allow local loopback hosts for CLI / HTTP integration tests
-- [ ] Add one focused test file proving external fetch is blocked and localhost fetch is allowed
+- [x] Add a global Vitest setup file that deletes common real provider env vars before each test and restores them after each test
+- [x] Block `fetch` calls to non-local hosts unless a test explicitly stubs `globalThis.fetch`
+- [x] Allow local loopback hosts for CLI / HTTP integration tests
+- [x] Add one focused test file proving external fetch is blocked and localhost fetch is allowed
 
 ### Task 2: Delete Low-ROI WebUI Tests
 
 **Files:**
 - Delete: `tests/webui-*.test.ts`
 
-- [ ] Remove static render / formatting / copy-feedback / branding tests in the WebUI layer
-- [ ] Keep WebUI value through build and higher-level HTTP/integration coverage rather than DOM string assertions
+- [x] Remove static render / formatting / copy-feedback / branding tests in the WebUI layer
+- [x] Keep WebUI value through build and higher-level HTTP/integration coverage rather than DOM string assertions
 
 ### Task 3: Delete Low-ROI Prompt / Reply Tests
 
@@ -37,8 +37,8 @@
 - Delete: `tests/*reply*.test.ts`
 - Delete: `tests/manager-loop-helpers.test.ts`
 
-- [ ] Remove prompt-template wording tests and reply phrasing tests that primarily assert literal strings
-- [ ] Keep core manager / worker behavior through state, guard, and integration tests that do not depend on wording
+- [x] Remove prompt-template wording tests and reply phrasing tests that primarily assert literal strings
+- [x] Keep core manager / worker behavior through state, guard, and integration tests that do not depend on wording
 
 ### Task 4: Delete Auxiliary Guard / Archive Tests
 
@@ -55,15 +55,15 @@
 - Delete: `tests/manager-project-profile-guard.test.ts`
 - Delete: `tests/manager-enqueue-task-guard.test.ts`
 
-- [ ] Remove tests whose main value is checking hint wording, auxiliary fail-soft messaging, or archive/render phrasing
-- [ ] Re-run a representative manager core subset after deletion to confirm no hidden dependency on those files
+- [x] Remove tests whose main value is checking hint wording, auxiliary fail-soft messaging, or archive/render phrasing
+- [x] Re-run a representative manager core subset after deletion to confirm no hidden dependency on those files
 
 ### Task 5: Verify Count Reduction and Full Suite
 
 **Files:**
 - Modify if needed: `plans/task_plan_test-roi-prune-20260415.md`
 
-- [ ] Recount `test(...)` total and confirm final count is `<=322`
-- [ ] Run targeted tests for the new cost guard and a representative manager core subset
-- [ ] Run `pnpm run review-code-changes`
-- [ ] Record the before/after counts and final deletion delta in the task plan
+- [x] Recount `test(...)` total and confirm final count is `<=322` (`398 -> 314`, `-84`)
+- [x] Run targeted tests for the new cost guard and a representative manager core subset (superseded by full suite pass)
+- [x] Run `pnpm run review-code-changes`
+- [x] Record the before/after counts and final deletion delta in the task plan

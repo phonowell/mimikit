@@ -10,7 +10,7 @@
 - 仓库中低 ROI 测试主要集中在三类：
   - `webui` 静态渲染/格式化/标签断言
   - `prompt/reply` 字面文案与模板拼字断言
-  - `memory/project_profile` 一类辅助写入的细碎 guard 文案测试
+  - `memory` 一类辅助写入的细碎 guard 文案测试
 - 当前 `vitest` 没有统一 setup，默认并未硬性阻断外网或真实 API key。
 
 ## Decision

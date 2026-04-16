@@ -27,13 +27,11 @@ const runRounds = (params: {
   batchId: string
   inputs: UserInput[]
   results: TaskResult[]
-  maxCorrectionRounds: number
   abortSignal?: AbortSignal
 }): Promise<{
   parsed: ManagerParsedTurn
   usage?: TokenUsage
   elapsedMs: number
-  roundLimitReached?: boolean
   diagnostics: {
     batchId: string
     roundCount: number
@@ -43,7 +41,7 @@ const runRounds = (params: {
     threadId?: string
   }
 }> => {
-  const { runtime, inputs, results, maxCorrectionRounds } = params
+  const { runtime, inputs, results } = params
   const workingFocusIds = resolveBatchWorkingFocusIds({
     runtime,
     inputs,
@@ -74,7 +72,6 @@ const runRounds = (params: {
     tasks,
     plans,
     workingFocusIds,
-    maxCorrectionRounds,
     ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
   })
 }
@@ -88,7 +85,6 @@ export const runManagerBatch = async (params: {
   parsed: ManagerParsedTurn
   usage?: TokenUsage
   elapsedMs: number
-  roundLimitReached?: boolean
   diagnostics: {
     batchId: string
     roundCount: number
@@ -107,16 +103,11 @@ export const runManagerBatch = async (params: {
     results.map((item) => item.taskId),
   )
 
-  const maxCorrectionRounds = Math.max(
-    1,
-    runtime.config.manager.maxCorrectionRounds,
-  )
   return runRounds({
     runtime,
     batchId,
     inputs,
     results,
-    maxCorrectionRounds,
     ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
   })
 }

@@ -4,13 +4,12 @@ import type {
   TaskResultStatus,
 } from '../../foundation/types/runtime-domain.js'
 
-export type ManagerPacketMode = 'minimal' | 'standard' | 'expanded'
+export type ManagerPacketMode = 'minimal' | 'standard'
 
 export type ManagerPacketSection =
   | 'environment'
   | 'focus_list'
   | 'working_focuses'
-  | 'project_profile'
   | 'remembered_memory'
   | 'memory'
   | 'tasks'
@@ -18,7 +17,6 @@ export type ManagerPacketSection =
   | 'inputs'
   | 'batch_results'
   | 'recent_history'
-  | 'action_feedback'
 
 export type ManagerContextPacket = {
   id: string
@@ -92,19 +90,10 @@ export type ManagerActionFeedbackCode =
   | 'task_contract_missing'
   | 'invalid_action_args'
 
-export type ManagerActionFeedbackRepair = {
-  kind: 'fix_action_args'
-  issues?: string[] | undefined
-  missing_required_attr?: string | undefined
-  missing_required_attrs?: string[] | undefined
-  unknown_attrs?: string[] | undefined
-}
-
 export type ManagerActionFeedback = {
   action: string
   error: string
   hint: string
   attempted?: string
   code?: ManagerActionFeedbackCode
-  repair?: ManagerActionFeedbackRepair
 }

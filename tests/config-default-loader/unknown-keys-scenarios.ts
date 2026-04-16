@@ -12,7 +12,6 @@ test('supports manager model overrides and ignores unknown keys after reporting 
   const path = await writeTempConfig(
     [
       '[manager]',
-      'maxCorrectionRounds = 3',
       'model = "gpt-5.2-mini"',
       'modelReasoningEffort = "medium"',
       '',
@@ -35,7 +34,6 @@ test('supports manager model overrides and ignores unknown keys after reporting 
 
   expect(config.manager.model).toBe('gpt-5.2-mini')
   expect(config.manager.modelReasoningEffort).toBe('medium')
-  expect(config.manager.maxCorrectionRounds).toBe(3)
   expect(config.codex.model).toBe('gpt-5.4')
   expect(unknownKeys).toEqual(['manager.promptSections', 'worker.retry'])
 })
@@ -45,7 +43,6 @@ test('reports removed runtime-only keys as unknown', async () => {
     [
       '[manager]',
       'model = "gpt-5.2-mini"',
-      'maxCorrectionRounds = 3',
       '',
       '[manager.promptSections]',
       'tasksMaxBytes = 1024',

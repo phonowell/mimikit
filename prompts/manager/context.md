@@ -3,11 +3,6 @@
 {{ state_packet }}
 </M:state_packet>
 {% endif %}
-{% if project_profile %}
-<M:project_profile>
-{{ project_profile }}
-</M:project_profile>
-{% endif %}
 {% if event_packet %}
 <M:event_packet>
 {{ event_packet }}

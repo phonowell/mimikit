@@ -4,7 +4,6 @@ import { resolveDefaultFocusId } from '../../work/focus/state.js'
 import { canScheduleManagerRestart } from './restart-runtime.js'
 
 import type {
-  ManagerActionFeedback,
   ManagerWakeProfile,
   TaskPlanStatus,
   TaskStatus,
@@ -12,16 +11,6 @@ import type {
   UserInput,
 } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
-
-export type ManagerRoundExtra = {
-  actionFeedback?: ManagerActionFeedback[]
-}
-export const hasNoFollowupRequests = (params: {
-  feedbackCount: number
-}): boolean => {
-  const { feedbackCount } = params
-  return feedbackCount === 0
-}
 
 export const buildActionFeedbackContext = (params: {
   runtime: ManagerRuntime
@@ -90,7 +79,7 @@ export const logManagerBatchStart = (
     resultIds,
   })
 
-export const buildRoundLimitResult = (params: {
+export const buildClarifiedStopResult = (params: {
   text: string
   elapsedMs: number
   usage?: TokenUsage
@@ -106,7 +95,6 @@ export const buildRoundLimitResult = (params: {
   parsed: { text: string; actions: [] }
   elapsedMs: number
   usage?: TokenUsage
-  roundLimitReached: true
   diagnostics: {
     batchId: string
     roundCount: number
@@ -122,7 +110,6 @@ export const buildRoundLimitResult = (params: {
   },
   elapsedMs: params.elapsedMs,
   ...(params.usage ? { usage: params.usage } : {}),
-  roundLimitReached: true,
   diagnostics: params.diagnostics,
 })
 

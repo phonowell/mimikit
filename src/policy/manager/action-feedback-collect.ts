@@ -14,7 +14,6 @@ const pushFeedback = (
     error: string
     hint: string
     code?: ManagerActionFeedback['code']
-    repair?: ManagerActionFeedback['repair']
   },
 ): void => {
   const attempted = renderAttemptedAction(item)
@@ -27,7 +26,6 @@ const pushFeedback = (
     hint: issue.hint,
     attempted,
     ...(issue.code ? { code: issue.code } : {}),
-    ...(issue.repair ? { repair: issue.repair } : {}),
   })
 }
 

@@ -2,7 +2,6 @@ import type { PromptSectionLimits } from '../../src/bootstrap/config.js'
 import type { LogRow } from './score-runtime-window-model.js'
 
 const PROMPT_SECTION_LIMIT_KEYS: Array<keyof PromptSectionLimits> = [
-  'actionFeedbackMaxBytes',
   'batchResultsMaxBytes',
   'environmentMaxBytes',
   'focusListMaxBytes',

@@ -13,7 +13,6 @@ export type UserConfigDefaults = {
     baseUrl?: string | undefined
     apiKey?: string | undefined
     proxy?: string | undefined
-    maxCorrectionRounds: number
   }
   worker: {
     maxConcurrent: number
@@ -41,7 +40,6 @@ const DEFAULT_USER_CONFIG: UserConfigDefaults = {
     baseUrl: '',
     apiKey: '',
     proxy: '',
-    maxCorrectionRounds: 3,
   },
   worker: {
     maxConcurrent: 3,
@@ -97,9 +95,6 @@ export const buildUserConfigDefaults = (
       ...(baseUrl ? { baseUrl } : {}),
       ...(apiKey ? { apiKey } : {}),
       ...(managerProxy ? { proxy: managerProxy } : {}),
-      maxCorrectionRounds:
-        input.manager?.maxCorrectionRounds ??
-        DEFAULT_USER_CONFIG.manager.maxCorrectionRounds,
     },
     worker: {
       maxConcurrent:

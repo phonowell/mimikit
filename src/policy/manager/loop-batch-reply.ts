@@ -52,9 +52,7 @@ export const appendManagerBatchReply = async (params: {
       })
   const responseText =
     params.normalizedReplyText ||
-    normalizeManagerReplyText(fallback?.text ?? '', {
-      mode: params.results.length > 0 ? 'structured' : 'natural',
-    })
+    normalizeManagerReplyText(fallback?.text ?? '')
   await appendManagerReply({
     runtime: params.runtime,
     text: responseText,

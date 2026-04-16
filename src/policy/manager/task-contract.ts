@@ -6,9 +6,9 @@ import {
   createPromptTemplateRenderer,
   loadYamlPromptTemplates,
 } from '../../foundation/prompting/prompt-template-loader.js'
-import { canonicalizeTaskDraft } from '../../foundation/shared/task-draft-canonicalize.js'
 
 import { renderActionFeedbackHint } from './action-feedback-hint-renderer.js'
+import { managerTaskDraftSchema } from './task-draft-schema.js'
 
 import type { ManagerTaskDraft } from './manager-turn-schema.js'
 import type { TaskContract } from '../../foundation/types/index.js'
@@ -130,13 +130,15 @@ const buildGeneratedWorkerPrompt = (params: {
 export const buildTaskContractFromDraft = (
   draft: ManagerTaskDraft,
 ): TaskContract | undefined => {
-  const compactDraft = canonicalizeTaskDraft(draft)
-  const goal = normalizeLine(compactDraft.goal)
-  const scope = joinList(compactDraft.in_scope)
-  if (!goal || !scope || compactDraft.done_when.length === 0) return undefined
-  const outOfScope = joinList(compactDraft.out_of_scope)
-  const contextRefs = normalizeList(compactDraft.context_refs)
-  const acceptance = normalizeList(compactDraft.done_when)
+  const parsed = managerTaskDraftSchema.safeParse(draft)
+  if (!parsed.success) return undefined
+  const validDraft = parsed.data
+  const goal = normalizeLine(validDraft.goal)
+  const scope = joinList(validDraft.in_scope)
+  if (!goal || !scope || validDraft.done_when.length === 0) return undefined
+  const outOfScope = joinList(validDraft.out_of_scope)
+  const contextRefs = normalizeList(validDraft.context_refs)
+  const acceptance = normalizeList(validDraft.done_when)
   if (acceptance.length === 0) return undefined
   return {
     goal,
@@ -153,17 +155,19 @@ export const resolveWorkerPromptFromDraft = (
     stateDir?: string
   },
 ): string | undefined => {
-  const compactDraft = canonicalizeTaskDraft(draft)
-  const contract = buildTaskContractFromDraft(compactDraft)
+  const parsed = managerTaskDraftSchema.safeParse(draft)
+  if (!parsed.success) return undefined
+  const validDraft = parsed.data
+  const contract = buildTaskContractFromDraft(validDraft)
   if (!contract) return undefined
   return buildGeneratedWorkerPrompt({
-    title: normalizeLine(compactDraft.title),
+    title: normalizeLine(validDraft.title),
     goal: contract.goal,
     inScope: contract.scope,
     doneWhen: contract.acceptance,
     ...(contract.outOfScope ? { outOfScope: contract.outOfScope } : {}),
     ...(contract.contextRefs ? { contextRefs: contract.contextRefs } : {}),
-    extraInstructions: compactDraft.instructions,
+    extraInstructions: validDraft.instructions,
     stateDir: options?.stateDir,
   })
 }

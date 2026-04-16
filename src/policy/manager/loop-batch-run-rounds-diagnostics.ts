@@ -1,13 +1,12 @@
 import { appendLog } from '../../persistence/log/append.js'
 
-import {
-  buildCorrectionFallbackReply,
-  shouldRetrySelfRepairRound,
-} from './loop-batch-correction-reply.js'
-import { buildRoundLimitResult } from './loop-batch-run-helpers.js'
+import { buildCorrectionFallbackReply } from './loop-batch-correction-reply.js'
+import { buildClarifiedStopResult } from './loop-batch-run-helpers.js'
 
-import type { ManagerRoundExtra } from './loop-batch-run-helpers.js'
-import type { TokenUsage } from '../../foundation/types/index.js'
+import type {
+  ManagerActionFeedback,
+  TokenUsage,
+} from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export type ManagerRoundDiagnostics = {
@@ -42,7 +41,7 @@ export const updateManagerRoundDiagnostics = (params: {
 const buildManagerCorrectionLogPayload = (params: {
   batchId: string
   round: number
-  actionFeedback: NonNullable<ManagerRoundExtra['actionFeedback']>
+  actionFeedback: ManagerActionFeedback[]
   diagnostics: ManagerRoundDiagnostics
   threadId?: string
 }): {
@@ -65,57 +64,25 @@ const buildManagerCorrectionLogPayload = (params: {
   names: params.actionFeedback.map((item) => item.action),
 })
 
-export const resolveSelfRepairRoundContinuation = async (params: {
+export const buildCorrectionRoundResult = async (params: {
   runtime: ManagerRuntime
   batchId: string
   round: number
-  actionFeedback: NonNullable<ManagerRoundExtra['actionFeedback']>
+  actionFeedback: ManagerActionFeedback[]
   elapsedMs: number
   diagnostics: ManagerRoundDiagnostics
   usage?: TokenUsage
   threadId?: string
-}): Promise<
-  | {
-      continueRound: true
-    }
-  | ReturnType<typeof buildRoundLimitResult>
-> => {
-  if (!shouldRetrySelfRepairRound(params.round, params.actionFeedback)) {
-    const fallbackReply = buildCorrectionFallbackReply(params.actionFeedback)
-    await appendLog(params.runtime.paths.log, {
-      event: 'manager_correction_structured_clarify',
-      ...buildManagerCorrectionLogPayload(params),
-    })
-    return buildRoundLimitResult({
-      text: fallbackReply,
-      elapsedMs: params.elapsedMs,
-      diagnostics: params.diagnostics,
-      ...(params.usage ? { usage: params.usage } : {}),
-    })
-  }
-
+}): Promise<ReturnType<typeof buildClarifiedStopResult>> => {
+  const fallbackReply = buildCorrectionFallbackReply(params.actionFeedback)
   await appendLog(params.runtime.paths.log, {
-    event: 'manager_action_feedback_self_repair_retry',
+    event: 'manager_correction_structured_clarify',
     ...buildManagerCorrectionLogPayload(params),
   })
-  return { continueRound: true }
-}
-
-export const appendManagerCorrectionRoundLimitReached = (
-  runtime: ManagerRuntime,
-  params: {
-    maxCorrectionRounds: number
-    batchId: string
-    diagnostics: ManagerRoundDiagnostics
-    threadId?: string
-  },
-): Promise<void> =>
-  appendLog(runtime.paths.log, {
-    event: 'manager_correction_round_limit_reached',
-    ...(params.threadId ? { traceId: params.threadId } : {}),
-    batchId: params.batchId,
-    ...(params.diagnostics.roundId
-      ? { roundId: params.diagnostics.roundId }
-      : {}),
-    maxCorrectionRounds: params.maxCorrectionRounds,
+  return buildClarifiedStopResult({
+    text: fallbackReply,
+    elapsedMs: params.elapsedMs,
+    diagnostics: params.diagnostics,
+    ...(params.usage ? { usage: params.usage } : {}),
   })
+}

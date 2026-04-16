@@ -21,7 +21,6 @@ import type { AppConfig } from '../../bootstrap/config.js'
 import type {
   FocusId,
   FocusMeta,
-  ManagerActionFeedback,
   ManagerEnv,
   ManagerPacketMode,
   Task,
@@ -41,7 +40,6 @@ export const runManager = async (params: {
   promptSectionLimits: AppConfig['manager']['promptSections']
   startupWorktree?: string
   plans?: TaskPlan[]
-  actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
   workingFocusIds?: FocusId[]
@@ -71,7 +69,6 @@ export const runManager = async (params: {
       ? { startupWorktree: params.startupWorktree }
       : {}),
     ...(params.plans ? { plans: params.plans } : {}),
-    ...(params.actionFeedback ? { actionFeedback: params.actionFeedback } : {}),
     ...(params.env ? { env: params.env } : {}),
     ...(params.focuses ? { focuses: params.focuses } : {}),
     ...(params.workingFocusIds

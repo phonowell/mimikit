@@ -5,7 +5,6 @@ vi.mock('../src/bootstrap/config-default-loader.js', () => ({
     manager: {
       model: 'gpt-test-manager',
       modelReasoningEffort: 'medium',
-      maxCorrectionRounds: 9,
     },
     worker: {
       maxConcurrent: 2,
@@ -39,12 +38,6 @@ test('defaultConfig keeps worker timeout override from user config', () => {
 
   expect(config.worker.timeoutMs).toBe(321000)
   expect('budget' in config.worker).toBe(false)
-})
-
-test('defaultConfig keeps manager correction round override from user config', () => {
-  const config = defaultConfig({ workDir: '.mimikit' })
-
-  expect(config.manager.maxCorrectionRounds).toBe(9)
 })
 
 test('defaultConfig returns independent nested defaults per call', () => {

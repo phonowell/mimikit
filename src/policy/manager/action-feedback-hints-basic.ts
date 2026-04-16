@@ -119,7 +119,7 @@ export const formatRememberMemoryNotStableHint = (reason: string): string =>
   renderActionFeedbackHint('remember_memory_not_stable', { reason })
 
 export const formatAuxiliaryWriteFailedHint = (
-  action: 'remember_memory' | 'remember_project_profile',
+  action: 'remember_memory',
   reason: string,
 ): string =>
   renderActionFeedbackHint('auxiliary_write_failed', {

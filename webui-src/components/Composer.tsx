@@ -1,4 +1,4 @@
-import { useEffectEvent, useLayoutEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react'
 
 import type { QuoteState } from '../types.js'
 
@@ -23,6 +23,26 @@ export const buildQuotePreviewState = (
   className: `quote-preview${hasQuote ? ' is-visible' : ''}`,
   dataRole: quoteRole,
 })
+
+export const shouldCaptureComposerFocusRestore = ({
+  hasActiveComposerFocus,
+  sendPending,
+  value,
+}: {
+  hasActiveComposerFocus: boolean
+  sendPending: boolean
+  value: string
+}): boolean => hasActiveComposerFocus && !sendPending && value.trim().length > 0
+
+export const resolveComposerFocusRestore = ({
+  pendingRestoreFocus,
+  previousSendPending,
+  sendPending,
+}: {
+  pendingRestoreFocus: boolean
+  previousSendPending: boolean
+  sendPending: boolean
+}): boolean => pendingRestoreFocus && previousSendPending && !sendPending
 
 const resizeInput = (input: HTMLTextAreaElement) => {
   input.style.height = 'auto'
@@ -49,8 +69,19 @@ export const Composer = ({
   sendPending,
   value,
 }: Props) => {
+  const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const pendingRestoreFocusRef = useRef(false)
+  const previousSendPendingRef = useRef(sendPending)
   const syncLayoutShift = useEffectEvent(onLayoutShift)
+  const restoreInputFocus = useEffectEvent(() => {
+    if (typeof window === 'undefined') return
+    window.requestAnimationFrame(() => {
+      const input = inputRef.current
+      if (!input) return
+      input.focus()
+    })
+  })
 
   useLayoutEffect(() => {
     const input = inputRef.current
@@ -59,14 +90,41 @@ export const Composer = ({
     syncLayoutShift(isNearBottom)
   }, [hasQuote, isNearBottom, syncLayoutShift, value])
 
+  useEffect(() => {
+    const shouldRestoreFocus = resolveComposerFocusRestore({
+      pendingRestoreFocus: pendingRestoreFocusRef.current,
+      previousSendPending: previousSendPendingRef.current,
+      sendPending,
+    })
+    previousSendPendingRef.current = sendPending
+    if (!shouldRestoreFocus) return
+    pendingRestoreFocusRef.current = false
+    restoreInputFocus()
+  }, [restoreInputFocus, sendPending])
+
+  const submitFromComposer = () => {
+    const activeElement =
+      typeof document === 'undefined' ? null : document.activeElement
+    pendingRestoreFocusRef.current = shouldCaptureComposerFocusRestore({
+      hasActiveComposerFocus: Boolean(
+        activeElement instanceof HTMLElement &&
+        formRef.current?.contains(activeElement),
+      ),
+      sendPending,
+      value,
+    })
+    onSubmit()
+  }
+
   const quotePreview = buildQuotePreviewState(hasQuote, quoteRole)
 
   return (
     <section className="composer" aria-label="Input">
       <form
+        ref={formRef}
         onSubmit={(event) => {
           event.preventDefault()
-          onSubmit()
+          submitFromComposer()
         }}
       >
         <div
@@ -102,10 +160,10 @@ export const Composer = ({
               !event.nativeEvent.isComposing
             ) {
               event.preventDefault()
-              onSubmit()
+              submitFromComposer()
             }
           }}
-        ></textarea>
+        />
         <button
           className="btn btn--md btn--primary"
           type="submit"

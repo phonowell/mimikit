@@ -11,7 +11,6 @@ export type DefaultConfigParams = {
 }
 
 export type PromptSectionLimits = {
-  actionFeedbackMaxBytes: number
   batchResultsMaxBytes: number
   environmentMaxBytes: number
   focusListMaxBytes: number
@@ -31,7 +30,6 @@ export type AppConfig = {
     baseUrl?: string | undefined
     apiKey?: string | undefined
     proxy?: string | undefined
-    maxCorrectionRounds: number
     promptSections: PromptSectionLimits
     taskCreate: {
       debounceMs: number
@@ -69,9 +67,7 @@ export type AppConfig = {
 }
 
 const INTERNAL_MANAGER_DEFAULTS = {
-  maxCorrectionRounds: 3,
   promptSections: {
-    actionFeedbackMaxBytes: 8192,
     batchResultsMaxBytes: 20480,
     environmentMaxBytes: 4096,
     focusListMaxBytes: 8192,
@@ -121,7 +117,6 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
         ? { apiKey: userConfig.manager.apiKey }
         : {}),
       ...(userConfig.manager.proxy ? { proxy: userConfig.manager.proxy } : {}),
-      maxCorrectionRounds: userConfig.manager.maxCorrectionRounds,
       promptSections: { ...INTERNAL_MANAGER_DEFAULTS.promptSections },
       taskCreate: { ...INTERNAL_MANAGER_DEFAULTS.taskCreate },
       taskWindow: { ...INTERNAL_MANAGER_DEFAULTS.taskWindow },

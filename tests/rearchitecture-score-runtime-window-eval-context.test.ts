@@ -14,7 +14,7 @@ test('evaluateContextScore marks incomplete promptSectionLimits as drift', () =>
         resultCount: 0,
         activeFocusCount: 1,
         promptSectionLimits: {
-          actionFeedbackMaxBytes: 8192,
+          batchResultsMaxBytes: 8192,
         },
       },
     ],

@@ -9,14 +9,6 @@ domain_boundary: |
   - {{ summary }}
 action_summary: |
   - `{{ name }}`：{{ summary }}{{ constraints_suffix }}
-action_detail: |
-  - `{{ name }}`：{{ summary }}{{ constraints_suffix }}
-detail_heading: |
-  ### 详细参数契约（按需注入）
-detail_all: |
-  - 当前为 follow-up/expanded 轮，补充本轮可用 action 的完整约束。
-detail_feedback: |
-  - 当前按反馈补充失败 action：{{ action_names }}。
 domains:
   task:
     title: 任务调度
@@ -31,15 +23,14 @@ domains:
     title: Focus 归属
     summary: 维护 focus 归属。
   memory:
-    title: 记忆与项目档案
-    summary: 写稳定记忆或项目档案。
+    title: 记忆
+    summary: 写稳定长期记忆。
 actions:
   enqueue_task:
     summary: 派发 worker 任务。
     brief_constraints:
       - 必填 `task`
       - 必填 `task.use_worktree`
-    detail_constraints:
       - '`task` 必须包含 `title,cwd,mode,use_worktree,goal,in_scope,out_of_scope,done_when[],context_refs[],instructions[]`'
       - '`goal/in_scope/out_of_scope/done_when/instructions` 默认 1-3 条高密度短句，避免同义重复、客套和多段解释'
       - '若单条 `goal/in_scope/out_of_scope/done_when/context_refs/instructions` 因 `；` 分句过长，优先删减末尾次要 clause，不要拆出兼容别名或额外字段'
@@ -57,7 +48,6 @@ actions:
     summary: 暂停、恢复或取消任务。
     brief_constraints:
       - 必填 `task_id,action`
-    detail_constraints:
       - '`action=pause|resume|cancel`'
       - '`instructions[]` 仅在 `action="resume"` 时可选附带，用于下一轮恢复补充说明'
       - '若当前 focus 下目标 task 是唯一 paused task，且本轮只是泛化续跑，可直接用 `task_control` + `action="resume"`；不要强迫自己再复述 `task_id/title` 或整份旧合同来“证明”它还是同一条线'
@@ -66,7 +56,6 @@ actions:
     brief_constraints:
       - 必填 `plan_id,plan`
       - '`plan_id=null` 表示创建；非空表示按该 ID 整体替换'
-    detail_constraints:
       - '`plan` 必须包含 `title,trigger,task,priority,max_runs`'
       - '`plan.task` 与 `enqueue_task.task` 使用同一合同'
       - '高风险 `set_plan(write)` 只接受当前用户输入的直接授权；不要再依赖 continuation anchor、差异解释器或结果旁证来放行'
@@ -76,36 +65,20 @@ actions:
     summary: 关闭计划并保留审计记录。
     brief_constraints:
       - 必填 `plan_id`
-    detail_constraints:
       - '这是高风险动作；当前用户输入必须直接引用目标 `plan_id/title` 并明确表达“关闭/删除/停用该计划”'
   assign_focus:
     summary: 绑定对象与 focus。
     brief_constraints:
       - 必填 `target_type,target_id,focus_id`
-    detail_constraints:
       - '这是辅助归属写入；若 target 当前不可用或字段不完整，允许静默丢弃，不要让它覆盖主结论'
   remember_memory:
     summary: 写长期记忆。
     brief_constraints:
       - 必填 `content,source_input_id`
-    detail_constraints:
       - 只保存稳定偏好或长期约束
       - '`content` 必须是单行 digest，且 `<=240 chars`'
       - '`source_input_id` 必须引用当前轮用户输入'
       - '`source_quote` 非必填；若拿不准原文片段就留空，不要冒险摘取'
-      - '禁止 checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用'
-      - 'remember 是辅助动作；reply 必须在该动作被静默丢弃时仍然保持为真'
-      - '若落盘失败，只允许内部记录 apply feedback；不要让辅助写入失败覆盖主结论'
-  remember_project_profile:
-    summary: 写项目档案。
-    brief_constraints:
-      - 必填 `content,source_input_id`
-    detail_constraints:
-      - 只保存当前仓库可跨后续多轮复用的稳定事实或阶段方向
-      - '`content` 必须是单行 digest，且 `<=240 chars`'
-      - '`source_input_id` 必须引用当前轮用户输入'
-      - '`source_quote` 非必填；若拿不准原文片段就留空，不要冒险摘取'
-      - '`content` 可基于当前用户输入做最小归纳，但不得脱离原意扩写'
       - '禁止 checklist、多行过程文本、协议标签与 `task-*/plan-*` 一类 runtime 引用'
       - 'remember 是辅助动作；reply 必须在该动作被静默丢弃时仍然保持为真'
       - '若落盘失败，只允许内部记录 apply feedback；不要让辅助写入失败覆盖主结论'

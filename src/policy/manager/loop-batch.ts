@@ -1,10 +1,7 @@
 import { readProviderErrorCode } from '../../execution/providers/provider-error.js'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { notifyUiSignal } from '../../kernel/orchestrator/signals.js'
-import { appendManagerCorrectionLimitSystemMessage } from '../../persistence/history/manager-events.js'
-import { bestEffort } from '../../persistence/log/safe.js'
 import { isVisibleToAgent } from '../../surface/shared/message-visibility.js'
-import { resolveDefaultFocusId } from '../../work/focus/state.js'
 
 import { applyTaskActions } from './action-apply.js'
 import { completeSuccessfulManagerBatch } from './batch-success-finalize.js'
@@ -70,15 +67,6 @@ export const processManagerBatch = async (params: {
       abortSignal: runAbortController.signal,
     })
     managerBatchId = managerRun.diagnostics.batchId
-    if (managerRun.roundLimitReached) {
-      await bestEffort('appendHistory: manager_round_limit', () =>
-        appendManagerCorrectionLimitSystemMessage(
-          runtime.paths,
-          runtime.config.manager.maxCorrectionRounds,
-          resolveDefaultFocusId(runtime),
-        ),
-      )
-    }
     const resolvedUsage: TokenUsage | undefined = managerRun.usage
     const { parsed } = managerRun
     const hasManualCanceledResult = results.some(
@@ -99,9 +87,7 @@ export const processManagerBatch = async (params: {
         ? { roundId: managerRun.diagnostics.roundId }
         : {}),
     })
-    const normalizedReplyText = normalizeManagerReplyText(parsed.text, {
-      mode: results.length > 0 ? 'structured' : 'natural',
-    })
+    const normalizedReplyText = normalizeManagerReplyText(parsed.text)
     agentAppended = await appendManagerBatchReply({
       runtime,
       agentInputs,

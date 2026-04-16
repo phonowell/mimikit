@@ -26,7 +26,7 @@
 1. 根据输入、任务、plan、历史、focus 组装 prompt、context packet 与 prompt segments。
 2. 执行 token 预算与超时控制。
 3. 调用 provider 接口并返回整段输出。
-4. 若收到 `action_feedback`，在同批次继续修正回合。
+4. 若 action 校验或执行反馈不足以继续推进，当轮直接降级为澄清答复，不再发起自修回合。
 5. 成功/失败都归档到 `traces/YYYY-MM-DD/<ts36><ra>.txt`，并写入 `batch_id/round_id/provider_call_id/attempt_number/thread_id` 等诊断键。
 
 ## Worker Runner

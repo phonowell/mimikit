@@ -6,7 +6,6 @@ const INTERNAL_TERM_REPLACEMENTS: Array<[pattern: RegExp, value: string]> = [
   [/\bdelete_plan\b/gi, '计划关闭'],
   [/\btask_control\b/gi, '任务操作'],
   [/\bremember_memory\b/gi, '长期记忆'],
-  [/\bremember_project_profile\b/gi, '项目档案'],
   [/\bschema\b/gi, '结果结构'],
   [/\bguard\b/gi, '门禁'],
   [/\bgoal\b/gi, '目标'],

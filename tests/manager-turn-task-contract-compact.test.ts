@@ -5,189 +5,114 @@ import { parseManagerTurn } from '../src/policy/manager/manager-turn.js'
 const repeatClause = (label: string, count: number): string[] =>
   Array.from({ length: count }, (_, index) => `${label}-${index + 1}`)
 
-const draftTotalChars = (task: {
-  title: string
-  goal: string
-  in_scope: string[]
-  out_of_scope: string[]
-  done_when: string[]
-  context_refs: string[]
-  instructions: string[]
-}): number =>
-  [
-    task.title,
-    task.goal,
-    ...task.in_scope,
-    ...task.out_of_scope,
-    ...task.done_when,
-    ...task.context_refs,
-    ...task.instructions,
-  ].reduce((sum, item) => sum + item.length, 0)
-
-test('parseManagerTurn canonicalizes oversized enqueue_task drafts into compact contracts', () => {
-  const parsed = parseManagerTurn({
-    reply: '收到。',
-    actions: [
-      {
-        type: 'enqueue_task',
-        task: {
-          title: '综合多源证据并设计 output tokens 优化方案',
-          cwd: '/tmp/mimikit',
-          mode: 'read',
-          goal: '结合当前运行态、历史归档、外部参考与用户目标，给出一套稳妥有效且不明显削弱能力的 output tokens 优化方案。',
-          in_scope: [
-            '回读 manager 当前输出链路并定位主要放大点。',
-            '回读历史任务归档中已提出的 output tokens 方向并核对适用性。',
-            '阅读外部参考实现以提炼可复用模式。',
-            '比较多种候选方案的收益、风险与复杂度。',
-            '给出最终推荐顺序与落地边界。',
-          ],
-          out_of_scope: [
-            '直接修改 provider 内部记账逻辑。',
-            '改造成全面成本治理平台。',
-            '扩展无边界的浏览器验证链路。',
-            '放松高风险门禁与审计要求。',
-          ],
-          done_when: [
-            '明确首选方案与推荐顺序。',
-            '明确短期止血项与中期方案。',
-            '区分已证实与保守推断。',
-            '说明是否符合项目目标与是否过度设计。',
-            '给出 manager 可直接继续编排的结论。',
-          ],
-          context_refs: [
-            'tasks/2026-04-01/task-a.md',
-            'tasks/2026-04-01/task-b.md',
-            'tasks/2026-04-01/task-c.md',
-            'tasks/2026-04-01/task-d.md',
-            'tasks/2026-04-01/task-e.md',
-          ],
-          instructions: [
-            '优先高 ROI、低复杂度、不中断现有门禁与审计的方案。',
-            '把证据来源分成实现、参考、技能、外网四类。',
-            '证据不足处直接标缺口，不要补猜。',
-          ],
-        },
-      },
-    ],
-  })
-
-  expect(parsed.actions[0]).toMatchObject({
-    type: 'enqueue_task',
-    task: {
-      in_scope: [
-        '回读 manager 当前输出链路并定位主要放大点。',
-        '回读历史任务归档中已提出的 output tokens 方向并核对适用性。',
-        '阅读外部参考实现以提炼可复用模式。',
-      ],
-      done_when: [
-        '明确首选方案与推荐顺序。',
-        '明确短期止血项与中期方案。',
-        '区分已证实与保守推断。',
-      ],
-      out_of_scope: [
-        '直接修改 provider 内部记账逻辑。',
-        '改造成全面成本治理平台。',
-      ],
-      context_refs: [
-        'tasks/2026-04-01/task-a.md',
-        'tasks/2026-04-01/task-b.md',
-        'tasks/2026-04-01/task-c.md',
-      ],
-      instructions: [
-        '优先高 ROI、低复杂度、不中断现有门禁与审计的方案。',
-        '把证据来源分成实现、参考、技能、外网四类。',
-      ],
-    },
-  })
-  if (parsed.actions[0]?.type !== 'enqueue_task')
-    throw new Error('expected task')
-  expect(draftTotalChars(parsed.actions[0].task)).toBeLessThanOrEqual(900)
-})
-
-test('parseManagerTurn accepts over-limit enqueue_task list counts and compacts them before strict validation', () => {
-  const parsed = parseManagerTurn({
-    reply: '收到。',
-    actions: [
-      {
-        type: 'enqueue_task',
-        task: {
-          title: '继续收敛 enqueue_task 合同',
-          cwd: '/tmp/mimikit',
-          mode: 'read',
-          use_worktree: false,
-          goal: '收敛 parse 层前置失败，确保 verbose draft 先进入 canonicalize。',
-          in_scope: repeatClause('scope', 6),
-          out_of_scope: repeatClause('out', 3),
-          done_when: repeatClause('done', 6),
-          context_refs: repeatClause('tasks/ref', 6),
-          instructions: repeatClause('instruction', 4),
-        },
-      },
-    ],
-  })
-
-  if (parsed.actions[0]?.type !== 'enqueue_task')
-    throw new Error('expected task')
-  expect(parsed.actions[0].task.in_scope).toEqual([
-    'scope-1',
-    'scope-2',
-    'scope-3',
-  ])
-  expect(parsed.actions[0].task.out_of_scope).toEqual(['out-1', 'out-2'])
-  expect(parsed.actions[0].task.done_when).toEqual([
-    'done-1',
-    'done-2',
-    'done-3',
-  ])
-  expect(parsed.actions[0].task.context_refs).toEqual([
-    'tasks/ref-1',
-    'tasks/ref-2',
-    'tasks/ref-3',
-  ])
-  expect(parsed.actions[0].task.instructions).toEqual([
-    'instruction-1',
-    'instruction-2',
-  ])
-})
-
-test('parseManagerTurn accepts clause-heavy set_plan task fields and compacts them before strict validation', () => {
-  const parsed = parseManagerTurn({
-    reply: '收到。',
-    actions: [
-      {
-        type: 'set_plan',
-        plan_id: null,
-        plan: {
-          title: 'Compact plan task draft',
-          trigger: { type: 'on_worker_slot_freed' },
-          priority: 'normal',
-          max_runs: 1,
+test('parseManagerTurn rejects oversized enqueue_task drafts instead of compacting them', () => {
+  expect(() =>
+    parseManagerTurn({
+      reply: '收到。',
+      actions: [
+        {
+          type: 'enqueue_task',
           task: {
-            title: '继续压缩 manager 合同回灌',
+            title: '综合多源证据并设计 output tokens 优化方案',
+            cwd: '/tmp/mimikit',
+            mode: 'read',
+            goal: 'g'.repeat(241),
+            in_scope: [
+              '回读 manager 当前输出链路并定位主要放大点。',
+              '回读历史任务归档中已提出的 output tokens 方向并核对适用性。',
+              '阅读外部参考实现以提炼可复用模式。',
+              '比较多种候选方案的收益、风险与复杂度。',
+              '给出最终推荐顺序与落地边界。',
+            ],
+            out_of_scope: [
+              '直接修改 provider 内部记账逻辑。',
+              '改造成全面成本治理平台。',
+              '扩展无边界的浏览器验证链路。',
+              '放松高风险门禁与审计要求。',
+            ],
+            done_when: [
+              '明确首选方案与推荐顺序。',
+              '明确短期止血项与中期方案。',
+              '区分已证实与保守推断。',
+              '说明是否符合项目目标与是否过度设计。',
+              '给出 manager 可直接继续编排的结论。',
+            ],
+            context_refs: [
+              'tasks/2026-04-01/task-a.md',
+              'tasks/2026-04-01/task-b.md',
+              'tasks/2026-04-01/task-c.md',
+              'tasks/2026-04-01/task-d.md',
+              'tasks/2026-04-01/task-e.md',
+            ],
+            instructions: [
+              '优先高 ROI、低复杂度、不中断现有门禁与审计的方案。',
+              '把证据来源分成实现、参考、技能、外网四类。',
+              '证据不足处直接标缺口，不要补猜。',
+            ],
+          },
+        },
+      ],
+    }),
+  ).toThrow()
+})
+
+test('parseManagerTurn rejects over-limit enqueue_task list counts instead of trimming them', () => {
+  expect(() =>
+    parseManagerTurn({
+      reply: '收到。',
+      actions: [
+        {
+          type: 'enqueue_task',
+          task: {
+            title: '继续收敛 enqueue_task 合同',
             cwd: '/tmp/mimikit',
             mode: 'read',
             use_worktree: false,
-            goal: [
-              '第一段目标说明'.repeat(20),
-              '第二段目标说明'.repeat(20),
-              '第三段目标说明'.repeat(20),
-            ].join('；'),
-            in_scope: [`${'范围一'.repeat(40)}；${'范围二'.repeat(40)}`],
-            out_of_scope: [],
-            done_when: ['完成一'.repeat(12), '完成二'.repeat(12)],
-            context_refs: [],
-            instructions: [`${'补充一'.repeat(24)}；${'补充二'.repeat(24)}`],
+            goal: '收敛 parse 层前置失败，禁止 verbose draft 先进入 repair。',
+            in_scope: repeatClause('scope', 6),
+            out_of_scope: repeatClause('out', 3),
+            done_when: repeatClause('done', 6),
+            context_refs: repeatClause('tasks/ref', 6),
+            instructions: repeatClause('instruction', 4),
           },
         },
-      },
-    ],
-  })
+      ],
+    }),
+  ).toThrow()
+})
 
-  if (parsed.actions[0]?.type !== 'set_plan') throw new Error('expected plan')
-  expect(parsed.actions[0].plan.task.goal).toBe('第一段目标说明'.repeat(20))
-  expect(parsed.actions[0].plan.task.in_scope).toEqual(['范围一'.repeat(40)])
-  expect(parsed.actions[0].plan.task.instructions).toEqual([
-    '补充一'.repeat(24),
-  ])
+test('parseManagerTurn rejects clause-heavy set_plan task fields instead of compacting them', () => {
+  expect(() =>
+    parseManagerTurn({
+      reply: '收到。',
+      actions: [
+        {
+          type: 'set_plan',
+          plan_id: null,
+          plan: {
+            title: 'Compact plan task draft',
+            trigger: { type: 'on_worker_slot_freed' },
+            priority: 'normal',
+            max_runs: 1,
+            task: {
+              title: '继续压缩 manager 合同回灌',
+              cwd: '/tmp/mimikit',
+              mode: 'read',
+              use_worktree: false,
+              goal: [
+                '第一段目标说明'.repeat(20),
+                '第二段目标说明'.repeat(20),
+                '第三段目标说明'.repeat(20),
+              ].join('；'),
+              in_scope: [`${'范围一'.repeat(40)}；${'范围二'.repeat(40)}`],
+              out_of_scope: [],
+              done_when: ['完成一'.repeat(12), '完成二'.repeat(12)],
+              context_refs: [],
+              instructions: [`${'补充一'.repeat(24)}；${'补充二'.repeat(24)}`],
+            },
+          },
+        },
+      ],
+    }),
+  ).toThrow()
 })

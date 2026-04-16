@@ -57,7 +57,6 @@ export type {
 export type {
   ManagerActionFeedback,
   ManagerActionFeedbackCode,
-  ManagerActionFeedbackRepair,
   ManagerContextPacket,
   ManagerEnv,
   ManagerPacketMode,

@@ -9,7 +9,6 @@ import { appendJsonl } from '../src/persistence/storage/jsonl.js'
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-score-runtime-'))
 const promptSectionLimits = {
-  actionFeedbackMaxBytes: 8192,
   batchResultsMaxBytes: 20480,
   environmentMaxBytes: 4096,
   focusContextsMaxBytes: 20480,

@@ -129,7 +129,7 @@ const normalizeManagerAction = (value: unknown): unknown => {
       focus_id: action.focus_id,
     }
   }
-  if (type === 'remember_memory' || type === 'remember_project_profile') {
+  if (type === 'remember_memory') {
     return {
       type,
       content: action.content,

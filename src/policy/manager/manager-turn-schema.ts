@@ -104,13 +104,6 @@ export const rememberMemoryActionSchema = z.strictObject({
   source_quote: optionalInlineString,
 })
 
-export const rememberProjectProfileActionSchema = z.strictObject({
-  type: z.literal('remember_project_profile'),
-  content: s,
-  source_input_id: s,
-  source_quote: optionalInlineString,
-})
-
 export const managerActionSchema = z.discriminatedUnion('type', [
   enqueueTaskActionSchema,
   taskControlActionSchema,
@@ -118,7 +111,6 @@ export const managerActionSchema = z.discriminatedUnion('type', [
   deletePlanActionSchema,
   assignFocusActionSchema,
   rememberMemoryActionSchema,
-  rememberProjectProfileActionSchema,
 ])
 
 export const managerTurnSchema = z.strictObject({
@@ -133,7 +125,6 @@ export const managerActionParseSchema = z.discriminatedUnion('type', [
   deletePlanActionSchema,
   assignFocusActionSchema,
   rememberMemoryActionSchema,
-  rememberProjectProfileActionSchema,
 ])
 
 export const managerTurnParseSchema = z.strictObject({

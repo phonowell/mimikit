@@ -24,7 +24,6 @@ const managerInputSchema = z
     baseUrl: z.string().optional(),
     apiKey: z.string().optional(),
     proxy: z.string().optional(),
-    maxCorrectionRounds: z.number().int().positive().optional(),
   })
   .strict()
 

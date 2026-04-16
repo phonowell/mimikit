@@ -13,12 +13,10 @@ import {
   validateSetPlan,
 } from './action-validation-plan.js'
 import { validateRememberMemoryAction } from './action-validation-remember-memory.js'
-import { validateRememberProjectProfileAction } from './action-validation-remember-project-profile.js'
 import { validateWithSchema } from './action-validation-shared.js'
 import {
   enqueueTaskActionSchema,
   rememberMemoryActionSchema,
-  rememberProjectProfileActionSchema,
   taskControlActionSchema,
 } from './manager-turn-schema.js'
 import {
@@ -104,17 +102,4 @@ export const validateRememberMemory = (
   if (schemaIssues.length > 0) return schemaIssues
   if (item.type !== 'remember_memory') return schemaIssues
   return validateRememberMemoryAction(item, context)
-}
-
-export const validateRememberProjectProfile = (
-  item: Parsed,
-  context: FeedbackContext,
-): ValidationIssue[] => {
-  const schemaIssues = validateWithSchema(
-    item,
-    rememberProjectProfileActionSchema,
-  )
-  if (schemaIssues.length > 0) return schemaIssues
-  if (item.type !== 'remember_project_profile') return schemaIssues
-  return validateRememberProjectProfileAction(item, context)
 }

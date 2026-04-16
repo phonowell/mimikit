@@ -3,14 +3,11 @@ import { appendLog } from '../../persistence/log/append.js'
 
 import { managerActionCliLogger } from './action-cli-log.js'
 import { collectManagerActionValidationOutcome } from './action-feedback-collect.js'
-import {
-  buildActionFeedbackContext,
-  hasNoFollowupRequests,
-  type ManagerRoundExtra,
-} from './loop-batch-run-helpers.js'
+import { buildActionFeedbackContext } from './loop-batch-run-helpers.js'
 
 import type { ManagerTurnAction as Parsed } from './manager-turn-schema.js'
 import type {
+  ManagerActionFeedback,
   ManagerWakeProfile,
   TaskResult,
 } from '../../foundation/types/index.js'
@@ -20,10 +17,10 @@ const appendRoundActionFeedback = async (params: {
   runtime: ManagerRuntime
   batchId?: string
   roundId?: string
-  actionFeedback: ManagerRoundExtra['actionFeedback']
+  actionFeedback: ManagerActionFeedback[]
 }): Promise<void> => {
   const { actionFeedback } = params
-  if (!actionFeedback || actionFeedback.length === 0) return
+  if (actionFeedback.length === 0) return
   for (const [index, item] of actionFeedback.entries()) {
     await managerActionCliLogger.logFeedback({
       item,
@@ -51,15 +48,8 @@ const appendRoundActionFeedback = async (params: {
 }
 
 type RoundFollowupResult =
-  | {
-      done: true
-      filteredActions?: Parsed[]
-    }
-  | {
-      done: false
-      extra: ManagerRoundExtra
-      filteredActions?: Parsed[]
-    }
+  | { filteredActions?: Parsed[]; actionFeedback: [] }
+  | { filteredActions?: Parsed[]; actionFeedback: ManagerActionFeedback[] }
 
 export const resolveRoundFollowup = async (params: {
   runtime: ManagerRuntime
@@ -73,7 +63,6 @@ export const resolveRoundFollowup = async (params: {
   allowAskUserChoice: boolean
   resultTaskIds: Set<string>
   wakeProfile: ManagerWakeProfile
-  roundExtra?: ManagerRoundExtra
 }): Promise<RoundFollowupResult> => {
   const validation = collectManagerActionValidationOutcome(
     params.parsed,
@@ -117,9 +106,9 @@ export const resolveRoundFollowup = async (params: {
       ),
     })
   }
-  if (hasNoFollowupRequests({ feedbackCount: actionFeedback.length })) {
+  if (actionFeedback.length === 0) {
     return {
-      done: true,
+      actionFeedback: [],
       ...(filteredActions ? { filteredActions } : {}),
     }
   }
@@ -132,10 +121,7 @@ export const resolveRoundFollowup = async (params: {
   })
 
   return {
-    done: false,
-    extra: {
-      ...(actionFeedback.length > 0 ? { actionFeedback } : {}),
-    },
+    actionFeedback,
     ...(filteredActions ? { filteredActions } : {}),
   }
 }

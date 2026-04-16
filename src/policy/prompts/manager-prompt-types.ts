@@ -3,7 +3,6 @@ import type { ProviderPromptSegment } from '../../execution/providers/types.js'
 import type {
   FocusId,
   FocusMeta,
-  ManagerActionFeedback,
   ManagerContextPacket,
   ManagerEnv,
   ManagerPacketMode,
@@ -21,7 +20,6 @@ export type PromptSectionUsage = {
   action_surface: number
   state_packet: number
   event_packet: number
-  project_profile: number
   remembered_memory: number
   memory: number
 }
@@ -56,7 +54,6 @@ export type BuildManagerPromptParams = {
   tasks: Task[]
   promptSectionLimits: PromptSectionLimits
   plans?: TaskPlan[]
-  actionFeedback?: ManagerActionFeedback[]
   env?: ManagerEnv
   focuses?: FocusMeta[]
   workingFocusIds?: OrderedWorkingFocusIds
@@ -68,7 +65,6 @@ export type ManagerPromptPacketBuildResult = {
   contextPacket: ManagerContextPacket
   statePacket: string
   eventPacket: string
-  selectedProjectProfile: string
   selectedRememberedMemory: string
   selectedMemory: string
   promptSelection: PromptSelectionSummary

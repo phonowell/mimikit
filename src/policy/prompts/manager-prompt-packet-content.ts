@@ -2,7 +2,6 @@ import { stringifyPromptJson } from '../../foundation/prompting/format-base.js'
 import { buildPlansPromptPayloadSection } from '../../foundation/prompting/format-plan-content.js'
 import { buildTasksPromptPayloadSection } from '../../foundation/prompting/format-task-content.js'
 import {
-  buildActionFeedbackPromptPayload,
   buildFocusListPromptPayload,
   buildInputsPromptPayload,
   buildWorkingFocusesPromptPayload,
@@ -135,7 +134,6 @@ export const buildEventPacketPayload = (params: {
   quoteLookup: ManagerPromptRuntimeData['quoteLookup']
   batchResultsPayload: unknown
   recentHistoryPayload: unknown
-  actionFeedback: BuildManagerPromptParams['actionFeedback']
   packet: unknown
 }): string =>
   stringifyPromptJson({
@@ -150,13 +148,6 @@ export const buildEventPacketPayload = (params: {
       : {}),
     ...(params.selectedSections.recent_history
       ? { recent_history: params.recentHistoryPayload }
-      : {}),
-    ...(params.selectedSections.action_feedback
-      ? {
-          action_feedback: buildActionFeedbackPromptPayload(
-            params.actionFeedback ?? [],
-          ),
-        }
       : {}),
     packet: params.packet,
   })

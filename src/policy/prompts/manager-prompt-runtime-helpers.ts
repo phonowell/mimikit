@@ -20,7 +20,6 @@ const pushMention = (target: string[], value: string | undefined): void => {
 export type ManagerPromptRuntimeDemand = {
   includeTasks: boolean
   includeInputs: boolean
-  includeProjectProfile: boolean
   includeRememberedMemory: boolean
   includeMemory: boolean
   includeWorkingFocuses: boolean
@@ -30,7 +29,6 @@ export type ManagerPromptRuntimeDemand = {
 const DEFAULT_RUNTIME_DEMAND: ManagerPromptRuntimeDemand = {
   includeTasks: true,
   includeInputs: true,
-  includeProjectProfile: true,
   includeRememberedMemory: true,
   includeMemory: true,
   includeWorkingFocuses: true,
@@ -42,9 +40,6 @@ export const normalizeRuntimeDemand = (
 ): ManagerPromptRuntimeDemand => ({
   includeTasks: demand?.includeTasks ?? DEFAULT_RUNTIME_DEMAND.includeTasks,
   includeInputs: demand?.includeInputs ?? DEFAULT_RUNTIME_DEMAND.includeInputs,
-  includeProjectProfile:
-    demand?.includeProjectProfile ??
-    DEFAULT_RUNTIME_DEMAND.includeProjectProfile,
   includeRememberedMemory:
     demand?.includeRememberedMemory ??
     DEFAULT_RUNTIME_DEMAND.includeRememberedMemory,
@@ -157,7 +152,6 @@ export type ManagerPromptRuntimeData = {
   normalizedWorkingFocusIds: FocusId[]
   focusPayload: ReturnType<typeof buildFocusPromptPayload>
   quoteLookup: ReturnType<typeof buildQuoteReferenceLookup>
-  projectProfilePrompt: string
   memoryPrompts: {
     rememberedMemory: string
     memory: string

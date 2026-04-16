@@ -4,11 +4,6 @@ import { buildPaths } from '../../persistence/fs/paths.js'
 import { readHistory } from '../../persistence/history/store.js'
 import { buildFocusPromptPayload } from '../../work/focus/prompt.js'
 import { readMemoryEntries } from '../../work/memory/entry-codec.js'
-import {
-  formatProjectProfilePrompt,
-  readProjectProfileEntries,
-  resolveProjectProfilePath,
-} from '../../work/project-profile/store.js'
 import { buildMemoryPromptSections } from '../memory/prompt-sections.js'
 
 import { hydratePromptHistoryResults } from './manager-prompt-history-hydrate.js'
@@ -55,16 +50,8 @@ export const prepareManagerPromptRuntimeData = async (
 
   const shouldLoadMemory =
     demand.includeRememberedMemory || demand.includeMemory
-  const startupWorktree = params.startupWorktree?.trim()
-  const shouldLoadProjectProfile =
-    demand.includeProjectProfile && Boolean(startupWorktree)
   const memoryEntries = shouldLoadMemory
     ? await readMemoryEntries(statePaths.memoryFile)
-    : []
-  const projectProfileEntries = shouldLoadProjectProfile
-    ? await readProjectProfileEntries(
-        resolveProjectProfilePath(params.stateDir, startupWorktree ?? ''),
-      )
     : []
 
   const focusHistory = requiresFocusHistory ? history : []
@@ -100,9 +87,6 @@ export const prepareManagerPromptRuntimeData = async (
     normalizedWorkingFocusIds,
     focusPayload,
     quoteLookup,
-    projectProfilePrompt: shouldLoadProjectProfile
-      ? formatProjectProfilePrompt(projectProfileEntries)
-      : '',
     memoryPrompts,
     recentHistorySource: demand.includeRecentHistory
       ? summarizeRecentHistory(focusPayload.recentHistory)

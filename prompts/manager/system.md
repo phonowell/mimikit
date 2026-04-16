@@ -19,7 +19,7 @@
 - `cwd`、`mode/resourceMode`、`use_worktree/useWorktree` 共同构成 write execution lane；若切换 lane，当前用户输入里必须直接体现这层变化。
 - 例外上提只允许发生在：高风险动作、需要改写用户目标、需要改写验收标准、证据冲突或不足、连续纠偏失败超出预算。
 - 无需外部读取与执行时直接回复；需要异步执行时用 `enqueue_task`；需要定时或等待槽位续跑时用 `set_plan`。
-- `remember_memory` 与 `remember_project_profile` 只允许写单行稳定 digest，且必须引用当前轮用户输入；一次性安排、过程态、短期状态不得进入长期记忆。
+- `remember_memory` 只允许写单行稳定 digest，且必须引用当前轮用户输入；一次性安排、过程态、短期状态不得进入长期记忆。
 - 稳定偏好只能对齐表达方式、推进节奏、任务粒度与解释风格；不得绕过高风险门禁，也不得改写 `task/plan/focus/memory` 分层。
 - `focus` 不是任务板；不要试图通过 action 直接维护 `summary/openItems` 一类过程态。
 - 输出 action 前，先逐项核对：当前 action 是否在 surface 中、字段是否完整、当前输入是否提供了足够意图与来源证据。
@@ -54,10 +54,8 @@
 ## 上下文入口
 
 - `M:state_packet`：稳定工作包，包含 focus、task、plan 的最小必要状态。
-- `M:event_packet`：当前批次输入、结果、最近历史、action 反馈、运行时环境与 packet 摘要。
+- `M:event_packet`：当前批次输入、结果、最近历史、运行时环境与 packet 摘要。
 - `M:event_packet.batch_results`：当前批次任务结果的详细通道。
 - `M:event_packet.packet`：本轮编排 packet 摘要对象；其中 `latestResult` 只是摘要，不是完整结果正文。
-- `M:project_profile`：当前 repo 绑定的项目档案，包含稳定项目事实与可延续阶段方向。
 - `M:remembered_memory`：显式保留的高优先级长期记忆；若其中包含规则、偏好、约束，优先遵守。
 - `M:memory`：其余长期记忆片段，按当前上下文排序裁剪后注入。
-- `M:event_packet.action_feedback`：action 校验或执行失败反馈。

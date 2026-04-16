@@ -7,11 +7,9 @@ import { GLOBAL_FOCUS_ID } from '../../src/work/focus/constants.js'
 import { createRuntime } from './testkit.js'
 
 import type * as MemoryEntryModule from '../../src/work/memory/remember-entry.js'
-import type * as ProjectProfileStoreModule from '../../src/work/project-profile/store.js'
 
 const hoistedMocks = vi.hoisted(() => ({
   rememberMemoryEntryMock: vi.fn(),
-  rememberProjectProfileEntryMock: vi.fn(),
 }))
 
 vi.mock('../../src/work/memory/remember-entry.js', async () => {
@@ -24,19 +22,8 @@ vi.mock('../../src/work/memory/remember-entry.js', async () => {
   }
 })
 
-vi.mock('../../src/work/project-profile/store.js', async () => {
-  const actual = await vi.importActual<ProjectProfileStoreModule>(
-    '../../src/work/project-profile/store.js',
-  )
-  return {
-    ...actual,
-    rememberProjectProfileEntry: hoistedMocks.rememberProjectProfileEntryMock,
-  }
-})
-
 afterEach(() => {
   hoistedMocks.rememberMemoryEntryMock.mockReset()
-  hoistedMocks.rememberProjectProfileEntryMock.mockReset()
 })
 
 test('remember_memory write failure appends apply feedback without blocking later actions', async () => {
@@ -91,35 +78,6 @@ test('remember_memory write failure appends apply feedback without blocking late
   )
   expect(feedback).toMatchObject({
     action: 'remember_memory',
-    error: 'action_execution_rejected',
-  })
-})
-
-test('remember_project_profile write failure appends apply feedback without throwing', async () => {
-  hoistedMocks.rememberProjectProfileEntryMock.mockRejectedValueOnce(
-    new Error('profile file is read only'),
-  )
-  const runtime = await createRuntime()
-
-  await expect(
-    applyTaskActions(runtime, [
-      {
-        type: 'remember_project_profile',
-        content: '统一用 pnpm + tsx。',
-        source_input_id: 'input-user',
-        source_quote: '统一用 pnpm + tsx',
-      },
-    ]),
-  ).resolves.toBeUndefined()
-
-  const logs = await readJsonl<Record<string, unknown>>(runtime.paths.log, {
-    ensureFile: true,
-  })
-  const feedback = logs.find(
-    (entry) => entry.event === 'manager_action_apply_feedback',
-  )
-  expect(feedback).toMatchObject({
-    action: 'remember_project_profile',
     error: 'action_execution_rejected',
   })
 })

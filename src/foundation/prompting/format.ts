@@ -88,10 +88,6 @@ export const formatEnvironment = (params?: PromptEnvironmentParams): string => {
 }
 
 export {
-  buildActionFeedbackPromptPayload,
-  formatActionFeedback,
-} from './format-action-feedback.js'
-export {
   buildInputsPromptPayload,
   buildRecentHistoryPromptPayload,
   formatInputs,

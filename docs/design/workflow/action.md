@@ -32,7 +32,6 @@
 
 - `assign_focus`
 - `remember_memory`
-- `remember_project_profile`
 
 ## 关键合同
 
@@ -53,8 +52,7 @@
   - `instructions[]`
 - `worker_prompt` 已删除；worker prompt 由任务合同自动生成。
 - `branch` 已删除；git worktree / branch 由运行时决定。
-- manager turn 解析流程固定为“结构校验 -> 任务合同规范化 -> 严格校验”；不会为超长合同补兼容字段或保留旧协议入口。
-- 规范化会优先压缩单条字段中的 `；` 分句，并裁剪列表数量；当前覆盖 `goal/in_scope/out_of_scope/done_when/context_refs/instructions`。
+- manager turn 解析流程固定为“结构校验 -> 严格校验”；不会为超长合同补兼容字段、压缩草案或保留旧协议入口。
 - `cwd` 必须指向现有目录。
 - `use_worktree` 必填；不需要独立 worktree 时显式传 `false`。
 - 不存在 `continuation_of` 一类延续锚点；是否属于同一条续跑链，只由 runtime state、对象归属与风险门禁决定。
@@ -104,15 +102,7 @@
 - `source_input_id` 必须命中当前轮真实用户输入
 - `source_quote` 为可选审计提示；拿不准原文片段时留空
 - runtime 只校验 provenance 与内容 hygiene；不再用词面 overlap / 历史重复命中去猜测 `content` 是否“被用户说过”
-- 这类记忆/档案写入属于辅助动作；即使落盘阶段失败，也只能记录内部 apply feedback，不得污染主回复
-
-### `remember_project_profile`
-
-- 结构：`{ type: "remember_project_profile", content, source_input_id, source_quote? }`
-- 复用 `remember_memory` 的内容 hygiene guard 与 provenance 必填要求
-- `content` 可以基于当前输入做最小归纳，但不得脱离原意
-- 文件路径按 `runtime.startup.worktree` 绑定；不同 repo / worktree 不共享 profile
-- apply 阶段若写盘失败，同样只允许内部记录，不得把失败升级成用户可见主链阻塞
+- 这类记忆写入属于辅助动作；即使落盘阶段失败，也只能记录内部 apply feedback，不得污染主回复
 
 ## 执行语义
 
@@ -122,7 +112,6 @@
 - `delete_plan`：关闭计划
 - `assign_focus`：仅修改 task / plan / history 的 `focusId`
 - `remember_memory`：立即写入 `memory/MEMORY.md`，并通过 `memory_remembered` system event 回执 `entry_id/ref/operation`
-- `remember_project_profile`：立即写入 repo 绑定的项目档案文件，并通过 `project_profile_remembered` system event 回执 `entry_id/ref/operation`
 
 ## Guardrail
 
@@ -153,7 +142,6 @@
 
 - 稳定包：`M:state_packet`
 - 易变包：`M:event_packet`
-- 项目档案：`M:project_profile`
 - 长期高优先级记忆：`M:remembered_memory`
 - 其余长期记忆：`M:memory`
 
@@ -167,7 +155,6 @@
 - `M:event_packet.inputs`
 - `M:event_packet.batch_results`
 - `M:event_packet.recent_history`
-- `M:event_packet.action_feedback`
 - `M:event_packet.packet`
 
 约束补充：

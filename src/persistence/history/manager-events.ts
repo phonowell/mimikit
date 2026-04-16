@@ -102,24 +102,3 @@ export const appendManagerErrorSystemMessage = async (
     focusId,
   })
 }
-
-export const appendManagerCorrectionLimitSystemMessage = async (
-  paths: RuntimePathsState['paths'],
-  maxRounds: number,
-  focusId: FocusId = GLOBAL_FOCUS_ID,
-): Promise<void> => {
-  const createdAt = nowIso()
-  const eventRecord = createSystemEventRecord({
-    summary: `Manager reached correction round limit (${maxRounds}). Returned best-effort answer without further actions.`,
-    event: 'manager_round_limit',
-    payload: { max_rounds: maxRounds },
-  })
-  await appendHistory(paths.history, {
-    id: `sys-manager-round-limit-${Date.now()}`,
-    role: 'system',
-    visibility: 'all',
-    ...eventRecord,
-    createdAt,
-    focusId,
-  })
-}

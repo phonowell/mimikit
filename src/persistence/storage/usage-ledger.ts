@@ -38,7 +38,6 @@ type UsageLedgerEntry = {
     action_surface: number
     state_packet: number
     event_packet: number
-    project_profile: number
     remembered_memory: number
     memory: number
   }

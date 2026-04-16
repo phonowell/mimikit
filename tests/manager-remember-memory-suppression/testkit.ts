@@ -45,7 +45,6 @@ export const createRememberMemoryRuntime = (
 export const runRememberMemoryRound = (
   runtime: RuntimeState,
   userText: string,
-  maxCorrectionRounds = 3,
 ): Promise<Awaited<ReturnType<typeof runManagerCorrectionRounds>>> =>
   runManagerCorrectionRounds({
     runtime,
@@ -62,7 +61,6 @@ export const runRememberMemoryRound = (
     tasks: [],
     plans: [],
     workingFocusIds: ['focus-global'],
-    maxCorrectionRounds,
   })
 
 export const appendRepeatedRememberMemoryHistory = async (

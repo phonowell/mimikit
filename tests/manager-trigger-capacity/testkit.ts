@@ -48,9 +48,7 @@ const createTestConfig = (
     baseUrl: '',
     apiKey: '',
     proxy: '',
-    maxCorrectionRounds: 1,
     promptSections: {
-      actionFeedbackMaxBytes: 2048,
       batchResultsMaxBytes: 4096,
       environmentMaxBytes: 2048,
       focusListMaxBytes: 2048,

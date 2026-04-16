@@ -30,7 +30,6 @@ export const buildManagerPromptPackets = (params: {
   inputs: BuildManagerPromptParams['inputs']
   tasks: BuildManagerPromptParams['tasks']
   plans: BuildManagerPromptParams['plans']
-  actionFeedback: BuildManagerPromptParams['actionFeedback']
   workingFocusIds: BuildManagerPromptParams['workingFocusIds']
   env: BuildManagerPromptParams['env']
   sectionPolicy: PacketSectionPolicy
@@ -43,7 +42,6 @@ export const buildManagerPromptPackets = (params: {
       inputs: params.inputs,
       tasks: params.tasks,
       plans: params.plans,
-      actionFeedback: params.actionFeedback,
       env: params.env,
       sectionPolicy: params.sectionPolicy,
     })
@@ -91,21 +89,18 @@ export const buildManagerPromptPackets = (params: {
       quoteLookup: params.runtime.quoteLookup,
       batchResultsPayload: digestSections.batchResultsPayload,
       recentHistoryPayload: digestSections.recentHistoryPayload,
-      actionFeedback: params.actionFeedback,
       packet: contextPacket,
     }),
     params.limits.environmentMaxBytes +
       params.limits.inputsMaxBytes +
       params.limits.batchResultsMaxBytes +
-      params.limits.recentHistoryMaxBytes +
-      params.limits.actionFeedbackMaxBytes,
+      params.limits.recentHistoryMaxBytes,
   )
 
   return {
     contextPacket,
     statePacket,
     eventPacket,
-    selectedProjectProfile: selectedSections.project_profile,
     selectedRememberedMemory: selectedSections.remembered_memory,
     selectedMemory: selectedSections.memory,
     promptSelection: statePacketPayload.selection,

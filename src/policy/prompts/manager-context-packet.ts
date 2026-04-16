@@ -26,7 +26,6 @@ const MINIMAL_SECTIONS = new Set<ManagerPacketSection>([
   'environment',
   'focus_list',
   'working_focuses',
-  'project_profile',
   'remembered_memory',
   'tasks',
   'plans',
@@ -42,11 +41,7 @@ const STANDARD_SECTIONS = new Set<ManagerPacketSection>([
 
 export const resolveManagerPacketMode = (params: {
   wakeProfile: ManagerWakeProfile
-  round: number
-  hasActionFeedback: boolean
 }): ManagerPacketMode => {
-  if (params.round >= 2) return 'expanded'
-  if (params.hasActionFeedback) return 'expanded'
   if (
     params.wakeProfile === 'trigger' ||
     params.wakeProfile === 'capacity' ||
@@ -60,7 +55,6 @@ const wantsSectionByMode = (
   mode: ManagerPacketMode,
   section: ManagerPacketSection,
 ): boolean => {
-  if (mode === 'expanded') return true
   if (mode === 'standard') return STANDARD_SECTIONS.has(section)
   return MINIMAL_SECTIONS.has(section)
 }
@@ -72,7 +66,6 @@ export const shouldIncludePacketSection = (params: {
   hasContent: boolean
 }): boolean => {
   if (!params.hasContent) return false
-  if (params.section === 'action_feedback') return true
   if (params.section === 'inputs') {
     return (
       params.wakeProfile === 'user_input' ||
@@ -87,8 +80,7 @@ export const shouldIncludePacketSection = (params: {
       params.mode !== 'minimal'
     )
   }
-  if (params.section === 'recent_history')
-    return params.mode === 'expanded' || params.mode === 'standard'
+  if (params.section === 'recent_history') return params.mode === 'standard'
   if (params.section === 'memory') return params.mode !== 'minimal'
   return wantsSectionByMode(params.mode, params.section)
 }
