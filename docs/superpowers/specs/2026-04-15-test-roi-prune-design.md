@@ -1,12 +1,14 @@
 # Test ROI Prune Design
 
+> Status (2026-04-16): implemented. The current suite baseline in this repo is `95` files / `327` tests. References below to deleted prompt/guard files are historical prune targets, not live entry points in the current tree.
+
 ## Goal
 
 在不削弱主线回归价值的前提下，按 ROI 清理至少 `30%` 的测试用例，并把“测试不得产生实际费用”从约定变成硬门禁。
 
 ## Current State
 
-- 当前基线约 `460` 个 `test(...)` 用例。
+- 当前基线为 `95` 个测试文件 / `327` 个测试。
 - 仓库中低 ROI 测试主要集中在三类：
   - `webui` 静态渲染/格式化/标签断言
   - `prompt/reply` 字面文案与模板拼字断言
@@ -19,7 +21,7 @@
 
 1. 直接删除低 ROI 测试文件，而不是把低价值断言搬到别处
 2. 保留核心高价值测试：
-   - manager 主状态机 / intent-evidence / write lane / runtime follow-up
+   - manager 主状态机 / write lane / runtime follow-up / action apply legality
    - worker / orchestrator / cli / archive / integration 主路径
 3. 新增统一测试环境门禁：
    - 清空常见真实 provider API key
@@ -34,7 +36,7 @@
 
 ## Prune Scope
 
-优先删除：
+已删除或裁剪的代表性低 ROI 用例：
 
 - `tests/webui-*.test.ts`
 - `tests/*prompt*.test.ts`
@@ -54,7 +56,7 @@
 
 ## Acceptance
 
-- `test(...)` 总数从约 `460` 降到 `<=322`
+- 当前全量测试维持在低 `300s` 量级，现状为 `327` 个测试
 - 保留的回归仍覆盖 manager 主线、runtime 主线、worker 主线与 CLI / HTTP 核心闭环
 - 测试环境默认禁止外部网络和真实 provider 凭证
 - `pnpm run review-code-changes` 通过

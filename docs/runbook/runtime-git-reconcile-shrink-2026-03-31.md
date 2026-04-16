@@ -1,5 +1,7 @@
 # Runtime Git Reconcile Shrink 2026-03-31
 
+> Historical note (2026-04-16): this runbook records the removal of `record_task_git`. Mentions of validation or `intent-evidence` below describe the then-existing manager guard chain; current manager authorization has since been simplified further.
+
 ## Goal
 
 - Land the archived shrink decision for runtime git closure in this worktree.
@@ -11,7 +13,7 @@
 ### Before
 
 - Manager action surface exposed `record_task_git`.
-- Validation, intent-evidence, prompt templates, and feedback hints all carried explicit git lifecycle writeback protocol.
+- Validation, the then-existing intent-evidence layer, prompt templates, and feedback hints all carried explicit git lifecycle writeback protocol.
 - Runtime accepted worker `handoff.git_lifecycle` writes and merged them into `Task.git.lifecycle`.
 - Explicit writeback path also synced task archive git lifecycle projection.
 
@@ -30,7 +32,7 @@
   - `src/policy/manager/action-feedback-mutate-task-git-hints.ts`
 - Removed `record_task_git` from:
   - manager action schema, registry, prompt specs, action surface prompt, system prompt
-  - validation, intent-evidence guard, feedback/evidence hints
+  - validation, then-existing intent-evidence guard, feedback/evidence hints
   - workflow docs and git-writeback-specific tests
 - Tightened runtime result handling:
   - `src/execution/worker/task-handoff-protocol.ts` ignores worker-provided `git_lifecycle`

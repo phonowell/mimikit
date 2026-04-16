@@ -1,5 +1,7 @@
 # Manager Rule Solidification 2026-03-29
 
+> Historical note (2026-04-16): this runbook captures an intermediate rule set. The later 2026-04-15 simplification removed the `intent-evidence` layer and pruned `tests/manager-project-profile-prompt.test.ts` / `tests/manager-enqueue-task-guard.test.ts`. Treat the sections below as historical context, not the current live guard surface.
+
 ## Scope
 
 - 任务：把可跨项目复用的 manager 编排规则，从口头约定收敛为仓库内可复用表达。
@@ -12,7 +14,7 @@
 - `prompts/manager/action-surface.md` 与 `docs/design/workflow/action.md` / `docs/design/workflow/task.md` 已承载 action/task 契约说明。
 - `src/policy/manager/action-validation.ts` 已在 schema 校验后接入 manager 级 guard。
 - `src/policy/manager/action-validation-enqueue-task.ts` 当前最合适的代码守护点是同批次 `enqueue_task` 的目录冲突校验。
-- `tests/manager-project-profile-prompt.test.ts` 与 `tests/manager-enqueue-task-guard.test.ts` 已覆盖提示词与 guard 的最小稳定契约。
+- 当时由 `tests/manager-project-profile-prompt.test.ts` 与 `tests/manager-enqueue-task-guard.test.ts` 覆盖提示词与 guard 的最小稳定契约；这两条测试已在后续 ROI prune 中删除。
 
 ## 规则拆分
 
@@ -21,11 +23,11 @@
 1. 证据充分时默认推进，不把可执行事项退回成多余追问。
    - 层级：`prompts/manager/system.md` + `docs/design/workflow/action.md`
    - 原因：这是 manager 决策边界，不依赖仓库实现细节。
-2. intent-evidence guard 按风险分级工作，而不是做字面重叠卡死。
+2. 当时的 intent-evidence guard 按风险分级工作，而不是做字面重叠卡死。
    - 层级：`prompts/manager/system.md` + `docs/design/workflow/action.md`
    - 原因：这是通用门禁原则，适合落在提示与规则文档，不必再加重复代码分支。
 3. 默认粗粒度派单；只有目录边界独立且互不冲突时才并发多个 `enqueue_task`。
-   - 层级：`prompts/manager/system.md` + `prompts/manager/action-surface.md` + `docs/design/workflow/action.md` + `docs/design/workflow/task.md` + `src/policy/manager/action-validation-enqueue-task.ts` + `tests/manager-enqueue-task-guard.test.ts`
+   - 层级：`prompts/manager/system.md` + `prompts/manager/action-surface.md` + `docs/design/workflow/action.md` + `docs/design/workflow/task.md` + `src/policy/manager/action-validation-enqueue-task.ts` + `tests/manager-enqueue-task-guard.test.ts`（历史）
    - 原因：既是通用编排原则，也能在当前校验层低成本做硬拒绝，回归价值高。
 4. 输出 action 前逐字段按当前契约做硬检查。
    - 层级：已存在于 `prompts/manager/system.md`、`src/policy/manager/action-validation.ts`、`src/policy/manager/manager-turn-schema.ts`
@@ -56,9 +58,9 @@
 ## 验证
 
 - Red: `pnpm vitest run tests/manager-enqueue-task-guard.test.ts tests/manager-project-profile-prompt.test.ts`
-  - 结果：先因 `tests/manager-project-profile-prompt.test.ts` 断言失败，确认通用 prompt 仍包含 repo 特有 worktree 规则。
+  - 结果：先因 `tests/manager-project-profile-prompt.test.ts` 断言失败，确认通用 prompt 仍包含 repo 特有 worktree 规则；这两条测试已在后续 ROI prune 中删除。
 - Green: `pnpm vitest run tests/manager-enqueue-task-guard.test.ts tests/manager-project-profile-prompt.test.ts`
-  - 结果：通过。
+  - 结果：当时通过；当前仓库不再保留这两条测试文件。
 - Code review:
   - 范围：当前 diff（prompt/doc/guard/test + 本归档）
   - 结果：未发现需要阻塞合并的 P0/P1/P2 问题；当前实现保持最小化，只保留 fan-out 目录冲突硬守护。

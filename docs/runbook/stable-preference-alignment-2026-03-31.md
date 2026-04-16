@@ -1,5 +1,7 @@
 # stable preference alignment
 
+> Historical note (2026-04-16): this runbook predates the 2026-04-15 manager simplification. Current implementation still keeps stable preference alignment in `remember_memory` plus manager prompt rules, but manager authorization no longer uses the deleted `intent-evidence` layer, `tests/manager-project-profile-prompt.test.ts` has been removed, and the current full-suite baseline is `95` files / `327` tests.
+
 ## Goal
 
 - 在不新增策略层的前提下，最小固化“用户稳定偏好对齐”能力。
@@ -18,7 +20,7 @@
 - 稳定偏好只允许影响表达方式、推进节奏、任务粒度与解释风格。
 - 稳定偏好不得改写用户目标、验收标准、`task/plan/focus/memory` 分层。
 - 稳定偏好不得把一次性安排、当前状态或临时判断升级为长期规则。
-- 稳定偏好不得绕过 `intent-evidence guard`，也不得直接触发或放宽高风险 action 门禁。
+- 稳定偏好不得绕过当前 action 合法性与高风险门禁，也不得直接触发或放宽高风险 action。
 
 ## Changes
 
@@ -30,16 +32,16 @@
 
 - 没有新增独立策略层、用户画像系统、偏好推断器或评分器。
 - 没有修改 `task` / `plan` / `focus` / `memory` 分层，也没有新增兼容壳。
-- 没有放宽 provenance、intent-evidence 或高风险 action 规则。
+- 没有放宽 provenance、runtime 合法性或高风险 action 规则。
 
 ## Validation
 
-- RED: `pnpm test -- tests/manager-project-profile-prompt.test.ts`
-  - 失败，缺口是 manager system prompt 尚未固化“稳定偏好”作用域。
-- GREEN: `pnpm test -- tests/manager-project-profile-prompt.test.ts`
-  - 通过，当前 Vitest 汇总为 `145` files / `442` tests passed。
+- Historical verification:
+  - 原始改动当时通过了对应 prompt 回归；该专用测试已在后续 ROI prune 中删除，不再是当前仓库验证入口。
+- Current verification baseline:
+  - 当前全量测试基线为 `95` files / `327` tests passed。
 - Code review:
-  - 按最近 diff 复盘 `prompts/manager/system.md`、`docs/design/workflow/memory.md`、`tests/manager-project-profile-prompt.test.ts`，未发现 P0/P1/P2 问题；改动维持单一路径、无重复抽象与无兼容层扩张。
+  - 按最近 diff 复盘 `prompts/manager/system.md` 与 `docs/design/workflow/memory.md`，未发现 P0/P1/P2 问题；改动维持单一路径、无重复抽象与无兼容层扩张。
 - Gate: `pnpm review-code-changes`
   - 通过，包含 `lint`、`lint:changed-tests`、`type-check`、`build:webui` 与全量 `vitest run`。
 

@@ -1,5 +1,7 @@
 # Manager 中层化设计
 
+> Historical note (2026-04-16): this design doc predates the later state-first simplification. Current implementation no longer uses a top-level `decision` field, a second correction round, or an `intent-evidence` layer; keep this file as background for the responsibility shift only.
+
 ## 目标
 
 - 把 manager 从“轻量调度器”收敛为“承担推进责任的编排中层”。

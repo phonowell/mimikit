@@ -1,9 +1,11 @@
 # Manager Explanation Layer 2026-03-31
 
+> Historical note (2026-04-16): this runbook is still useful for the user-visible reply layer, but the references below to `intent-evidence` describe the older authorization chain that no longer exists in current manager code.
+
 ## Scope
 
 - 任务：在不改动 manager 决策层与高风险门禁的前提下，最小补强用户可见的 task-result 解释层。
-- 约束：不碰 focus 选择、action 合法性、intent-evidence guard、任务合同与 worker 执行协议。
+- 约束：不碰 focus 选择、action 合法性、当时仍存在的 intent-evidence guard、任务合同与 worker 执行协议。
 - 目标：让 task 结果回复更可定位、可验证、少歧义，尤其补足 task 标识、停下原因与归档缺失说明。
 
 ## 现状回读
@@ -55,7 +57,7 @@
   - 首次结果：失败；命中 `exactOptionalPropertyTypes`，已改为条件展开 `task/detail` 并收紧 `stopReason` 类型读取
   - 二次结果：通过。
 - Gate 2: `pnpm review-code-changes`
-- 结果：通过（147 files / 449 tests）。
+- 结果：当时通过；当前仓库基线已收缩为 `95` files / `327` tests。
 
 ## 当前状态
 

@@ -1,5 +1,7 @@
 # Action State-First Shrink Design
 
+> Historical note (2026-04-16): this document captured an intermediate shrink step. The remaining `intent-evidence` boundary described below was later removed; current manager authorization is `schema/shape -> runtime legality -> risk gate`.
+
 **Goal:** Remove the root-level protocol drift in manager actions so authorization follows runtime truth and risk boundaries instead of making the model re-prove state.
 
 **Scope:** Manager turn contract, action validation/apply behavior, prompt/workflow docs, and root guidance in `CLAUDE.md` / `AGENTS.md`.
@@ -53,7 +55,7 @@ Replacement rule:
 - validation checks legality and risk
 - apply/runtime handles exact paused fingerprint resume, pending reuse, and state-machine transitions
 
-### 3. Keep intent-evidence only for real risk boundaries
+### 3. Historical intermediate step: keep intent-evidence only for real risk boundaries
 
 Still gated by direct current user input:
 

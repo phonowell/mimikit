@@ -1,5 +1,7 @@
 # task_control(cancel) contract alignment
 
+> Historical note (2026-04-16): this contract fix remains accurate, but references below to `intent-evidence` describe the pre-2026-04-15 guard chain rather than the current simplified manager authorization model.
+
 ## Root cause
 
 - `src/policy/manager/manager-turn-schema.ts` required `task_control.instructions` for every action shape.
@@ -15,7 +17,7 @@
 ## Changed surface
 
 - Relaxed `task_control` schema in `src/policy/manager/manager-turn-schema.ts`.
-- Normalized runtime access with `item.instructions ?? []` in validation, intent-evidence checks, and apply path.
+- Normalized runtime access with `item.instructions ?? []` in validation, the then-existing guard checks, and apply path.
 - Updated prompt surface text so manager guidance matches the executable contract.
 - Added regression coverage for parsing cancel-without-instructions, prompt wording, and end-to-end apply of cancel.
 
