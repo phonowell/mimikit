@@ -55,4 +55,4 @@
 
 - Current branch: `task/claude-code-roi-7623003790`
 - `pnpm run review-code-changes` passed in this worktree.
-- Merge back to `main` and worktree cleanup were not executed here because `main` is checked out in `/Users/mimiko/Projects/mimikit`, outside the runtime write boundary for this task. A follow-up session with authority over the main worktree is required for merge/cleanup closure.
+- Merge back to `main` and worktree cleanup were not executed here because `main` is checked out in `/Users/mimiko/Projects/mimikit`, outside the runtime write boundary for this task. Under the current workflow model, that remaining work belongs in a repo-root closure follow-up task rather than by holding the source task open.

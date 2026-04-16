@@ -7,7 +7,7 @@ import { readTaskExecutionSpec } from '../../work/spec/store.js'
 
 import { resolveArchivePath, writeTaskArchive } from './result-archive.js'
 import {
-  applyClosurePendingResultState,
+  applyClosureFollowupHandoff,
   enqueueClosureTaskIfNeeded,
 } from './result-closure.js'
 import {
@@ -52,7 +52,7 @@ export const finalizeResult = async (
     runtime.config.workDir,
     task.executionSpecId,
   )
-  applyClosurePendingResultState({ task, result })
+  applyClosureFollowupHandoff({ task, result })
   applyTaskResultStateDefaults(result)
   const candidateArchivePath = await resolveArchivePath(
     runtime,

@@ -4,7 +4,7 @@ import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
 import { appendTaskProgress } from '../../persistence/storage/task-progress.js'
 import { appendWorkerUsageLedgerEntry } from '../../persistence/storage/usage-ledger.js'
-import { applyClosureTaskGitTruth } from '../shared/task-git-closure-truth.js'
+import { reconcileClosureTaskGitTruth } from '../shared/task-git-closure-truth.js'
 import { resolveTaskGitLifecycle } from '../shared/task-git-lifecycle.js'
 
 import { applyRuntimeTaskDomainWrite } from './task-state-write.js'
@@ -71,7 +71,7 @@ export const applyTaskResultWrite = async (params: {
   }
 
   runtime.process.worker.lastActivityAtMs = Date.now()
-  applyRuntimeTaskDomainWrite({
+  const writtenTask = applyRuntimeTaskDomainWrite({
     kind: 'apply_result',
     runtime,
     taskId: task.id,
@@ -79,8 +79,8 @@ export const applyTaskResultWrite = async (params: {
     markTask: options.markTask,
     patch: basePatch,
   })
-  const writtenTask = runtime.domain.tasks.find((item) => item.id === task.id)
-  if (writtenTask) applyClosureTaskGitTruth(runtime.domain.tasks, writtenTask)
+  if (writtenTask)
+    reconcileClosureTaskGitTruth(runtime.domain.tasks, writtenTask)
 
   await bestEffort(`appendTaskProgress: ${progressType}`, () =>
     appendTaskProgress({

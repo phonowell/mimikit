@@ -73,7 +73,12 @@ export const hasTaskClosedGitLifecycle = (
   return lifecycle?.merged === true && lifecycle.cleaned === true
 }
 
-export const applyClosureTaskGitTruth = (
+export const taskHasOpenGitClosure = (
+  task: Pick<Task, 'git' | 'repoKey' | 'result'>,
+): boolean =>
+  task.git?.closureRequired === true && !hasTaskClosedGitLifecycle(task)
+
+const reconcileSingleClosureTaskGitTruth = (
   tasks: Task[],
   closureTask: Pick<Task, 'id' | 'contract' | 'result'>,
 ): string[] => {
@@ -132,4 +137,18 @@ export const applyClosureTaskGitTruth = (
     updatedTaskIds.push(sourceTaskId)
   }
   return updatedTaskIds
+}
+
+export const reconcileClosureTaskGitTruth = (
+  tasks: Task[],
+  closureTask?: Pick<Task, 'id' | 'contract' | 'result'>,
+): string[] => {
+  if (closureTask) return reconcileSingleClosureTaskGitTruth(tasks, closureTask)
+
+  const updatedTaskIds = new Set<string>()
+  for (const task of tasks) {
+    for (const taskId of reconcileSingleClosureTaskGitTruth(tasks, task))
+      updatedTaskIds.add(taskId)
+  }
+  return [...updatedTaskIds]
 }

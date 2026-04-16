@@ -1,6 +1,9 @@
 import { expect, test } from 'vitest'
 
-import { hasTaskClosedGitLifecycle } from '../src/work/shared/task-git-closure-truth.js'
+import {
+  hasTaskClosedGitLifecycle,
+  taskHasOpenGitClosure,
+} from '../src/work/shared/task-git-closure-truth.js'
 import { reconcileTaskGitState } from '../src/work/shared/task-git-lifecycle.js'
 
 import { createTaskFixture } from './helpers/runtime-snapshot.js'
@@ -73,4 +76,26 @@ test('reconcileTaskGitState preserves review evidence while ignoring unverified 
     'mergedAt',
   )
   expect(hasTaskClosedGitLifecycle(reconciled)).toBe(false)
+})
+
+test('taskHasOpenGitClosure only reports open closure debt for closure-required tasks', () => {
+  const task = createTaskFixture({
+    id: 'task-open-closure-debt',
+    repoKey: '/tmp/task-open-closure-debt/.git',
+    branch: 'task/open-closure-debt',
+    git: {
+      worktreePath: '/tmp/task-open-closure-debt',
+      branch: 'task/open-closure-debt',
+      closureRequired: true,
+      lifecycle: {
+        review: { passed: false },
+        merged: false,
+        cleaned: false,
+      },
+    },
+  })
+
+  expect(taskHasOpenGitClosure(task)).toBe(true)
+  if (task.git) task.git.closureRequired = false
+  expect(taskHasOpenGitClosure(task)).toBe(false)
 })

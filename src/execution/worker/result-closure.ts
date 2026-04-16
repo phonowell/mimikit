@@ -8,6 +8,7 @@ import {
   resolveBranch,
   runGitCapture,
 } from '../../work/shared/task-execution-target.js'
+import { taskHasOpenGitClosure } from '../../work/shared/task-git-closure-truth.js'
 import { resolveTaskGitLifecycle } from '../../work/shared/task-git-lifecycle.js'
 import { resolveTaskResourceMode } from '../../work/shared/task-resource-mode.js'
 
@@ -34,8 +35,14 @@ const appendUniqueItems = (
   return merged.length > 0 ? merged : undefined
 }
 
+const needsClosureFollowup = (task: Task, result: TaskResult): boolean => {
+  if (result.status !== 'succeeded') return false
+  if (resolveTaskResourceMode(task.resourceMode) !== 'write') return false
+  return taskHasOpenGitClosure(task)
+}
+
 const buildClosureSummary = (task: Task): string =>
-  `实现与门禁已完成，等待主仓对 ${task.git?.branch ?? task.id} 执行 merge/cleanup 收尾。`
+  `当前 lane 的实现与验证已完成，后续会在主仓继续处理 ${task.git?.branch ?? task.id} 的 merge/cleanup 收尾。`
 
 const buildClosurePrompt = (params: {
   task: Task
@@ -105,34 +112,26 @@ const resolveClosureBaseBranch = async (repoRoot: string): Promise<string> => {
   return (await resolveBranch(repoRoot)) ?? 'main'
 }
 
-export const applyClosurePendingResultState = (params: {
+export const applyClosureFollowupHandoff = (params: {
   task: Task
   result: TaskResult
 }): void => {
   const { task, result } = params
-  if (result.status !== 'succeeded') return
-  if (resolveTaskResourceMode(task.resourceMode) !== 'write') return
-  if (!task.git) return
-  if (task.git.closureRequired !== true) return
-  const lifecycle = resolveTaskGitLifecycle(task)
-  if (!lifecycle) return
-  if (lifecycle.merged && lifecycle.cleaned) return
+  if (!needsClosureFollowup(task, result)) return
 
-  result.taskStatus = 'paused'
-  result.outcome = 'blocked'
-  result.stopReason = 'closure_pending'
   const handoff: TaskResultHandoff = result.handoff ?? {}
   const handoffSummary = handoff.summary?.trim()
   handoff.summary =
     handoffSummary && handoffSummary.length > 0
       ? handoffSummary
       : buildClosureSummary(task)
+  const branch = task.git?.branch ?? task.branch ?? task.id
   handoff.nextSteps = appendUniqueItems(handoff.nextSteps, [
-    `在主仓完成 ${task.git.branch} 的 merge/cleanup 收尾`,
+    `在主仓完成 ${branch} 的 merge/cleanup 收尾`,
     '收尾后回写 git closure 真相并复核归档',
   ])
   handoff.risks = appendUniqueItems(handoff.risks, [
-    '当前实现已完成，但 git 闭环未完成前不得按 completed 收口',
+    '当前局部执行已完成，但整条主线仍在继续推进 git 收尾 follow-up',
   ])
   result.handoff = handoff
 }
@@ -143,7 +142,7 @@ export const enqueueClosureTaskIfNeeded = async (params: {
   result: TaskResult
 }): Promise<void> => {
   const { runtime, task, result } = params
-  if (result.stopReason !== 'closure_pending') return
+  if (!needsClosureFollowup(task, result)) return
   if (!task.git) return
   const repoKey = requireClosureRepoKey(task)
   const repoRoot = resolve(repoKey, '..')

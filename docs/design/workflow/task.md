@@ -66,6 +66,7 @@
 3. worker 结果收敛为 `task.result`
 4. 结果归档并发布到 `results`
 5. manager 消费压缩后的结果与归档路径
+- 若仓库写任务本地实现已完成、但 `Task.git.lifecycle` 仍未闭环，源 task 仍记为 `succeeded`；剩余 merge/cleanup 债务只通过新派生的 closure follow-up task 表达，不再回写成源 task 的暂停语义。
 
 ## Git 对账
 
@@ -77,8 +78,9 @@
 - runtime 只允许复用 repo-local `./.worktrees/<branch-hash>` 下的既有 worktree；命中仓外旧路径会直接拒绝，不再沿用旧布局。
 - git 收尾派生 closure task 时只信任根级 `task.repoKey` 作为主仓真相源；不会再从 `worktreePath` 反推 repoKey 或 repo root。
 - git 收尾派生 closure task 会显式绑定主分支（当前协议为 `main`，若仓内不存在 `main` 才退回主仓当前分支），不再跟随主仓当下检出分支漂移。
+- git 收尾的状态表达分层固定为：源 task 表示局部执行结果，closure follow-up task 表示剩余主仓 merge/cleanup 工作；禁止再把 git 收尾债务编码回源 task `status/result.stopReason`。
 - runtime 不再暴露 `record_task_git` 一类显式 git 状态写回 action，也不会采信 worker 主动上报的 `git_lifecycle`
-- 启动 hydrate 与 snapshot persist 会基于文件系统 / git 真相源补做 repo-local reconcile：
+- worker 结果写回、runtime hydrate、snapshot persist 都统一走同一个 closure truth reconcile 入口，基于文件系统 / git 真相源补做 repo-local 对账：
   - 缺失 worktree 会收敛为 `cleaned=true`
   - review sentinel / merge 祖先关系会收敛为最新 lifecycle
   - 对账结果会回写到 `task.git.lifecycle` 与已有 `task.result.handoff.git.lifecycle`
