@@ -43,16 +43,29 @@ test(
     const hydratedSourceTask = runtime.domain.tasks.find(
       (task) => task.id === 'task-source-closure-truth',
     )
+    expect(hydratedSourceTask?.status).toBe('succeeded')
     expect(hydratedSourceTask?.git?.lifecycle).toMatchObject({
       ...expectedClosurePromotionLifecycle,
+    })
+    expect(hydratedSourceTask?.result).toMatchObject({
+      taskStatus: 'succeeded',
+      outcome: 'completed',
+      stopReason: 'completed',
     })
     expect(hydratedSourceTask?.result?.handoff?.git?.lifecycle).toMatchObject({
       ...expectedClosurePromotionLifecycle,
     })
-    expect(
-      (await readTaskResultArchive(sourceArchivePath))?.handoff?.git?.lifecycle,
-    ).toMatchObject({
-      ...expectedClosurePromotionLifecycle,
+    expect(await readTaskResultArchive(sourceArchivePath)).toMatchObject({
+      taskStatus: 'succeeded',
+      outcome: 'completed',
+      stopReason: 'completed',
+      handoff: {
+        git: {
+          lifecycle: {
+            ...expectedClosurePromotionLifecycle,
+          },
+        },
+      },
     })
 
     await persistRuntimeState(runtime)
@@ -80,6 +93,12 @@ test(
     expect(persistedSourceTask?.result?.handoff?.git?.lifecycle).toMatchObject({
       merged: true,
       cleaned: true,
+    })
+    expect(persistedSourceTask?.status).toBe('succeeded')
+    expect(persistedSourceTask?.result).toMatchObject({
+      taskStatus: 'succeeded',
+      outcome: 'completed',
+      stopReason: 'completed',
     })
   },
 )

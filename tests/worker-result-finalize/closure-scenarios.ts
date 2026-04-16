@@ -15,7 +15,7 @@ import {
 
 afterEach(cleanupGitRepos)
 
-test('finalizeResult pauses merge-required write task and enqueues repo-root closure task', async () => {
+test('finalizeResult keeps source task succeeded and enqueues repo-root closure task as follow-up work', async () => {
   const { repoRoot, worktreeRoot } = await createReviewPassedClosureWorktree({
     worktreeName: 'feature-closure',
     branch: 'task/feature-closure',
@@ -44,13 +44,15 @@ test('finalizeResult pauses merge-required write task and enqueues repo-root clo
 
   await finalizeResult(runtime, task, result, markTaskSucceeded)
 
-  expect(task.status).toBe('paused')
-  expect(result.taskStatus).toBe('paused')
-  expect(result.outcome).toBe('blocked')
-  expect(result.stopReason).toBe('closure_pending')
-  expect(
-    result.evidence?.acceptanceChecks.every((item) => item.met === false),
-  ).toBe(true)
+  expect(task.status).toBe('succeeded')
+  expect(result.taskStatus).toBe('succeeded')
+  expect(result.outcome).toBe('completed')
+  expect(result.stopReason).toBe('completed')
+  expect(task.pausedAt).toBeUndefined()
+  expect(result.handoff).toBeDefined()
+  const nextSteps = result.handoff.nextSteps ?? []
+  expect(nextSteps).toContain(`在主仓完成 ${branch} 的 merge/cleanup 收尾`)
+  expect(nextSteps).toContain('收尾后回写 git closure 真相并复核归档')
 
   const closureTask = runtime.domain.tasks.find((item) => item.id !== task.id)
   expect(closureTask).toMatchObject({

@@ -80,7 +80,7 @@ test('applyPlanCompletionState writes stage digest from the latest anchored task
         summary: 'auth guard 当前阶段已完成，已进入下一步落地准备。',
         risks: ['剩余风险是回归验证还未跑完。'],
       },
-      stopReason: 'closure_pending',
+      stopReason: 'completed',
     },
   ])
 

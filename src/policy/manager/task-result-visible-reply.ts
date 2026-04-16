@@ -19,7 +19,6 @@ const TASK_RESULT_STATUS_TEXT: Record<TaskResult['status'], string> = {
 const TASK_RESULT_STOP_REASON_HINT: Partial<
   Record<TaskResultStopReason, string>
 > = {
-  closure_pending: '还差 merge/cleanup 这类收尾。',
   guard_rejected: '这一步命中了当前门禁。',
   input_required: '还缺必要输入。',
 }
@@ -45,7 +44,7 @@ const toVisibleSentence = (value: string): string => {
 
 const resolveTaskResultStatusText = (result: TaskResult): string => {
   if (result.taskStatus === 'paused' && result.outcome === 'blocked')
-    return result.stopReason === 'closure_pending' ? '待收尾' : '已暂停'
+    return '已暂停'
 
   return TASK_RESULT_STATUS_TEXT[result.status]
 }

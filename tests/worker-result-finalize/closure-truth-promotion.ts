@@ -18,7 +18,7 @@ test('finalizeResult promotes runtime-verifiable merged truth into the reference
     fingerprint: 'task-source-closure-truth-runtime',
     semanticKey: 'task-source-closure-truth-runtime',
     executionSpecId: 'spec-task-source-closure-truth-runtime',
-    title: '源任务待收尾',
+    title: '源任务本地完成',
     cwd: worktreePath,
     resourceMode: 'write',
     repoKey: join(repoRoot, '.git'),
@@ -36,20 +36,20 @@ test('finalizeResult promotes runtime-verifiable merged truth into the reference
     focusId: 'focus-local',
     profile: 'worker',
     provider: 'codex',
-    status: 'paused',
+    status: 'succeeded',
     createdAt: '2026-04-01T03:00:00.000Z',
     result: {
       taskId: 'task-source-closure-truth-runtime',
       status: 'succeeded',
       ok: true,
-      output: 'waiting for closure',
+      output: 'local execution completed',
       durationMs: 1,
       completedAt: '2026-04-01T03:20:00.000Z',
-      taskStatus: 'paused',
-      outcome: 'blocked',
-      stopReason: 'closure_pending',
+      taskStatus: 'succeeded',
+      outcome: 'completed',
+      stopReason: 'completed',
       handoff: {
-        summary: 'waiting for closure',
+        summary: 'local execution completed',
         git: {
           worktreePath,
           branch,
@@ -68,7 +68,7 @@ test('finalizeResult promotes runtime-verifiable merged truth into the reference
     fingerprint: 'task-closure-source-closure-truth-runtime',
     semanticKey: 'task-closure-source-closure-truth-runtime',
     executionSpecId: 'spec-task-closure-source-closure-truth-runtime',
-    title: '收尾：源任务待收尾',
+    title: '收尾：源任务本地完成',
     cwd: '/tmp/source-closure-repo-runtime',
     resourceMode: 'write',
     focusId: 'focus-local',
@@ -136,6 +136,12 @@ test('finalizeResult promotes runtime-verifiable merged truth into the reference
 
   await finalizeResult(runtime, closureTask, result, mergeTaskPatch)
 
+  expect(sourceTask.status).toBe('succeeded')
+  expect(sourceTask.result).toMatchObject({
+    taskStatus: 'succeeded',
+    outcome: 'completed',
+    stopReason: 'completed',
+  })
   expect(sourceTask.git?.lifecycle).toMatchObject({
     review: {
       passed: true,

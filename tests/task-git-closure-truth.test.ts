@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import { expect, test } from 'vitest'
 
 import {
-  applyClosureTaskGitTruth,
   hasTaskClosedGitLifecycle,
+  reconcileClosureTaskGitTruth,
 } from '../src/work/shared/task-git-closure-truth.js'
 
 import { createMergedClosureRepo as createRealMergedClosureRepo } from './helpers/git-closure-truth.js'
@@ -18,7 +18,7 @@ import {
 
 const createTmpDir = () => mkdtemp(join(tmpdir(), 'mimikit-closure-truth-'))
 
-test('applyClosureTaskGitTruth preserves source task git identity while promoting only review truth when merge cannot be reverified', async () => {
+test('reconcileClosureTaskGitTruth preserves source task git identity while promoting only review truth when merge cannot be reverified', async () => {
   const repoRoot = await createTmpDir()
   const worktreePath = join(repoRoot, 'missing-source-worktree')
   const sourceTask = createSourceTaskFixture({
@@ -32,7 +32,7 @@ test('applyClosureTaskGitTruth preserves source task git identity while promotin
     sourceTaskId: sourceTask.id,
   })
 
-  applyClosureTaskGitTruth([sourceTask, closureTask], closureTask)
+  reconcileClosureTaskGitTruth([sourceTask, closureTask], closureTask)
 
   expectPromotedReviewOnlyTruth(sourceTask, {
     worktreePath,
@@ -43,7 +43,7 @@ test('applyClosureTaskGitTruth preserves source task git identity while promotin
 })
 
 test(
-  'applyClosureTaskGitTruth re-derives merged truth from source review sha after real merge and cleanup',
+  'reconcileClosureTaskGitTruth re-derives merged truth from source review sha after real merge and cleanup',
   { timeout: 30000 },
   async () => {
     const { repoRoot, worktreePath, branch, reviewSha } =
@@ -66,7 +66,7 @@ test(
       }
     }
 
-    applyClosureTaskGitTruth([sourceTask, closureTask], closureTask)
+    reconcileClosureTaskGitTruth([sourceTask, closureTask], closureTask)
 
     expectPromotedReviewOnlyTruth(sourceTask, {
       worktreePath,
@@ -80,7 +80,7 @@ test(
   },
 )
 
-test('applyClosureTaskGitTruth does not trust closure-reported merged or cleaned when source git identity cannot verify them', async () => {
+test('reconcileClosureTaskGitTruth does not trust closure-reported merged or cleaned when source git identity cannot verify them', async () => {
   const repoRoot = await createTmpDir()
   const worktreePath = join(repoRoot, 'source-worktree')
   await mkdir(worktreePath, { recursive: true })
@@ -96,7 +96,7 @@ test('applyClosureTaskGitTruth does not trust closure-reported merged or cleaned
     sourceTaskId: sourceTask.id,
   })
 
-  applyClosureTaskGitTruth([sourceTask, closureTask], closureTask)
+  reconcileClosureTaskGitTruth([sourceTask, closureTask], closureTask)
 
   expectPromotedReviewOnlyTruth(sourceTask, {
     worktreePath,
@@ -106,7 +106,7 @@ test('applyClosureTaskGitTruth does not trust closure-reported merged or cleaned
   })
 })
 
-test('applyClosureTaskGitTruth preserves verified source cleanedAt instead of overwriting it with closure-reported timestamps', async () => {
+test('reconcileClosureTaskGitTruth preserves verified source cleanedAt instead of overwriting it with closure-reported timestamps', async () => {
   const repoRoot = await createTmpDir()
   const worktreePath = join(repoRoot, 'missing-cleaned-worktree')
   const sourceTask = createSourceTaskFixture({
@@ -135,7 +135,7 @@ test('applyClosureTaskGitTruth preserves verified source cleanedAt instead of ov
     sourceTaskId: sourceTask.id,
   })
 
-  applyClosureTaskGitTruth([sourceTask, closureTask], closureTask)
+  reconcileClosureTaskGitTruth([sourceTask, closureTask], closureTask)
 
   expectPromotedReviewOnlyTruth(sourceTask, {
     worktreePath,
@@ -146,7 +146,7 @@ test('applyClosureTaskGitTruth preserves verified source cleanedAt instead of ov
   })
 })
 
-test('applyClosureTaskGitTruth does not inject closure git identity into a source task that has no git identity', () => {
+test('reconcileClosureTaskGitTruth does not inject closure git identity into a source task that has no git identity', () => {
   const sourceTask = createSourceTaskFixture({
     id: 'task-source-without-git-identity',
     repoKey: '/tmp/source-without-git-identity/.git',
@@ -161,7 +161,7 @@ test('applyClosureTaskGitTruth does not inject closure git identity into a sourc
     sourceTaskId: sourceTask.id,
   })
 
-  const updatedTaskIds = applyClosureTaskGitTruth(
+  const updatedTaskIds = reconcileClosureTaskGitTruth(
     [sourceTask, closureTask],
     closureTask,
   )

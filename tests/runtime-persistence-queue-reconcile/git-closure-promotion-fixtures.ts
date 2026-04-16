@@ -39,14 +39,16 @@ const buildSourceArchiveRecord = (
   focusId: 'focus-global',
   title: 'Source Closure Truth',
   status: 'succeeded',
-  taskStatus: 'paused',
-  prompt: 'source task waiting for closure',
-  output: 'waiting for closure',
+  taskStatus: 'succeeded',
+  outcome: 'completed',
+  stopReason: 'completed',
+  prompt: 'source task local execution completed',
+  output: 'local execution completed',
   createdAt: '2026-02-06T00:00:00.000Z',
   completedAt: '2026-02-06T00:02:00.000Z',
   durationMs: 1,
   handoff: {
-    summary: 'waiting for closure',
+    summary: 'local execution completed',
     git: {
       worktreePath: sourceWorktreePath,
       branch: 'task/source-closure-truth',
@@ -82,7 +84,7 @@ export const buildClosurePromotionFixtures = async (
     task: {
       ...createTaskFixture({
         id: 'task-source-closure-truth',
-        status: 'paused',
+        status: 'succeeded',
         completedAt: '2026-02-06T00:02:00.000Z',
         repoKey: join(repoRoot, '.git'),
         branch,
@@ -96,12 +98,12 @@ export const buildClosurePromotionFixtures = async (
           taskId: 'task-source-closure-truth',
           status: 'succeeded',
           ok: true,
-          output: 'waiting for closure',
+          output: 'local execution completed',
           durationMs: 1,
           completedAt: '2026-02-06T00:02:00.000Z',
-          taskStatus: 'paused',
-          outcome: 'blocked',
-          stopReason: 'closure_pending',
+          taskStatus: 'succeeded',
+          outcome: 'completed',
+          stopReason: 'completed',
           archivePath: sourceArchivePath,
           handoff: buildSourceArchiveRecord(
             sourceWorktreePath,
@@ -109,7 +111,7 @@ export const buildClosurePromotionFixtures = async (
           ).handoff,
         },
       }),
-      prompt: 'source task waiting for closure',
+      prompt: 'source task local execution completed',
     },
   })
   const closureReportedLifecycle: TaskGitLifecycle = {

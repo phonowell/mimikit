@@ -35,9 +35,9 @@ test('normalizeManagerReplyText keeps task-result replies structured in structur
     output: 'done',
     durationMs: 42,
     completedAt: '2026-04-15T08:00:00.000Z',
-    taskStatus: 'paused',
-    outcome: 'blocked',
-    stopReason: 'closure_pending',
+    taskStatus: 'succeeded',
+    outcome: 'completed',
+    stopReason: 'completed',
     handoff: {
       summary: '主线实现已经完成。',
       risks: ['还差 merge 和 cleanup。'],
