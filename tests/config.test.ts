@@ -44,6 +44,8 @@ test('defaultConfig returns independent nested defaults per call', () => {
   const first = defaultConfig({ workDir: '.mimikit-a' })
   first.worker.retry.maxAttempts = 9
   first.worker.retry.backoffMs = 1
+  first.manager.retry.maxAttempts = 7
+  first.manager.retry.backoffMs = 2
   first.manager.promptSections.tasksMaxBytes = 123
   first.manager.taskCreate.debounceMs = 99
   first.manager.taskWindow.maxCount = 1
@@ -52,6 +54,10 @@ test('defaultConfig returns independent nested defaults per call', () => {
   const second = defaultConfig({ workDir: '.mimikit-b' })
 
   expect(second.worker.retry).toEqual({
+    maxAttempts: 1,
+    backoffMs: 5000,
+  })
+  expect(second.manager.retry).toEqual({
     maxAttempts: 1,
     backoffMs: 5000,
   })

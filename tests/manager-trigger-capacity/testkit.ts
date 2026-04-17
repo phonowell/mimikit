@@ -48,6 +48,7 @@ const createTestConfig = (
     baseUrl: '',
     apiKey: '',
     proxy: '',
+    retry: { maxAttempts: 1, backoffMs: 1 },
     promptSections: {
       batchResultsMaxBytes: 4096,
       environmentMaxBytes: 2048,

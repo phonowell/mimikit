@@ -56,7 +56,7 @@ export const runManagerRoundAttempt = (params: {
     modelReasoningEffort: params.modelReasoningEffort,
     retry: {
       maxAttempts: params.retryMaxAttempts,
-      backoffMs: params.runtime.config.worker.retry.backoffMs,
+      backoffMs: params.runtime.config.manager.retry.backoffMs,
     },
     ...(params.abortSignal ? { abortSignal: params.abortSignal } : {}),
     ...(params.managerThreadId ? { threadId: params.managerThreadId } : {}),

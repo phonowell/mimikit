@@ -3,6 +3,11 @@ import { randomUUID } from 'node:crypto'
 import { asRecord, asString } from '../../foundation/shared/json.js'
 import { normalizeUsage } from '../../foundation/shared/utils.js'
 
+import {
+  parseJsonRecord,
+  readResponsesErrorMessage,
+} from './openai-responses-provider-diagnostics.js'
+
 import type {
   OpenAiResponsesProviderRequest,
   ProviderPromptSegment,
@@ -36,22 +41,6 @@ const readCompletedOutput = (completed: Record<string, unknown>): string => {
     }
   }
   return text
-}
-
-const parseJsonRecord = (raw: string): Record<string, unknown> | null => {
-  try {
-    return asRecord(JSON.parse(raw))
-  } catch {
-    return null
-  }
-}
-
-export const readResponsesErrorMessage = (raw: string): string | undefined => {
-  const payload = parseJsonRecord(raw)
-  const message = asString(payload, 'message')
-  if (message) return message
-  const error = asRecord(payload?.error)
-  return asString(error, 'message')
 }
 
 const readIncompleteReason = (

@@ -70,7 +70,7 @@ export const recoverManagerBatchFailure = async (params: {
     autoRetryAttempts: autoRetryMeta?.autoRetryAttempts ?? 0,
     autoRetryMaxAttempts:
       autoRetryMeta?.autoRetryMaxAttempts ??
-      Math.max(0, params.runtime.config.worker.retry.maxAttempts),
+      Math.max(0, params.runtime.config.manager.retry.maxAttempts),
     autoRetryState: autoRetryMeta?.autoRetryState ?? ('not_retryable' as const),
     autoRetryStrategy:
       autoRetryMeta?.autoRetryStrategy ?? 'reuse_worker_retry_config',

@@ -54,7 +54,7 @@ export const runManagerRoundWithRecovery = async (params: {
   const packetMode = resolveManagerPacketMode({ wakeProfile })
   const roundId = createRoundId()
   const { promptSectionLimits } = budgetDecision
-  const baseRetry = params.runtime.config.worker.retry
+  const baseRetry = params.runtime.config.manager.retry
   void appendLog(params.runtime.paths.log, {
     event: 'manager_context_budget_resolved',
     batchId: params.batchId,
@@ -89,8 +89,7 @@ export const runManagerRoundWithRecovery = async (params: {
         packetMode,
         modelReasoningEffort:
           params.runtime.config.manager.modelReasoningEffort,
-        retryMaxAttempts:
-          wakeProfile === 'user_input' ? 0 : baseRetry.maxAttempts,
+        retryMaxAttempts: baseRetry.maxAttempts,
       })
     } catch (error) {
       if (

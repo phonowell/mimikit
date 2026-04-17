@@ -30,6 +30,10 @@ export type AppConfig = {
     baseUrl?: string | undefined
     apiKey?: string | undefined
     proxy?: string | undefined
+    retry: {
+      maxAttempts: number
+      backoffMs: number
+    }
     promptSections: PromptSectionLimits
     taskCreate: {
       debounceMs: number
@@ -89,6 +93,10 @@ const INTERNAL_MANAGER_DEFAULTS = {
     maxCount: 20,
     minCount: 5,
   },
+  retry: {
+    maxAttempts: 1,
+    backoffMs: 5000,
+  },
 } as const
 
 const INTERNAL_WORKER_DEFAULTS = {
@@ -117,6 +125,7 @@ export const defaultConfig = (params: DefaultConfigParams): AppConfig => {
         ? { apiKey: userConfig.manager.apiKey }
         : {}),
       ...(userConfig.manager.proxy ? { proxy: userConfig.manager.proxy } : {}),
+      retry: { ...INTERNAL_MANAGER_DEFAULTS.retry },
       promptSections: { ...INTERNAL_MANAGER_DEFAULTS.promptSections },
       taskCreate: { ...INTERNAL_MANAGER_DEFAULTS.taskCreate },
       taskWindow: { ...INTERNAL_MANAGER_DEFAULTS.taskWindow },

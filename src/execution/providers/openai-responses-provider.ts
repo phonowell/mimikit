@@ -7,6 +7,7 @@ import {
   resolveProxyDispatcher,
   trimNonEmptyString,
 } from './openai-responses-provider-config.js'
+import { summarizeResponsesPayload } from './openai-responses-provider-diagnostics.js'
 import {
   buildResponsesHttpErrorMessage,
   mapOpenAiResponsesError,
@@ -38,11 +39,13 @@ export {
   parseResponsesPayload,
   parseResponsesSse,
 } from './openai-responses-provider-parse.js'
+export { summarizeResponsesPayload } from './openai-responses-provider-diagnostics.js'
 
 const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
   const startedAt = Date.now()
   const controller = new AbortController()
   let sessionId: string | undefined
+  let rawResponse: string | undefined
   const lifecycle = {
     externallyAborted: false,
     timedOut: false,
@@ -120,6 +123,7 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
     resetIdle()
     if (response.ok) request.onTurnStarted?.()
     const raw = await response.text()
+    rawResponse = raw
     resetIdle()
     if (!response.ok)
       throw new Error(buildResponsesHttpErrorMessage(response.status, raw))
@@ -158,6 +162,9 @@ const runOpenAiResponses = async (request: OpenAiResponsesProviderRequest) => {
       elapsedMs: elapsedMsSince(startedAt),
       error: mapped.message,
       errorName: mapped.name,
+      ...(rawResponse
+        ? { responseSummary: summarizeResponsesPayload(rawResponse) }
+        : {}),
       ...(code ? { errorCode: code } : {}),
     })
     throw attachProviderThreadId(mapped, sessionId ?? request.threadId ?? null)

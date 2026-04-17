@@ -8,6 +8,7 @@ import {
 } from '../src/kernel/streams/queues.js'
 import { readHistory } from '../src/persistence/history/store.js'
 import { recoverManagerBatchFailure } from '../src/policy/manager/loop-batch-flow.js'
+import { attachManagerAutoRetryMeta } from '../src/policy/manager/manager-llm-call-shared.js'
 import { createTask } from '../src/work/orchestrator/task-lifecycle.js'
 
 import { createManagerBatchFailureRuntimeKit } from './helpers/manager-batch-failure.js'
@@ -121,4 +122,55 @@ test('recoverManagerBatchFailure keeps task results pending for replay after man
     return item.systemEventName === 'manager_error'
   })
   expect(managerErrorMessage).toBeDefined()
+})
+
+test('recoverManagerBatchFailure fallback reply does not claim retries when none ran', async () => {
+  const runtime = await runtimeKit.createRuntime({
+    runtimeId: 'runtime-manager-failure-no-retry-copy-test',
+    tempDirPrefix: 'mimikit-manager-failure-copy-',
+  })
+  const input: UserInput = {
+    id: 'input-2',
+    role: 'user',
+    text: '继续',
+    createdAt: '2026-03-08T06:18:36.155Z',
+    focusId: 'focus-main',
+    source: 'webui',
+    platform: 'webui',
+  }
+  runtime.process.session.inflightInputs = [input]
+  await publishUserInput({ paths: runtime.paths, payload: input })
+
+  const error = attachManagerAutoRetryMeta(
+    new ProviderError({
+      code: 'provider_transient_network',
+      message: '[provider:openai-responses] sdk run failed: fetch failed',
+      retryable: true,
+    }),
+    {
+      autoRetryAttempts: 0,
+      autoRetryMaxAttempts: 0,
+      autoRetryState: 'exhausted',
+      autoRetryStrategy: 'reuse_worker_retry_config',
+    },
+  )
+
+  await recoverManagerBatchFailure({
+    runtime,
+    error,
+    inputs: [input],
+    results: [],
+    nextInputsCursor: 1,
+    nextResultsCursor: 0,
+    agentInputsCount: 1,
+    agentAppended: false,
+    startedAt: Date.now() - 20,
+  })
+
+  const history = await readHistory(runtime.paths.history)
+  const fallbackMessage = history.find((item) => {
+    if (item.role !== 'system') return false
+    return item.systemEventName === 'manager_fallback_reply'
+  })
+  expect(fallbackMessage?.text).not.toContain('重试后仍未收口')
 })

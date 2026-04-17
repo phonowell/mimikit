@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest'
 import {
   parseResponsesPayload,
   parseResponsesSse,
+  summarizeResponsesPayload,
 } from '../../src/execution/providers/openai-responses-provider.js'
 
 describe('parseResponsesSse', () => {
@@ -108,5 +109,28 @@ describe('parseResponsesPayload', () => {
     expect(() => parseResponsesPayload(payload)).toThrow(
       'responses_incomplete:max_output_tokens',
     )
+  })
+})
+
+describe('summarizeResponsesPayload', () => {
+  test('summarizes missing completed SSE responses for diagnostics', () => {
+    const sse = [
+      'event: response.output_text.done',
+      'data: {"type":"response.output_text.done","text":"partial"}',
+      '',
+      'event: response.completed',
+      'data: {"type":"response.completed"',
+      '',
+    ].join('\n')
+
+    expect(summarizeResponsesPayload(sse)).toEqual({
+      chunkCount: 2,
+      parseErrorCount: 1,
+      hasCompletedEvent: false,
+      hasIncompleteEvent: false,
+      hasFailedEvent: false,
+      lastEventTypes: ['response.output_text.done', '<parse_error>'],
+      tailPreview: sse.slice(-240),
+    })
   })
 })

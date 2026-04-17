@@ -1,5 +1,5 @@
 import { OPENAI_RESPONSES_PROVIDER_ID } from './openai-responses-provider-config.js'
-import { readResponsesErrorMessage } from './openai-responses-provider-parse.js'
+import { readResponsesErrorMessage } from './openai-responses-provider-diagnostics.js'
 import {
   buildProviderAbortedError,
   buildProviderSdkError,
