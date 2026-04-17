@@ -55,6 +55,7 @@ export type ManagerContextPacket = {
         focusId: FocusId
         source:
           | 'user_input'
+          | 'quoted_message'
           | 'task_result'
           | 'trigger'
           | 'plan_stage'

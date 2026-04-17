@@ -97,6 +97,16 @@ export const readHistory = async (
   return partitions.flat().sort(compareHistoryMessage)
 }
 
+export const readHistoryMessageById = async (
+  historyDir: string,
+  messageId: string,
+): Promise<HistoryMessage | undefined> => {
+  const normalizedId = messageId.trim()
+  if (!normalizedId) return undefined
+  const history = await readHistory(historyDir)
+  return history.find((item) => item.id === normalizedId)
+}
+
 export const rewriteHistory = async (
   historyDir: string,
   items: HistoryMessage[],

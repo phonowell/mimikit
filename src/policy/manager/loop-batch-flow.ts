@@ -1,13 +1,9 @@
-import { nowIso } from '../../foundation/shared/utils.js'
-import { broadcastAgentReply } from '../../kernel/orchestrator/channel-broadcast.js'
 import { persistRuntimeState } from '../../kernel/orchestrator/runtime-persistence.js'
 import { appendManagerErrorSystemMessage } from '../../persistence/history/manager-events.js'
-import { appendHistory } from '../../persistence/history/store.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { readLogDiagnostics } from '../../persistence/log/diagnostics.js'
 import { bestEffort, logSafeError } from '../../persistence/log/safe.js'
-import { extractArtifactLinksFromText } from '../../surface/shared/artifact-link.js'
-import { resolveDefaultFocusId, touchFocus } from '../../work/focus/state.js'
+import { resolveDefaultFocusId } from '../../work/focus/state.js'
 
 import { appendAndDispatchManagerFailureReply } from './loop-batch-failure-reply.js'
 import {
@@ -19,11 +15,7 @@ import { readManagerAutoRetryMeta } from './manager-llm-call.js'
 import { flushPendingManagerRestart } from './restart-runtime.js'
 import { scheduleResultReplayBackoff } from './result-replay-backoff.js'
 
-import type {
-  TaskResult,
-  TokenUsage,
-  UserInput,
-} from '../../foundation/types/index.js'
+import type { TaskResult, UserInput } from '../../foundation/types/index.js'
 import type { ManagerRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
 export const finishBatchWithoutAgentReply = async (params: {
@@ -56,40 +48,6 @@ export const finishBatchWithoutAgentReply = async (params: {
     skippedReason: 'no_agent_visible_inputs',
   })
   flushPendingManagerRestart(params.runtime)
-}
-
-export const appendManagerReply = async (params: {
-  runtime: ManagerRuntime
-  text: string
-  nextInputsCursor: number
-  usage?: TokenUsage
-  elapsedMs?: number
-  artifacts?: ReturnType<typeof extractArtifactLinksFromText>
-}): Promise<void> => {
-  const replyFocusId = resolveDefaultFocusId(params.runtime)
-  touchFocus(params.runtime, replyFocusId)
-  const messageId = `agent-${Date.now()}-${params.nextInputsCursor}`
-  const artifacts =
-    params.artifacts ?? extractArtifactLinksFromText(params.text)
-  await appendHistory(params.runtime.paths.history, {
-    id: messageId,
-    role: 'agent',
-    text: params.text,
-    createdAt: nowIso(),
-    focusId: replyFocusId,
-    ...(params.usage ? { usage: params.usage } : {}),
-    ...(params.elapsedMs !== undefined && params.elapsedMs >= 0
-      ? { elapsedMs: params.elapsedMs }
-      : {}),
-    ...(artifacts ? { artifacts } : {}),
-  })
-  await bestEffort('broadcast:agent_reply', () =>
-    broadcastAgentReply({
-      runtime: params.runtime,
-      messageId,
-      text: params.text,
-    }),
-  )
 }
 
 export const recoverManagerBatchFailure = async (params: {

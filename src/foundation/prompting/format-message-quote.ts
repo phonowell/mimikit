@@ -1,4 +1,8 @@
-import { isVisibleToAgent } from '../../surface/shared/message-visibility.js'
+import { resolveMessageProvenance } from '../../surface/shared/message-provenance.js'
+import {
+  isVisibleToAgent,
+  isVisibleToUser,
+} from '../../surface/shared/message-visibility.js'
 
 import type { HistoryMessage, UserInput } from '../types/index.js'
 
@@ -10,6 +14,9 @@ export type PromptQuoteReference = {
   time: string
   focus_id: string
   content: string
+  source_input_ids?: string[]
+  source_task_ids?: string[]
+  source_plan_ids?: string[]
 }
 
 export type PromptQuoteReferenceLookup = Map<string, PromptQuoteReference>
@@ -20,6 +27,9 @@ type QuoteReferenceSource = {
   createdAt: string
   focusId: string
   text: string
+  sourceInputIds?: string[]
+  sourceTaskIds?: string[]
+  sourcePlanIds?: string[]
 }
 
 const normalizeQuoteId = (value: unknown): string =>
@@ -50,14 +60,26 @@ const toPromptQuoteReference = (
     time,
     focus_id: focusId,
     content,
+    ...(source.sourceInputIds
+      ? { source_input_ids: source.sourceInputIds }
+      : {}),
+    ...(source.sourceTaskIds ? { source_task_ids: source.sourceTaskIds } : {}),
+    ...(source.sourcePlanIds ? { source_plan_ids: source.sourcePlanIds } : {}),
   }
 }
 
 const toVisibleQuoteReference = (
   source: HistoryMessage | UserInput,
 ): PromptQuoteReference | null => {
-  if (!isVisibleToAgent(source)) return null
-  return toPromptQuoteReference(source)
+  if (!isVisibleToAgent(source) && !isVisibleToUser(source)) return null
+  return toPromptQuoteReference({
+    id: source.id,
+    role: source.role,
+    createdAt: source.createdAt,
+    focusId: source.focusId,
+    text: source.text,
+    ...resolveMessageProvenance(source),
+  })
 }
 
 export const resolveQuoteReference = (

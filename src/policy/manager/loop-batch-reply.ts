@@ -1,4 +1,10 @@
-import { appendManagerReply } from './loop-batch-flow.js'
+import {
+  mergeMessageProvenance,
+  normalizeProvenanceIds,
+  resolveMessageProvenance,
+} from '../../surface/shared/message-provenance.js'
+
+import { appendManagerReply } from './loop-batch-append-reply.js'
 import { buildFallbackReply } from './loop-helpers.js'
 import { normalizeManagerReplyText } from './reply-normalize.js'
 
@@ -23,6 +29,32 @@ const shouldSuppressEmptyTriggerWakeReply = (params: {
       (input.systemEventName === 'worker_slot_freed' ||
         input.systemEventName === 'trigger_fire'),
   )
+}
+
+const buildReplyProvenance = (params: {
+  agentInputs: UserInput[]
+  results: TaskResult[]
+}): {
+  sourceInputIds?: string[]
+  sourceTaskIds?: string[]
+  sourcePlanIds?: string[]
+} => {
+  const sourceInputIds = normalizeProvenanceIds(
+    params.agentInputs.map((input) => input.id),
+  )
+  const resultTaskIds = normalizeProvenanceIds(
+    params.results.map((result) => result.taskId),
+  )
+  const fromResults = {
+    ...(resultTaskIds ? { sourceTaskIds: resultTaskIds } : {}),
+  }
+  const fromQuotedInputs = mergeMessageProvenance(
+    ...params.agentInputs.map((input) => resolveMessageProvenance(input)),
+  )
+  const fromInputs = {
+    ...(sourceInputIds ? { sourceInputIds } : {}),
+  }
+  return mergeMessageProvenance(fromResults, fromInputs, fromQuotedInputs)
 }
 
 export const appendManagerBatchReply = async (params: {
@@ -53,10 +85,15 @@ export const appendManagerBatchReply = async (params: {
   const responseText =
     params.normalizedReplyText ||
     normalizeManagerReplyText(fallback?.text ?? '')
+  const provenance = buildReplyProvenance({
+    agentInputs: params.agentInputs,
+    results: params.results,
+  })
   await appendManagerReply({
     runtime: params.runtime,
     text: responseText,
     nextInputsCursor: params.nextInputsCursor,
+    ...provenance,
     ...(fallback?.artifacts ? { artifacts: fallback.artifacts } : {}),
     ...(params.usage ? { usage: params.usage } : {}),
     ...(params.elapsedMs !== undefined && params.elapsedMs >= 0

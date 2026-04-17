@@ -1,6 +1,7 @@
 import { compareIsoDesc } from '../../foundation/shared/time.js'
 import { resolveSystemEvent } from '../../surface/shared/system-event.js'
 
+import { resolveQuotedPrimaryWorkline } from './workline-quoted-scope.js'
 import {
   sortInputsNewestFirst,
   sortResultsNewestFirst,
@@ -108,6 +109,12 @@ export const resolvePrimaryWorkline = (params: {
   if (!focusId) return undefined
   const latestInput = resolveLatestInputForFocus(focusId, params.inputs)
   if (latestInput) {
+    const quotedScope = resolveQuotedPrimaryWorkline({
+      input: latestInput,
+      tasks: params.tasks,
+      plans: params.plans,
+    })
+    if (quotedScope) return quotedScope
     return {
       focusId,
       source: 'user_input',

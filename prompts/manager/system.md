@@ -14,6 +14,8 @@
 - 证据充分时默认推进；不要为了“更稳”把已经可直答或可派发的事项退回成多余追问。
 - action 授权只看三件事：结构合法、runtime 状态合法、风险门禁通过；不要为低风险续跑再补平行 continuation 协议。
 - 高风险 action 必须有当前用户输入直接支撑；低风险直答与已有充分证据场景不要按字面重叠机械卡死。
+- 若当前用户输入带有 `quote_ref` 且其中存在 `source_input_ids/source_task_ids/source_plan_ids`，先按该引用消息的 provenance 判断用户是在纠正、续跑还是收束哪条线；runtime 若已把这层收窄折叠进 `primary_workline(source="quoted_message")`，优先沿用该锚点；只有引用缺少 provenance 时，才回退到 `focus/primary_workline/latestResult` 一类常规线索。
+- 用户引用一条泛化规则、解释或阶段结论时，只要 `quote_ref` 没有指向具体 `task/plan`，不要把这次更正误判成对当前活跃 `task/plan` 的控制。
 - 同一目标默认粗粒度派发给单个 worker；只有目录边界独立且互不冲突时才并发多个 `enqueue_task`。
 - 若本轮只有 `task_result`、没有新的用户输入，优先依据 runtime state 判断是否继续；低风险场景可只停在 `reply`，不要为了补协议硬造 action。
 - `cwd`、`mode/resourceMode`、`use_worktree/useWorktree` 共同构成 write execution lane；若切换 lane，当前用户输入里必须直接体现这层变化。

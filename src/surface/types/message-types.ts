@@ -7,6 +7,7 @@ import type {
   TokenUsage,
 } from '../../foundation/types/base.js'
 import type { SurfaceArtifactLink } from '../shared/artifact-link.js'
+import type { MessageProvenance } from '../shared/message-provenance.js'
 
 type NonSystemHistoryMessage = {
   id: Id
@@ -24,7 +25,7 @@ type NonSystemHistoryMessage = {
   elapsedMs?: number
   quote?: Id
   artifacts?: SurfaceArtifactLink[]
-}
+} & MessageProvenance
 
 type SystemHistoryMessage = {
   id: Id
@@ -39,7 +40,7 @@ type SystemHistoryMessage = {
   elapsedMs?: number
   quote?: Id
   artifacts?: SurfaceArtifactLink[]
-}
+} & MessageProvenance
 
 export type HistoryMessage = NonSystemHistoryMessage | SystemHistoryMessage
 
@@ -56,7 +57,7 @@ type UserInputUser = {
   telegramMessageId?: string
   telegramUpdateId?: string
   telegramTimestamp?: ISODate
-}
+} & MessageProvenance
 
 type UserInputSystem = {
   id: Id
@@ -68,6 +69,6 @@ type UserInputSystem = {
   systemEventName?: string
   systemEventPayload?: Record<string, unknown>
   quote?: Id
-}
+} & MessageProvenance
 
 export type UserInput = UserInputUser | UserInputSystem

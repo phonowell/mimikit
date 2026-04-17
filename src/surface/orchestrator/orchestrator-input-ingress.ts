@@ -10,11 +10,12 @@ import {
 } from '../../kernel/orchestrator/signals.js'
 import { buildRuntimeStartupSystemEventPayload } from '../../kernel/shared/runtime-startup.js'
 import { publishUserInput } from '../../kernel/streams/queues.js'
+import { readHistoryMessageById } from '../../persistence/history/store.js'
 import { appendLog } from '../../persistence/log/append.js'
 import { bestEffort } from '../../persistence/log/safe.js'
-import { resolveFocusByQuote } from '../../work/focus/assign.js'
 import { GLOBAL_FOCUS_ID } from '../../work/focus/constants.js'
 import { resolveDefaultFocusId, touchFocus } from '../../work/focus/state.js'
+import { resolveMessageProvenance } from '../shared/message-provenance.js'
 
 import type {
   RuntimeUserMeta,
@@ -30,9 +31,10 @@ export const appendUserInput = async (
   const id = `input-${newId()}`
   const createdAt = nowIso()
   const quoteId = quote?.trim()
-  const inherited = quoteId
-    ? await resolveFocusByQuote(runtime, quoteId)
+  const quotedMessage = quoteId
+    ? await readHistoryMessageById(runtime.paths.history, quoteId)
     : undefined
+  const inherited = quotedMessage?.focusId
   const focusId = inherited ?? resolveDefaultFocusId(runtime)
   touchFocus(runtime, focusId)
   const source = meta?.source?.trim()
@@ -54,7 +56,12 @@ export const appendUserInput = async (
     ...(telegramUpdateId ? { telegramUpdateId } : {}),
     ...(telegramTimestamp ? { telegramTimestamp } : {}),
   }
-  const input = quoteId ? { ...baseInput, quote: quoteId } : baseInput
+  const quotedProvenance = resolveMessageProvenance(quotedMessage)
+  const input = {
+    ...baseInput,
+    ...(quoteId ? { quote: quoteId } : {}),
+    ...quotedProvenance,
+  }
   await publishUserInput({ paths: runtime.paths, payload: input })
   runtime.process.session.inflightInputs.push(input)
   notifyUiSignal(runtime)

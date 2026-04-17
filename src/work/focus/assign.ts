@@ -11,14 +11,6 @@ import { ensureFocus, touchFocus } from './state.js'
 import type { FocusId, HistoryMessage } from '../../foundation/types/index.js'
 import type { FocusRuntime } from '../../kernel/orchestrator/runtime-interfaces.js'
 
-export const resolveFocusByQuote = async (
-  runtime: FocusRuntime,
-  quoteId: string,
-): Promise<FocusId | undefined> => {
-  const history = await readHistory(runtime.paths.history)
-  return history.find((item) => item.id === quoteId)?.focusId
-}
-
 export const assignFocusByTargetId = async (
   runtime: FocusRuntime,
   targetType: 'task' | 'plan' | 'history',
