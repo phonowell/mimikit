@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "@fastify/etag": "^6.1.0",
-    "@fastify/static": "^9.0.0",
+    "@fastify/static": "^9.1.1",
     "@iarna/toml": "^2.2.5",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@openai/codex-sdk": "^0.116.0",
